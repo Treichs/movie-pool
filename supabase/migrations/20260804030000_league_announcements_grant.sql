@@ -1,0 +1,26 @@
+-- ---------------------------------------------------------------------------
+-- The GRANT that 20260804020000 forgot.
+--
+-- league_announcements shipped with RLS enabled and a correct member SELECT
+-- policy — and was still unreadable, because a policy is a FILTER applied
+-- AFTER the table privilege check, never a substitute for it. With no
+-- `grant select ... to authenticated`, PostgREST answered every read with
+-- 42501 "permission denied for table league_announcements", which
+-- getLeagueAnnouncements swallowed (a panel is an accessory to the page, not
+-- its reason to render) and drew as "Nothing posted yet.". Posting worked
+-- throughout — post_league_announcement is SECURITY DEFINER and never consults
+-- the caller's table privileges — so the failure looked exactly like a write
+-- bug and was not one.
+--
+-- THIS IS THE SECOND TIME. league_invites shipped the same way on 2026-08-01
+-- and needed 20260802000000_league_invites_grants.sql to repair it. Twice is a
+-- pattern, so it is written down here rather than just fixed: in this schema
+-- RLS is the read RULE and the grant is the read PERMISSION, and a new table
+-- needs both. `enable row level security` plus a policy reads like a complete
+-- thought and is not one.
+--
+-- Nothing is widened by this. `authenticated` gets SELECT on the table, and
+-- the policy still restricts every row to members of that league; the write
+-- privileges are deliberately NOT granted, so the RPCs remain the only writers.
+-- ---------------------------------------------------------------------------
+grant select on public.league_announcements to authenticated;

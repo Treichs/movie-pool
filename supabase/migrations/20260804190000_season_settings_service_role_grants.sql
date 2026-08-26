@@ -1,0 +1,24 @@
+-- season_settings needs service_role DML (2026-08-04). Fixes 20260804170000.
+--
+-- The table shipped with `grant select ... to authenticated`, which is right
+-- for the app — every write goes through an RPC — and stops one row short of
+-- what the project actually needs. service_role got nothing but the inherited
+-- REFERENCES/TRIGGER/TRUNCATE, so the seed script, the spikes and every admin
+-- read came back empty. The setup spike found it: `Cannot read properties of
+-- null (reading 'fake_bankroll')` reading a row that plainly existed.
+--
+-- THIS IS THE THIRD TIME a table has shipped with correct policies and missing
+-- grants — league_invites (2026-08-01), league_announcements (2026-08-04), and
+-- now this one. The first two missed `authenticated`, this one missed
+-- `service_role`, and the failure looks different each time: a member sees an
+-- empty list, or a spike reads null from a row it can see in the SQL editor.
+--
+-- The rule that covers all three, worth stating once here: a policy is a FILTER
+-- applied after the privilege check, and a new table starts with no privileges
+-- for anybody. Every new table needs BOTH — the policy for who may see which
+-- rows, and grants for each role that touches it at all: `authenticated` for
+-- what the app reads, `service_role` for what the seeds and spikes read.
+-- league_settings already carried both, which is why the diff between the two
+-- tables was the fastest way to see it.
+
+grant select, insert, update, delete on public.season_settings to service_role;

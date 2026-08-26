@@ -1,0 +1,19 @@
+-- ---------------------------------------------------------------------------
+-- Restore service_role's SELECT on v_season_awards.
+--
+-- 20260812000000 had to DROP the view to rename worst_score to worst_ratio (a
+-- column cannot be renamed by CREATE OR REPLACE).  A dropped view takes its
+-- privileges with it, and the recreate granted only `authenticated` — so every
+-- service-role read of the awards broke the moment that migration landed.
+-- The original grant (20260716120000) named both roles; this restores it.
+--
+-- Kept as its own migration rather than edited into the previous one: that file
+-- is already applied to the hosted database, and silently changing an applied
+-- migration leaves a fresh environment and the live one running different SQL
+-- while both claim the same version.
+--
+-- The lesson generalises past this view: DROP + CREATE is not equivalent to
+-- CREATE OR REPLACE for anything that carries grants, and nothing in the schema
+-- fails loudly when a grant goes missing — the read just starts refusing.
+-- ---------------------------------------------------------------------------
+grant select on public.v_season_awards to authenticated, service_role;

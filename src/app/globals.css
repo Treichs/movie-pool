@@ -1,26 +1,276 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+/* Deletes Tailwind's stock palette. `bg-blue-500` emits no CSS at all, so raw
+   palette classes are impossible rather than forbidden — one line doing the
+   work a lint rule used to. MUST come before the @theme inline block below,
+   or it resets those mappings too. */
+@theme {
+  --color-*: initial;
 }
 
+/* ---------------------------------------------------------------------------
+   1. THE VALUES — light. Sprocket palette, contrast-validated at WCAG AA.
+   Three of these are not obvious and must not be "tidied":
+     - --muted-foreground uses a different neutral per mode. #6B6A68 is 4.92:1
+       in light but 3.66:1 in dark; #8E8D8B is the reverse. Do not unify them.
+     - --primary (vermilion) is a BACKGROUND only. 3.42:1 — it fails as text.
+     - --link (cobalt) is lifted in dark to #249BDB; #14567A is 2.64:1 on ink.
+--------------------------------------------------------------------------- */
+:root {
+  --radius: 0.25rem;
+
+  --background: #F5F4F3;
+  --foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  --popover: #FFFFFF;
+  --popover-foreground: #000000;
+  --primary: #EB4B37;
+  --primary-foreground: #000000;
+  --secondary: #EDECEA;
+  --secondary-foreground: #000000;
+  --muted: #EDECEA;
+  --muted-foreground: #6B6A68;
+  --accent: #EDECEA;
+  --accent-foreground: #000000;
+  --destructive: #932818;
+  --border: #DCDBD9;
+  --input: #EDECEA;
+  --ring: #000000;
+
+  --chart-1: #155D84;
+  --chart-2: #1E82B8;
+  --chart-3: #35A3DE;
+  --chart-4: #6ABBE7;
+  --chart-5: #9FD3EF;
+
+  --sidebar: #F5F4F3;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #EB4B37;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #EDECEA;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #DCDBD9;
+  --sidebar-ring: #000000;
+
+  /* App additions. Each follows the documented pattern: value here and in
+     .dark, mapping in @theme inline below. */
+  --link: #14567A;
+  --success: #266445;
+  --success-foreground: #F5F4F3;
+  --warning: #76550A;
+  --warning-foreground: #F5F4F3;
+  --scrim: #000000;
+  --scrim-foreground: #FFFFFF;
+
+  /* Bump-chart series. Ten hues derived from one surviving anchor (#7AC49F). */
+  --series-1: #7AC49F;
+  --series-2: #95CAD0;
+  --series-3: #7A90C4;
+  --series-4: #A795D0;
+  --series-5: #BD7AC4;
+  --series-6: #D095B3;
+  --series-7: #C4817A;
+  --series-8: #D0BE95;
+  --series-9: #AEC47A;
+  --series-10: #9BD095;
+}
+
+/* ---------------------------------------------------------------------------
+   2. DARK — wired, not switched on. Nothing sets .dark today. It exists so a
+   component installed from any registry has values to read if it is ever
+   turned on, and so a11y:contrast has both modes to sweep.
+--------------------------------------------------------------------------- */
+.dark {
+  --background: #0B0A09;
+  --foreground: #F5F4F3;
+  --card: #1C1B19;
+  --card-foreground: #F5F4F3;
+  --popover: #1C1B19;
+  --popover-foreground: #F5F4F3;
+  --primary: #EB4B37;
+  --primary-foreground: #000000;
+  --secondary: #262523;
+  --secondary-foreground: #F5F4F3;
+  --muted: #262523;
+  --muted-foreground: #8E8D8B;
+  --accent: #262523;
+  --accent-foreground: #F5F4F3;
+  --destructive: #FFA494;
+  --border: #33322F;
+  --input: #262523;
+  --ring: #F5F4F3;
+
+  --chart-1: #9FD3EF;
+  --chart-2: #6ABBE7;
+  --chart-3: #35A3DE;
+  --chart-4: #1E82B8;
+  --chart-5: #155D84;
+
+  --sidebar: #0B0A09;
+  --sidebar-foreground: #F5F4F3;
+  --sidebar-primary: #EB4B37;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #262523;
+  --sidebar-accent-foreground: #F5F4F3;
+  --sidebar-border: #33322F;
+  --sidebar-ring: #F5F4F3;
+
+  --link: #249BDB;
+  --success: #6BC799;
+  --success-foreground: #0B0A09;
+  --warning: #ECAB13;
+  --warning-foreground: #000000;
+  --scrim: #000000;
+  --scrim-foreground: #FFFFFF;
+
+  --series-1: #2C6347;
+  --series-2: #1F4347;
+  --series-3: #2C3C63;
+  --series-4: #2B1F47;
+  --series-5: #5D2C63;
+  --series-6: #471F33;
+  --series-7: #63312C;
+  --series-8: #473B1F;
+  --series-9: #52632C;
+  --series-10: #23471F;
+}
+
+/* ---------------------------------------------------------------------------
+   3. THE BRIDGE — turns each value above into a Tailwind utility.
+   Every corner in the app comes from --radius. No component hardcodes one.
+--------------------------------------------------------------------------- */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-link: var(--link);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-scrim: var(--scrim);
+  --color-scrim-foreground: var(--scrim-foreground);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
+  --color-series-9: var(--series-9);
+  --color-series-10: var(--series-10);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ---------------------------------------------------------------------------
+   4. TYPE — one family, three roles, hierarchy by WIDTH not size.
+   Archivo is variable on wdth (62-125) and wght (100-900). The faces are
+   bound in app/layout.tsx; the axis settings per role live here.
+
+--------------------------------------------------------------------------- */
+@theme {
+  --font-sans: var(--font-archivo-sans);
+  --font-heading: var(--font-archivo-heading);
+  --font-numeric: var(--font-archivo-numeric);
+
+  --fvs-display: "wdth" 62, "wght" 800;
+  --fvs-h1: "wdth" 64, "wght" 800;
+  --fvs-h2: "wdth" 70, "wght" 800;
+  --fvs-h3: "wdth" 100, "wght" 700;
+  --fvs-eyebrow: "wdth" 62, "wght" 800;
+  --fvs-dek: "wdth" 100, "wght" 300;
+  --fvs-body: "wdth" 100, "wght" 400;
+  --fvs-ui: "wdth" 100, "wght" 500;
+  --fvs-button: "wdth" 100, "wght" 700;
+  --fvs-micro: "wdth" 100, "wght" 600;
+  --fvs-numeral: "wdth" 78, "wght" 800;
+
+  --text-display: 4rem;
+  --text-display--line-height: 0.86;
+  --text-h1: 2.75rem;
+  --text-h1--line-height: 0.9;
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 0.96;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.25;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-dek: 1.5rem;
+  --text-dek--line-height: 1.35;
+  --text-ui: 0.875rem;
+  --text-ui--line-height: 1.45;
+  --text-button: 0.6875rem;
+  --text-button--line-height: 1;
+  --text-micro: 0.65625rem;
+  --text-micro--line-height: 1.4;
+  --text-numeral-xl: 4.5rem;
+  --text-numeral-xl--line-height: 0.82;
+  --text-numeral: 1.25rem;
+  --text-numeral--line-height: 1.1;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* The type roles. Each pairs a size from @theme with its width/weight axis. */
+@utility type-display { font-variation-settings: var(--fvs-display); text-transform: uppercase; }
+@utility type-h1      { font-variation-settings: var(--fvs-h1); text-transform: uppercase; }
+@utility type-h2      { font-variation-settings: var(--fvs-h2); text-transform: uppercase; }
+@utility type-h3      { font-variation-settings: var(--fvs-h3); }
+@utility type-eyebrow { font-variation-settings: var(--fvs-eyebrow); text-transform: uppercase; letter-spacing: 0.08em; }
+@utility type-dek     { font-variation-settings: var(--fvs-dek); }
+@utility type-body    { font-variation-settings: var(--fvs-body); }
+@utility type-ui      { font-variation-settings: var(--fvs-ui); }
+@utility type-button  { font-variation-settings: var(--fvs-button); text-transform: uppercase; letter-spacing: 0.06em; }
+@utility type-micro   { font-variation-settings: var(--fvs-micro); text-transform: uppercase; letter-spacing: 0.06em; }
+@utility type-numeral { font-variation-settings: var(--fvs-numeral); font-variant-numeric: tabular-nums; }
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground type-body; }
+  h1 { @apply text-h1 type-h1; }
+  h2 { @apply text-h2 type-h2; }
+  h3 { @apply text-h3 type-h3; }
 }

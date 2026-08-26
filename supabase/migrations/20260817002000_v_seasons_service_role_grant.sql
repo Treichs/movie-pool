@@ -1,0 +1,15 @@
+-- ---------------------------------------------------------------------------
+-- v_seasons is readable by the service role, like every other view here.
+--
+-- 20260817000000 granted SELECT to `authenticated` only. v_standings and
+-- v_season_awards both grant service_role as well, and that is not decoration:
+-- the notify cron composes season names server-side under the service key, and
+-- every spike reads through it. Without this the cron's four sweeps and the
+-- whole contract suite fail with 'permission denied for view v_seasons' —
+-- which is exactly how it was found, one command after the push.
+--
+-- The service role bypasses RLS, never GRANTs. security_invoker on the view
+-- means the underlying seasons policies still decide what an AUTHENTICATED
+-- caller sees; this changes nothing about that.
+-- ---------------------------------------------------------------------------
+grant select on public.v_seasons to service_role;

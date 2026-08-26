@@ -1,0 +1,30 @@
+-- ADR-069, part 1 of 2: week_status gains a sixth member, `skipped`.
+--
+-- A weekend with no wide releases is a real fact about a season, not an
+-- absence. Today it has nowhere to live: such a week sits at `draft` forever,
+-- because open_due_weeks only opens a week that has a slate, and `scored` is
+-- reached ONLY from inside capture_film — so a week with no eligible films can
+-- never finish by any path. Players see it as permanently "pending" and keep
+-- checking a week that is never going to open.
+--
+-- `skipped` lets the commissioner SAY there was nothing on, rather than leaving
+-- the app to infer it from an empty slate. That statement is what the season
+-- completion gate reads (part 2), and what players are shown.
+--
+-- WHY THIS IS A MIGRATION OF ITS OWN. `alter type ... add value` commits the
+-- new label, but Postgres will not let the SAME transaction use it — and
+-- supabase db push runs each file in one transaction. Part 2 creates the
+-- functions that reference it, in a separate file, which is the only reason
+-- this one is three lines long.
+--
+-- NOTHING ELSE HAS TO CHANGE TO STAY SAFE. Every week-status guard in the RPC
+-- layer is written as a positive allowlist — place_bid and close_bidding want
+-- `= 'open'`, resolve_winners wants `= 'locked'`, add_film/update_film/
+-- update_week want `in ('draft','open')`, capture_film wants
+-- `in ('resolved','scored')`. A new member is therefore refused by all of them
+-- without being named in any of them. The one predicate written the other way
+-- round, season_bidding_has_begun's `<> 'draft'`, is corrected in part 2; left
+-- alone it would read a skipped week as "bidding has begun" and freeze the
+-- season roster.
+
+alter type public.week_status add value if not exists 'skipped';
