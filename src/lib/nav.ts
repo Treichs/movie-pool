@@ -71,9 +71,8 @@ type LeagueMemberRow = {
   league: {
     id: string;
     name: string;
-    /** Optional: absent on the pre-migration fallback select. */
-    avatar_pair?: number | null;
-    avatar_glyph?: string | null;
+    avatar_pair: number | null;
+    avatar_glyph: string | null;
     seasons: NavSeason[] | null;
   } | null;
 };
@@ -87,36 +86,25 @@ export async function getNavLeagues(
   // most recent season open or closed, and the number is the only honest
   // ordering: it ranks by earliest week, which is when the season is actually
   // played.
-  const BASE = "id, name, seasons:v_seasons(id, name, status, number)";
-  const WITH_AVATAR =
+  const COLUMNS =
     "id, name, avatar_pair, avatar_glyph, seasons:v_seasons(id, name, status, number)";
 
-  const query = (columns: string) =>
-    supabase
-      .from("league_members")
-      .select(`role, league:leagues(${columns})`)
-      .eq("profile_id", userId)
-      .order("created_at", { ascending: true });
+  const { data, error } = await supabase
+    .from("league_members")
+    .select(`role, league:leagues(${COLUMNS})`)
+    .eq("profile_id", userId)
+    .order("created_at", { ascending: true });
 
-  let { data, error } = await query(WITH_AVATAR);
-
-  // DEPLOY-WINDOW FALLBACK, and it is here because the silent version of this
-  // cost a live outage on 2026-08-03.
-  //
-  // The avatar columns arrive in migration 20260803060000. Between the app
-  // deploying and that migration being applied, PostgREST rejects the whole
-  // select with 42703 — and because this helper returned `data ?? []`, the
-  // result was not an error but an EMPTY LEAGUE LIST. Every member saw their
-  // leagues vanish from the sidebar on every page, with nothing to say why.
-  //
-  // The avatar is decoration; the league list is the navigation. Losing the
-  // second because the first is not ready yet is never the right trade, so a
-  // failure retries without the decorative columns. Delete this once the
-  // migration is applied everywhere — it is a bridge, not a design.
-  if (error) {
-    ({ data, error } = await query(BASE));
-    if (error) return [];
-  }
+  // AN ERROR IS NOT AN EMPTY LEAGUE LIST, and saying so out loud is the whole
+  // lesson of 2026-08-03: a retry that dropped the avatar columns used to sit
+  // here, because a missing migration made PostgREST reject the select with
+  // 42703 and `data ?? []` turned that into "you belong to no leagues" —
+  // every member's nav emptied, with nothing on screen to say why. The
+  // migration (20260803060000) is applied everywhere and the bridge is
+  // deleted, per its own instruction. What survives is the explicit return:
+  // the caller renders an empty shell either way, but nothing downstream gets
+  // to mistake a failed read for a true one.
+  if (error) return [];
 
   const rows = (data ?? []) as unknown as LeagueMemberRow[];
 
