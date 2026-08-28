@@ -12,11 +12,12 @@ import { Button } from "@/components/ui/button";
  * action the hero and the close both repeat.
  *
  * ── VERMILION BUDGET ON THIS SURFACE: THE WORDMARK AND THE PILL ───────────
- * `--nav` is a permanently-ink surface in both modes, where `#EB4B37` is
- * 5.57:1 rather than the 3.42:1 it measures on paper — so the red is legal as
- * text here and only here. The bar spends it twice because the pill is a
- * BACKGROUND (its label is `--primary-foreground`, near-black), which is what
- * the token is for everywhere else in the app.
+ * The bar spends the accent twice, and on two different tokens, because the
+ * two uses sit on different grounds. The wordmark is TEXT on `--nav`, so it
+ * takes `--nav-primary` (#EB4B37, 5.59:1 on ink; the paper-side red would be
+ * 3.80:1 here). The pill is a BACKGROUND, so it takes `--primary` (#C52F1B),
+ * whose label is `--primary-foreground` — paper, at 5.04:1 — and whose own
+ * edge against the band is 3.79:1.
  */
 export function LandingNav() {
   return (
@@ -25,7 +26,7 @@ export function LandingNav() {
           A screen reader announcing "T M P" is the brand spelled out letter by
           letter, which is noise; the sr-only span is what it should say. Same
           pairing the auth ink pane makes. */}
-      <span className="type-eyebrow text-ui text-primary">
+      <span className="type-eyebrow text-ui text-nav-primary">
         <span aria-hidden>TMP</span>
         <span className="sr-only">The Movie Pool</span>
       </span>

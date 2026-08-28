@@ -18,7 +18,7 @@ export function LandingHighlights() {
           Steal of the century
         </h2>
         <div className="flex flex-col gap-2">
-          <span className="type-numeral text-display text-primary">188.40</span>
+          <span className="type-numeral text-display text-nav-primary">188.40</span>
           <span className="type-h3 text-h3">points, for a $2 bid</span>
         </div>
         <p className="type-body text-ui text-nav-muted-foreground">

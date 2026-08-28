@@ -8,10 +8,12 @@
  * one, and the ink side then does not change at all on swap-in.
  *
  * ── VERMILION BUDGET ON THIS SURFACE ──────────────────────────────────────
- * Exactly ONE element: the wordmark. `--primary` is a background almost
- * everywhere because it is 3.42:1 as text on paper — but this pane is `--nav`,
- * a permanently-ink surface in both modes, where the same red is 5.57:1 and
- * legal as text. The paper pane beside it spends zero, so the page spends one.
+ * Exactly ONE element: the wordmark, and it takes `--nav-primary` rather than
+ * `--primary`. They are one accent at two lightnesses: the paper-side red
+ * (#C52F1B) is 3.80:1 here and would fail, while the ink-side red (#EB4B37) is
+ * 5.59:1 on this ground and fails on paper. The pane is `--nav`, so it takes
+ * the ink-side value. The paper pane beside it spends zero, so the page spends
+ * one.
  */
 export function SignInInk() {
   return (
@@ -23,7 +25,7 @@ export function SignInInk() {
         <span aria-hidden className="type-display text-display">
           TMP
         </span>
-        <span className="type-eyebrow text-eyebrow text-primary">
+        <span className="type-eyebrow text-eyebrow text-nav-primary">
           The Movie Pool
         </span>
       </div>

@@ -79,15 +79,18 @@ Use the **`ui-review` skill** ([.claude/skills/ui-review/SKILL.md](../../../.cla
 | `--background` (paper) | `#F5F4F3` | the ground |
 | `--card` | `#FFFFFF` | panels |
 | `--foreground` (ink) | `#000000` | 19.12:1 on paper |
-| `--primary` (vermilion) | `#EB4B37` | **background only** — 3.42:1, fails as text. **One per surface.** |
+| `--primary` (printer red) | `#C52F1B` | the paper-side accent. 5.04:1 — legal as a ground **and** as text. **One per surface.** |
+| `--nav-primary` (vermilion) | `#EB4B37` | the ink-side accent, 5.59:1 on `--nav`. **Ink surfaces only** — it is 3.42:1 on paper. |
 | `--link` (cobalt) | `#14567A` | links, and the past tense |
 | `--muted` / `--input` | `#EDECEA` | field ground |
-| `--border` | `#DCDBD9` | |
+| `--border` | `#DCDBD9` | panel edges — decoration, no ratio required |
+| `--edge` | `#84827E` | **control boundaries** — anything you type in, tick or open. 3.25:1 at its worst ground, one value in both modes. |
 | `--radius` | `0.25rem` | drives every corner. No component hardcodes one. |
-| `--spacing-pitch` | `32px` | the perforation pitch |
 | `--container-measure-page` | `72rem` | the page frame |
 
-**`--destructive` and `--success` are both `#000000`.** A red error callout or a green confirmation invents a colour this system deleted. Corrections, warnings and confirmations all carry **ink**.
+**The accent is one colour at two lightnesses, and which one you reach for is decided by the ground, not by taste.** A red readable on paper and a red readable on the ink band cannot be the same value — the luminance windows do not overlap. `--primary` is the paper-side red and **never appears on an ink surface**; `--nav-primary` is the ink-side red and **never appears on paper**. Getting this wrong passes every gate and is visible only in the pixels.
+
+**Errors carry ink; the brand owns red.** Settled 2026-08-28 with the palette pass. `--destructive` (`#7A1D10`, 9.51:1) is for a destructive **action** — a delete button, a finalize warning — not for every validation message, because a red error beside a red brand reads as one thing. `--success` `#266445` and `--warning` `#76550A` follow the same rule: reached for deliberately, not by category habit. There is no amber in this palette, so no traffic light can be built from it.
 
 **Width is the hierarchy.** One family (Archivo, `wdth` 62–125 × `wght` 100–900). Display is `wdth 62`, h1 `64`, h2 `70`, body `100`, numerals `78`. Use the `type-*` utilities paired with their `text-*` sizes — never one without the other.
 
@@ -339,7 +342,7 @@ The treatment differs from the front door deliberately: this is **an interruptio
 
 - [ ] **Step 3: Build the sent state to board `1.3b`**
 
-It carries **ink, not green** — `--success` is `#000000` here, and reaching for a green invents a colour the system deleted. It names the address it sent to and says the link expires in one hour.
+It carries **ink, not green** — the board draws it that way and the 2026-08-28 palette ruling keeps it: a state colour is reached for deliberately, and "we sent an email" is not a state worth spending one on. It names the address it sent to and says the link expires in one hour.
 
 - [ ] **Step 4: Add `error.tsx`**
 
@@ -375,7 +378,7 @@ git commit -m "feat(auth): forgot-password gets the rail treatment and a real se
 
 - [ ] **Step 1: Open the board**
 
-The strength meter is **four ink steps with a word, not a red-amber-green ramp.** `--destructive` is `#000000` here; a traffic-light meter invents three colours the palette does not have.
+The strength meter is **four ink steps with a word, not a red-amber-green ramp.** There is no amber in this palette, so a traffic light cannot be built from it honestly — and the red that does exist is the brand's, which would make a weak password look like a feature.
 
 - [ ] **Step 2: Two fields**
 
@@ -786,7 +789,7 @@ Open (redirects), closed-and-unscored, settled, and skipped.
 
 Your result first. Then the reveal — each film with opening, Tomatometer, score, and its owners with bids. Then corrections and removed films.
 
-**Corrections carry ink, not red.** The owners line states the tie honestly — *"Three distinct amounts — a tie at $9 gives four owners"* — because that is the rule people misread.
+**Corrections carry ink, not red.** `--destructive` is for a destructive action, not for a commissioner's correction to a score — and red beside the brand's red reads as one thing (Global Constraints). The owners line states the tie honestly — *"Three distinct amounts — a tie at $9 gives four owners"* — because that is the rule people misread.
 
 - [ ] **Step 5: Give `PosterCard` its destination**
 

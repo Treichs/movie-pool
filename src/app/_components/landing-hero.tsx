@@ -72,7 +72,7 @@ export function LandingHero() {
           </span>
 
           <h1 className="type-display max-w-[15ch] text-display tracking-tight lg:text-display-lg">
-            Bet on the weekend. <span className="text-primary">Blind.</span>
+            Bet on the weekend. <span className="text-nav-primary">Blind.</span>
           </h1>
 
           <p className="type-dek max-w-measure-tight text-dek text-nav-muted-foreground">
