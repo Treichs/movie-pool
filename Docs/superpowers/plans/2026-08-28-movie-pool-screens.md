@@ -182,7 +182,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | # | Task | Route | Board |
 |---|---|---|---|
 | **1** | The app shell — **DONE**, `8df8de2` | `(member)/layout.tsx` | its own board |
-| **2** | Sign up | `/signup` | `1.2` |
+| **2** | Sign up — **DONE** | `/signup` | `1.2` |
 | **3** | Forgot password | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password | `/reset-password` | `1.4` |
 | **5** | How it works | `/how-it-works` | `2.1` |
@@ -236,57 +236,30 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 2: `/signup`
+### Task 2: `/signup` — DONE
 
 **Board:** `1.2  /signup`
 
-**Files:**
-- Create: `src/app/(auth)/signup/page.tsx`, `signup-form.tsx`, `error.tsx`
+**What shipped.** Five files in [src/app/(auth)/signup/](<../../../src/app/(auth)/signup/>): `page.tsx` (the signed-in redirect, the two entrances, the `next` round-trip), `signup-form.tsx`, `signup-ink.tsx`, `confirmation-notice.tsx`, `error.tsx`. It is the first use of `AuthSplitShell` at `inkLayout="strip"`, and `signUp` and `resendConfirmation` finally have a caller.
 
-**Interfaces:**
-- Consumes: `signUp` and `resendConfirmation`, **already exported from [src/app/(auth)/actions.ts](<../../../src/app/(auth)/actions.ts>) and currently unused. Do not rewrite them.**
-- Consumes: `AuthSplitShell` with `variant="field"` and **`inkLayout="strip"`**; `PasswordInput`, `SubmitButton`, `GoogleMark` from `src/components/`.
+**Sourcing.** `@shadcn/signup-05` was read and rejected: an email-only form with two providers — no password, no confirm, no name — whose dry-run wanted to overwrite `button.tsx` and `input.tsx`. The screen copies `/login`'s `login-02` grammar instead, which is its sibling and already in the repo.
 
-- [ ] **Step 1: Open the board, then check the registry**
+**Three departures from the board, each decided rather than drifted:**
 
-```bash
-npx shadcn@latest add signup-05 --dry-run
-```
+1. **Four fields, not three.** `signUp` reads a `confirm` and returns "Passwords don't match" whenever it is absent, so the drawn three-field form could never have succeeded. Settled with the developer on 2026-08-28: add the field, leave the action alone. A board is the approved layout and cannot draw a server-side rule.
+2. **`?resend=` renders the confirmation panel, not the form.** `/login` has linked to that address since the day it was built and it was a 404 until now. Someone whose account exists but is unconfirmed does not need a signup form; they need the resend.
+3. **The "Invited to <league>" eyebrow is not built.** The board draws it, and nothing on this route knows which league invited you — the token lives on `/invites/[token]`. It needs a public read of an invite by token and belongs to **Task 7**.
 
-- [ ] **Step 2: Copy the shape of `/login`**
+**Two defects no gate can see, both found by driving it:**
 
-[src/app/(auth)/login/](<../../../src/app/(auth)/login/>) is `page.tsx` + `sign-in-form.tsx` + `sign-in-ink.tsx` + `error.tsx`. Same split here.
+- **React 19 resets an uncontrolled form when its action completes — and a REJECTED sign-up is a completion.** One mistyped confirmation wiped the name, the email and both passwords: four fields retyped to fix one. The two identity fields are now controlled; the passwords are deliberately left to clear. **`/login` has the same bug** on its email field — one field rather than four, same cause, not fixed here.
+- Echoing the values back as `defaultValue` also survives the reset, but Base UI then logs *"a component is changing the default value state of an uncontrolled FieldControl"*. A clean console is condition 7, so the fields are controlled rather than defaulted.
 
-- [ ] **Step 3: The right half carries the game in three beats**
+**Copy corrected mid-drive:** the confirmation alert read "Sent to <address>", which is false on the `?resend=` path, where nothing has just been sent. It now reads "The link goes to <address>, and it lasts one hour" — true from both entrances.
 
-Not the scoring rule — that is `/login`'s. **This is the one place a new player is told what they have joined**, and it is onboarding, not decoration.
+**The drive, at 1440×900, signed out.** Console clean, exactly one `<main>`, every control with an accessible name. The whole chain was completed against the live project rather than inferred from a banner: the account was created, the `handle_new_user` trigger wrote its profile carrying the display name, a confirmation token minted through the admin API verified at `/auth/confirm`, and the landing rule sent the zero-league account to `/leagues` — a 404 until Task 6, which is the correct destination arriving early. The account and its profile were deleted afterwards and their absence confirmed by query.
 
-- [ ] **Step 4: Three fields, and the hint is real copy**
-
-`display_name` (placeholder *"What the standings will call you"*), `email`, `password`. The password hint states the actual requirement; it is not filler text.
-
-- [ ] **Step 5: Keep the confirmation state**
-
-On success the form renders an `Alert role="status"`. **It is the only thing that tells someone to go and check their email** — it must survive whatever the rebuild does to the form.
-
-- [ ] **Step 6: Add `error.tsx`**
-
-- [ ] **Step 7: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 8: Drive it**
-
-**Complete a real signup** with a throwaway address and confirm the row exists in the database — not that the banner appeared. Follow the confirmation email through `/auth/confirm` and confirm you land inside the shell. Then delete the row you created.
-
-- [ ] **Step 9: Commit**
-
-```bash
-git add -A
-git commit -m "feat(auth): signup is rebuilt, and its right half explains the game"
-```
+**Not driven, and worth naming:** Google sign-up, which needs a real consent hop; a real inbox, since the confirmation token was minted with the admin API rather than received by mail; and the resend button itself, which renders and is wired but was not clicked — a send to a `.local` address proves nothing, and a send to a real one leaves mail in somebody's inbox.
 
 ---
 
