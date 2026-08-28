@@ -483,7 +483,7 @@ git commit -m "feat(public): how-it-works is rebuilt, and the worked example sho
 **`/leagues` IS the league list** — it absorbed what the IA map called `/home`, and before that a separate `/league` index whose own description was *"`/home`'s empty state wearing a URL"*. One address, three names in its history, and the routing pass on 2026-08-28 settled it: the collection is `/leagues`, and its index is the signed-in front door. **The composer file stays `src/lib/home.ts`** — renaming it would put `leagues.ts` one letter from `league.ts`, which is how a wrong import happens.
 
 **Files:**
-- Create: `src/app/(member)/home/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/page.tsx`, `_components/*.tsx`, `error.tsx` — **the folder name is the URL**, so this is `leagues/`, not `home/`. The composer keeps the name `home.ts`; the route does not.
 - Modify: `src/lib/home.ts` — it already exports `getHomeLeagues(supabase, userId) -> HomeLeague[]`; add the screen composer beside it.
 
 **Interfaces:**
@@ -494,13 +494,13 @@ git commit -m "feat(public): how-it-works is rebuilt, and the worked example sho
 
 **The pending invite is the one vermilion element on this surface.** Not "Start a league", not the open-week chip on a league card. The invite is the only thing asking you to act.
 
-- [ ] **Step 2: Confirm nothing still points at `/leagues`**
+- [ ] **Step 2: Confirm nothing still points at an address this route absorbed**
 
 ```bash
-git grep -n '"/leagues"' -- 'src/*.ts' 'src/*.tsx'
+git grep -nE '"/league"|"/home"' -- 'src/**/*.ts' 'src/**/*.tsx'
 ```
 
-Expected: nothing. `resolveLandingPath`'s zero-leagues case is the one to check by eye — it must return `/leagues`.
+Expected: nothing. `/league` and `/home` are both retired into `/leagues`. `chooseLandingPath` ([src/lib/landing.ts](../../../src/lib/landing.ts)) already returns `/leagues` for the zero-league case — **the comment above that line still says `/league` and is stale; the code is right.**
 
 - [ ] **Step 3: Build the page**
 
