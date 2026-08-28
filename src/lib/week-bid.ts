@@ -31,7 +31,7 @@ import type { SeasonContext } from "./auth";
  * So this is a NEW composer for a NEW type, reading the tables directly, which
  * is what `orchestration` is permitted to do. `getWeekBoard` stays where it is
  * and keeps serving the closed-week board at
- * `/season/[seasonId]/weeks/[weekId]`, which needs the revealed bids, the
+ * `/seasons/[seasonId]/weeks/[weekId]`, which needs the revealed bids, the
  * override log and the roster count that a bidding screen has no use for.
  *
  * The queries below are ported faithfully from `getWeekBoard`, so the two agree

@@ -74,7 +74,7 @@ export async function getMemberships(
   return (data ?? []) as unknown as Membership[];
 }
 
-// Season-scoped gate for /season/[seasonId]/** player pages: any member of
+// Season-scoped gate for /seasons/[seasonId]/** player pages: any member of
 // THIS season (commissioner included — ADR-006, the commissioner also plays),
 // else back to the dashboard. RLS re-enforces at the database layer.
 export async function requireMemberOf(seasonId: string): Promise<{
@@ -85,7 +85,7 @@ export async function requireMemberOf(seasonId: string): Promise<{
   const { supabase, user } = await requireUser();
   const memberships = await getMemberships(supabase, user.id);
   const membership = memberships.find((m) => m.season.id === seasonId);
-  if (!membership) redirect("/home");
+  if (!membership) redirect("/leagues");
   return { supabase, user, membership };
 }
 
@@ -102,14 +102,14 @@ export async function requireCommissionerOf(seasonId: string): Promise<{
   const membership = memberships.find(
     (m) => m.season.id === seasonId && m.role === "commissioner"
   );
-  if (!membership) redirect("/home");
+  if (!membership) redirect("/leagues");
   return { supabase, user, membership };
 }
 
 // LEAGUE-scoped commissioner gate, for the commissioner surfaces that belong to
 // the league rather than to one of its seasons (2026-08-04).
 //
-// The portal moved under /league/[id] because that is what it actually
+// The portal moved under /leagues/[id] because that is what it actually
 // commissions: rules are the league's (ADR-059), members are the league's, and
 // a commissioner is a league role (ADR-016) — the season-scoped gate would have
 // asked the wrong question and, worse, would have gone missing in the gap
@@ -129,7 +129,7 @@ export async function requireCommissionerOfLeague(leagueId: string): Promise<{
     .eq("league_id", leagueId)
     .eq("profile_id", user.id)
     .maybeSingle();
-  if ((data as { role: string } | null)?.role !== "commissioner") redirect("/home");
+  if ((data as { role: string } | null)?.role !== "commissioner") redirect("/leagues");
   return { supabase, user };
 }
 
@@ -157,7 +157,7 @@ export async function getAccount(
  * opens with its own call and nothing fails if one forgets.
  *
  * `notFound()` rather than a redirect, and that is the second deliberate
- * divergence from `requireMemberOf`, which sends a non-member to `/home`. A
+ * divergence from `requireMemberOf`, which sends a non-member to `/leagues`. A
  * redirect to a dashboard tells the caller "that season is real, just not
  * yours" — exactly the fact a blind-bid game must not leak about a league they
  * were never invited to. Both gates are kept, side by side, so the difference

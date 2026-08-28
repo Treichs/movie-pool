@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * THE BID WRITE — the only path a bid takes into the database.
  *
- * Moved out of `src/app/(member)/season/actions.ts`, which is now deleted. The
+ * Moved out of `src/app/(member)/seasons/actions.ts`, which is now deleted. The
  * move is not cosmetic: that file reached transport through `@/lib/supabase/server`,
  * a compatibility forward left behind by Task 5 because the layer contract
  * refuses `app -> infra-clients`. From here the import is direct and permitted,
@@ -42,17 +42,17 @@ import { createClient } from "@/lib/supabase/server";
 // Revalidating only the week page left the other two showing stale money.
 function revalidateBidSurfaces(seasonId: string, weekId: string) {
   // THE BID PAGE ITSELF IS A SEPARATE PATH from the week board, and it was
-  // missing here until Task 18. `/season/x/weeks/y` and `/season/x/weeks/y/bid`
+  // missing here until Task 18. `/seasons/x/weeks/y` and `/seasons/x/weeks/y/bid`
   // are two routes; `revalidatePath` with a plain path invalidates exactly the
   // one it is given. The screen still refreshed, because a Server Action's
   // response re-renders the current route regardless and this page is dynamic —
   // which is precisely why the omission was invisible. It is listed anyway: the
   // set is meant to name every surface a bid changes, and one that is right by
   // accident stops being right the moment the page's caching changes.
-  revalidatePath(`/season/${seasonId}/weeks/${weekId}/bid`);
-  revalidatePath(`/season/${seasonId}/weeks/${weekId}`);
-  revalidatePath(`/season/${seasonId}`);
-  revalidatePath("/home");
+  revalidatePath(`/seasons/${seasonId}/weeks/${weekId}/bid`);
+  revalidatePath(`/seasons/${seasonId}/weeks/${weekId}`);
+  revalidatePath(`/seasons/${seasonId}`);
+  revalidatePath("/leagues");
 }
 
 /** One bid on one film. */
@@ -168,8 +168,8 @@ export async function closeWeek(
   const { error } = await db.rpc("close_week", { p_week_id: weekId });
   if (error) return fail(error.message);
 
-  revalidatePath(`/season/${seasonId}`, "layout");
-  revalidatePath("/home");
+  revalidatePath(`/seasons/${seasonId}`, "layout");
+  revalidatePath("/leagues");
   return ok(
     undefined,
     "Bidding closed — all bids are revealed, and the next week is now open."

@@ -24,13 +24,13 @@ export function BottomNav({
   focused: NavLeague | null;
   pathname: string;
 }) {
-  const seasonHref = focused?.currentSeason ? `/season/${focused.currentSeason.id}` : "/home";
-  const leagueHref = focused ? `/league/${focused.id}` : "/home";
+  const seasonHref = focused?.currentSeason ? `/seasons/${focused.currentSeason.id}` : "/leagues";
+  const leagueHref = focused ? `/leagues/${focused.id}` : "/leagues";
 
   const tabs = [
-    { label: "Home", href: "/home", match: "/home", exact: true, Icon: HomeIcon },
-    { label: "Season", href: seasonHref, match: "/season", exact: false, Icon: CalendarDaysIcon },
-    { label: "League", href: leagueHref, match: "/league", exact: false, Icon: UsersIcon },
+    { label: "Home", href: "/leagues", match: "/leagues", exact: true, Icon: HomeIcon },
+    { label: "Season", href: seasonHref, match: "/seasons", exact: false, Icon: CalendarDaysIcon },
+    { label: "League", href: leagueHref, match: "/leagues", exact: false, Icon: UsersIcon },
     { label: "You", href: "/account", match: "/account", exact: true, Icon: UserIcon },
   ];
 

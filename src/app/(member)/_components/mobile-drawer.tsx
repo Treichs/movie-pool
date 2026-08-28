@@ -67,7 +67,7 @@ export function MobileDrawer({
           {leagues.map((l) => (
             <Link
               key={l.id}
-              href={`/league/${l.id}`}
+              href={`/leagues/${l.id}`}
               onClick={() => setOpen(false)}
               className={`type-ui text-ui flex h-11 items-center gap-2.5 px-5 ${
                 l.id === focused?.id ? "bg-accent" : "hover:bg-muted"
@@ -83,7 +83,7 @@ export function MobileDrawer({
             </Link>
           ))}
           <Link
-            href="/league/new"
+            href="/leagues/new"
             onClick={() => setOpen(false)}
             className="type-ui text-ui flex h-11 items-center gap-2.5 px-5 hover:bg-muted"
           >

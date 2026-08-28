@@ -30,7 +30,7 @@ export type NavLeague = {
   // rather than dead links.
   currentSeason: NavSeason | null;
   // Every season id in the league — lets the client resolve "which league am I
-  // looking at?" from a /season/[id] URL without another query.
+  // looking at?" from a /seasons/[id] URL without another query.
   seasonIds: string[];
   // The league's chosen avatar (2026-08-03), same storage shape as a player's.
   // Null means none was chosen, and the rail falls back to the first letter —
@@ -191,10 +191,10 @@ export async function leagueLandingPath(
 
   // A failed read must not swallow the redirect — the league page is always a
   // valid destination, so fall back rather than throwing the caller away.
-  if (error) return `/league/${leagueId}`;
+  if (error) return `/leagues/${leagueId}`;
 
   const season = pickCurrentSeason((data ?? []) as NavSeason[]);
-  return season ? `/season/${season.id}` : `/league/${leagueId}`;
+  return season ? `/seasons/${season.id}` : `/leagues/${leagueId}`;
 }
 
 // "Current" is the season the nav lands on — CH-01 makes it Home.

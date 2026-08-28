@@ -64,7 +64,7 @@ export function AppShell({
           <MobileDrawer leagues={leagues} focused={focused} pathname={pathname} />
 
           <Link
-            href="/home"
+            href="/leagues"
             className="type-eyebrow text-ui rounded-lg px-2 py-1 text-nav-primary outline-none focus-visible:ring-3 focus-visible:ring-nav-foreground/30"
           >
             <span aria-hidden>TMP</span>
@@ -81,7 +81,7 @@ export function AppShell({
             drawer, because a dropdown that opens under a thumb is a worse
             control than a list you can scroll. */}
         <div className="hidden h-13 items-center gap-1 border-b bg-background px-8 md:flex">
-          <NavItem href="/home" label="Home" current={isCurrent(pathname, "/home", true)} />
+          <NavItem href="/leagues" label="Home" current={isCurrent(pathname, "/leagues", true)} />
           <NavGroup label="Season" links={season} pathname={pathname} />
           <NavGroup label="League" links={league} pathname={pathname} />
           <div className="ml-auto">

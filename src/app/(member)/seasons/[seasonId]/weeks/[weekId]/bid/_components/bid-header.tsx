@@ -16,12 +16,12 @@ export function BidHeader({ board }: { board: WeekBidBoard }) {
   const { season, league, week } = board;
 
   const crumbs = [
-    { label: "Home", href: "/home" },
-    ...(league ? [{ label: league.name, href: `/league/${league.id}` }] : []),
-    { label: season.name, href: `/season/${season.id}` },
+    { label: "Home", href: "/leagues" },
+    ...(league ? [{ label: league.name, href: `/leagues/${league.id}` }] : []),
+    { label: season.name, href: `/seasons/${season.id}` },
     {
       label: weekLabel(week.number, week.weekOf),
-      href: `/season/${season.id}/weeks/${week.id}`,
+      href: `/seasons/${season.id}/weeks/${week.id}`,
     },
   ];
 

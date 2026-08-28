@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  * kept poster and input as siblings and gave up on the card being one target.
  *
  * `href` IS OPTIONAL AND CURRENTLY UNSET on the bid page. Its destination is
- * `/league/[leagueId]/films/[tmdbId]`, a route Band 2 has not built yet, and a
+ * `/leagues/[leagueId]/films/[tmdbId]`, a route Band 2 has not built yet, and a
  * card that lifts on hover but leads to a 404 is worse than one that does not
  * lift. Pass it the moment that route lands.
  */

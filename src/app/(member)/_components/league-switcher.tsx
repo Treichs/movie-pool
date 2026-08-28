@@ -60,7 +60,7 @@ export function LeagueSwitcher({
   if (leagues.length === 0 || !focused) {
     return (
       <Link
-        href="/league/new"
+        href="/leagues/new"
         className="type-ui text-ui flex h-8 items-center gap-2 rounded-4xl border border-edge px-3 hover:bg-muted"
       >
         <PlusIcon className="size-4" aria-hidden />
@@ -87,7 +87,7 @@ export function LeagueSwitcher({
         {leagues.map((league) => (
           <DropdownMenuItem
             key={league.id}
-            render={<Link href={`/league/${league.id}`} />}
+            render={<Link href={`/leagues/${league.id}`} />}
             className={league.id === focused.id ? "bg-accent" : undefined}
           >
             <LeagueMark league={league} size="md" />
@@ -101,7 +101,7 @@ export function LeagueSwitcher({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/league/new" />}>
+        <DropdownMenuItem render={<Link href="/leagues/new" />}>
           <PlusIcon aria-hidden />
           Start a league
         </DropdownMenuItem>

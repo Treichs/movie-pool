@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       //
       // With no `next`, this is an ordinary Google sign-in, so it resolves the
       // same landing rule as every other entry point (ADR-104) rather than
-      // dropping the user on /home. An explicit `next` still wins — a recovery
+      // dropping the user on /leagues. An explicit `next` still wins — a recovery
       // link asked to go somewhere specific.
       // safeNextPath is the shared gate (lib/landing) rather than a check
       // written out again here — this used to carry its own copy, and a second

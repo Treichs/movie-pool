@@ -40,7 +40,7 @@ export default async function BidPage({
   // minute while the automated close catches up, and the RPC would refuse a bid
   // placed in that window — so this page must not be reachable in it. Everything
   // that is not a live bidding window belongs on the week board.
-  if (!board.biddable) redirect(`/season/${seasonId}/weeks/${weekId}`);
+  if (!board.biddable) redirect(`/seasons/${seasonId}/weeks/${weekId}`);
 
   return (
     <main className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">

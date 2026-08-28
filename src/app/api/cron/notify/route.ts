@@ -127,7 +127,7 @@ export async function GET(request: Request) {
     // §3 allows late additions) — nothing to announce yet, and the window
     // gives the sweep days to catch it once films land.
     if (titles.length === 0) continue;
-    const link = `${SITE_URL}/season/${week.seasonId}/weeks/${week.id}`;
+    const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}`;
 
     for (const { profile } of members) {
       if (sent.has(profile.id)) continue;
@@ -157,7 +157,7 @@ export async function GET(request: Request) {
       getMembersWhoBid(admin, week.id),
       getAlreadyEmailed(admin, week.id, "deadline_reminder"),
     ]);
-    const link = `${SITE_URL}/season/${week.seasonId}/weeks/${week.id}/bid`;
+    const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}/bid`;
 
     for (const { seasonMemberId, profile } of members) {
       if (hasBid.has(seasonMemberId) || sent.has(profile.id)) continue;
@@ -184,7 +184,7 @@ export async function GET(request: Request) {
       getSeasonRecipients(admin, week.seasonId),
       getAlreadyEmailed(admin, week.id, "bids_revealed"),
     ]);
-    const link = `${SITE_URL}/season/${week.seasonId}/weeks/${week.id}`;
+    const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}`;
 
     for (const { profile } of members) {
       if (sent.has(profile.id)) continue;
@@ -213,7 +213,7 @@ export async function GET(request: Request) {
     // CH-02: /standings is Season Home's Leaderboard tab. Emails link to the
     // real URL rather than leaning on the redirect — a mail client following a
     // 308 is one more thing to go wrong in someone's inbox.
-    const link = `${SITE_URL}/season/${week.seasonId}?tab=leaderboard`;
+    const link = `${SITE_URL}/seasons/${week.seasonId}?tab=leaderboard`;
 
     for (const { profile } of members) {
       if (sent.has(profile.id)) continue;

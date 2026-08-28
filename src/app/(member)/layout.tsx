@@ -6,7 +6,7 @@ import { AppShell } from "./_components/app-shell";
 
 /**
  * THE SIGNED-IN GROUP. `(member)` is a route group: it shares this layout with
- * every screen inside it and adds nothing to any URL, so `/season/…/bid` is the
+ * every screen inside it and adds nothing to any URL, so `/seasons/…/bid` is the
  * same address it was before the folder existed.
  *
  * THE GATE IS HERE AND IN EVERY PAGE, on purpose. `proxy.ts` bounces anonymous

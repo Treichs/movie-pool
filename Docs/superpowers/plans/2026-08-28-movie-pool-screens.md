@@ -121,13 +121,13 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 |---|---|---|
 | `/` — landing | [src/app/page.tsx](../../../src/app/page.tsx), `src/app/_components/` | Board `0.1`. Signed-in visitors are redirected; `?next=` is honoured over the ordinary landing rule. |
 | `/login` | [src/app/(auth)/login/](../../../src/app/(auth)/login/) | Board `1.1`. **The pattern every auth screen copies** — its page comment explains why `<main>` wraps the whole shell rather than the form. |
-| `/season/[seasonId]/weeks/[weekId]/bid` | [src/app/season/](../../../src/app/season/) | **The template every screen copies.** Its board is the app itself; the canvas has none. |
+| `/seasons/[seasonId]/weeks/[weekId]/bid` | [src/app/seasons/](../../../src/app/seasons/) | **The template every screen copies.** Its board is the app itself; the canvas has none. |
 | The six route handlers | `src/app/auth/`, `src/app/api/` | OAuth exchange, token-hash confirm, three crons, avatar composition. |
 | `src/proxy.ts` | [src/proxy.ts](../../../src/proxy.ts) | Next 16's renamed middleware: session refresh, signed-out bounce to `/login`, last-league cookie. |
 
 **Carried forward from the bid page, deliberately unfinished:**
 
-- `PosterCard` takes an optional `href` that is **unset**. Its destination is `/league/[leagueId]/films/[tmdbId]` — pass it in **Task 12**.
+- `PosterCard` takes an optional `href` that is **unset**. Its destination is `/leagues/[leagueId]/films/[tmdbId]` — pass it in **Task 12**.
 - The commissioner strip ships with "Close bidding" only. The "Week settings" disclosure needs `CommishFormState` and the commissioner surface — **Task 22**.
 - The poster card is **variant A (bid tile) on the slate, variant B (catalog tile) everywhere else**.
 - `@reui/frame` is installed and unused. It was mocked up holding the bid slate with the running total in `FrameFooter`; the sticky bar won because a footer scrolls away on a long slate.
@@ -164,26 +164,26 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **3** | Forgot password | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password | `/reset-password` | `1.4` |
 | **5** | How it works | `/how-it-works` | `2.1` |
-| **6** | Home | `/home` | `4.1` |
-| **7** | Accept an invite | `/join/[token]` | `4.9` |
-| **8** | Create a league | `/league/new` | `4.8` |
-| **9** | League home | `/league/[leagueId]` | `4.2` |
-| **10** | Start a season | `/league/[leagueId]/season/new` | `5.2` |
-| **11** | Season home | `/season/[seasonId]` | `3.1` |
-| **12** | The week board | `/season/[seasonId]/weeks/[weekId]` | `3.2` |
+| **6** | Home | `/leagues` | `4.1` |
+| **7** | Accept an invite | `/invites/[token]` | `4.9` |
+| **8** | Create a league | `/leagues/new` | `4.8` |
+| **9** | League home | `/leagues/[leagueId]` | `4.2` |
+| **10** | Start a season | `/leagues/[leagueId]/seasons/new` | `5.2` |
+| **11** | Season home | `/seasons/[seasonId]` | `3.1` |
+| **12** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` |
 | **13** | Film — catalog | `/films/[tmdbId]` | `2.2` |
-| **14** | Film — league record | `/league/[leagueId]/films/[tmdbId]` | `2.3` |
+| **14** | Film — league record | `/leagues/[leagueId]/films/[tmdbId]` | `2.3` |
 | **15** | A player's profile | `/players/[profileId]` | `2.4` |
-| **16** | The record book | `/league/[leagueId]/records` | `4.3` |
+| **16** | The record book | `/leagues/[leagueId]/records` | `4.3` |
 | **17** | Announcements list | `…/announcements` | `4.5` |
 | **18** | Reading one | `…/announcements/[announcementId]` | `4.7` |
 | **19** | Writing one | `…/announcements/new` | `4.6` |
 | **20** | Account | `/account` | `4.10` |
-| **21** | Dues | `/league/[leagueId]/dues` | `4.4` |
-| **22** | League settings | `/league/[leagueId]/settings` | `4.11` |
-| **23** | Payouts | `/season/[seasonId]/payouts` | `5.1a` / `5.1b` |
+| **21** | Dues | `/leagues/[leagueId]/dues` | `4.4` |
+| **22** | League settings | `/leagues/[leagueId]/settings` | `4.11` |
+| **23** | Payouts | `/seasons/[seasonId]/payouts` | `5.1a` / `5.1b` |
 
-**Why the shell is first, ahead of sign-up.** Every auth screen's success path lands inside the app — sign-up confirms to `/home`, reset signs you in. Building them first means each drive stops at a 404 and "it worked" cannot be shown. One day of shell buys an honest drive on all 22.
+**Why the shell is first, ahead of sign-up.** Every auth screen's success path lands inside the app — sign-up confirms to `/leagues`, reset signs you in. Building them first means each drive stops at a 404 and "it worked" cannot be shown. One day of shell buys an honest drive on all 22.
 
 **Task 12 must not be skipped ahead of Task 11.** The week board redirects to the already-built `/bid` when a week is biddable, and that redirect is the only thing keeping the two screens from disagreeing about which state owns the URL.
 
@@ -198,7 +198,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 **Files:**
 - Create: `src/app/(member)/layout.tsx`
 - Create: `src/app/(member)/_components/*.tsx` — the shell's own pieces
-- Move: `src/app/season/` → `src/app/(member)/season/` (the bid page; the URL does not change)
+- Move: `src/app/seasons/` → `src/app/(member)/seasons/` (the bid page; the URL does not change)
 - Modify: `src/lib/nav.ts:105-120` — see Step 6
 
 **Interfaces:**
@@ -244,7 +244,7 @@ export default async function MemberLayout({ children }: { children: React.React
 git mv "src/app/season" "src/app/(member)/season"
 ```
 
-The URL is unchanged — `(member)` is a group, not a segment. Confirm with `npm run build` that `/season/[seasonId]/weeks/[weekId]/bid` still appears in the route list.
+The URL is unchanged — `(member)` is a group, not a segment. Confirm with `npm run build` that `/seasons/[seasonId]/weeks/[weekId]/bid` still appears in the route list.
 
 - [ ] **Step 6: Delete the deploy-window fallback in `nav.ts`**
 
@@ -411,7 +411,7 @@ git commit -m "feat(auth): reset-password is rebuilt, with an ink strength meter
 
 **Board:** `2.1  /how-it-works`
 
-**Public route — no gate, no composer.** `/home` links to `#faq`, so **that anchor is load-bearing.**
+**Public route — no gate, no composer.** `/leagues` links to `#faq`, so **that anchor is load-bearing.**
 
 **Files:**
 - Create: `src/app/how-it-works/page.tsx`, `_components/*.tsx`, `error.tsx`
@@ -446,7 +446,7 @@ npm run verify
 
 - [ ] **Step 7: Drive it signed out, then signed in**
 
-Public means a session with **no cookie** — confirm it renders and does not link `/home`. Then follow `/how-it-works#faq` from `/home` as a member and confirm it scrolls.
+Public means a session with **no cookie** — confirm it renders and does not link `/leagues`. Then follow `/how-it-works#faq` from `/leagues` as a member and confirm it scrolls.
 
 - [ ] **Step 8: Commit**
 
@@ -457,11 +457,11 @@ git commit -m "feat(public): how-it-works is rebuilt, and the worked example sho
 
 ---
 
-### Task 6: `/home`
+### Task 6: `/leagues`
 
 **Board:** `4.1  /home`
 
-**`/home` absorbs the retired `/league`** (IA map §1: it *"was `/home`'s empty state wearing a URL"*). There is no `/league` list route in this repo — do not create one.
+**`/leagues` IS the league list** — it absorbed what the IA map called `/home`, and before that a separate `/league` index whose own description was *"`/home`'s empty state wearing a URL"*. One address, three names in its history, and the routing pass on 2026-08-28 settled it: the collection is `/leagues`, and its index is the signed-in front door. **The composer file stays `src/lib/home.ts`** — renaming it would put `leagues.ts` one letter from `league.ts`, which is how a wrong import happens.
 
 **Files:**
 - Create: `src/app/(member)/home/page.tsx`, `_components/*.tsx`, `error.tsx`
@@ -475,17 +475,17 @@ git commit -m "feat(public): how-it-works is rebuilt, and the worked example sho
 
 **The pending invite is the one vermilion element on this surface.** Not "Start a league", not the open-week chip on a league card. The invite is the only thing asking you to act.
 
-- [ ] **Step 2: Confirm nothing still points at `/league`**
+- [ ] **Step 2: Confirm nothing still points at `/leagues`**
 
 ```bash
-git grep -n '"/league"' -- 'src/*.ts' 'src/*.tsx'
+git grep -n '"/leagues"' -- 'src/*.ts' 'src/*.tsx'
 ```
 
-Expected: nothing. `resolveLandingPath`'s zero-leagues case is the one to check by eye — it must return `/home`.
+Expected: nothing. `resolveLandingPath`'s zero-leagues case is the one to check by eye — it must return `/leagues`.
 
 - [ ] **Step 3: Build the page**
 
-Greeting, invites, the league list, and the getting-started links. **The zero-league case renders the creation prompt** — that is the state `/league` used to own, and it is the state `dev-outsider` lands in.
+Greeting, invites, the league list, and the getting-started links. **The zero-league case renders the creation prompt** — that is the state `/leagues` used to own, and it is the state `dev-outsider` lands in.
 
 - [ ] **Step 4: Add `error.tsx`**
 
@@ -503,19 +503,19 @@ With leagues (`dev-player`), with a pending invite (**accept one and confirm the
 
 ```bash
 git add -A
-git commit -m "feat(home): /home is the front door, and the invite takes the accent"
+git commit -m "feat(home): /leagues is the front door, and the invite takes the accent"
 ```
 
 ---
 
-### Task 7: `/join/[token]`
+### Task 7: `/invites/[token]`
 
-**Board:** `4.9  /join/[token]`
+**Board:** `4.9  /invites/[token]`
 
 **Email-linked.** The address does not change; it is generated by the invite RPC and mailed.
 
 **Files:**
-- Create: `src/app/(member)/join/[token]/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/invites/[token]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/actions/league.ts` — `acceptInvite`
 
 **Interfaces:**
@@ -551,12 +551,12 @@ git commit -m "feat(invites): the join screen is rebuilt, with three distinct fa
 
 ---
 
-### Task 8: `/league/new`
+### Task 8: `/leagues/new`
 
-**Board:** `4.8  /league/new` — the board draws step 2.
+**Board:** `4.8  /leagues/new` — the board draws step 2.
 
 **Files:**
-- Create: `src/app/(member)/league/new/page.tsx`, `_components/create-league-wizard.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/new/page.tsx`, `_components/create-league-wizard.tsx`, `error.tsx`
 - Modify: `src/lib/actions/league.ts` — add `createLeague`
 
 **Interfaces:**
@@ -595,12 +595,12 @@ git commit -m "feat(league): the creation wizard is rebuilt on configurable rule
 
 ---
 
-### Task 9: `/league/[leagueId]`
+### Task 9: `/leagues/[leagueId]`
 
-**Board:** `4.2  /league/[leagueId]`
+**Board:** `4.2  /leagues/[leagueId]`
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/league-home.ts`
 
 **Interfaces:**
@@ -617,7 +617,7 @@ ADR-085: average winning bid, average points per film, league points-per-dollar,
 
 - [ ] **Step 3: Build the page**
 
-Seasons table, members with a role badge, the record-book panel linking to `/records`, the announcements rail, the dues summary, and a **link** to `/league/[id]/settings`. There is no settings dialog in this repo and none is to be created — Task 22 owns that surface.
+Seasons table, members with a role badge, the record-book panel linking to `/records`, the announcements rail, the dues summary, and a **link** to `/leagues/[id]/settings`. There is no settings dialog in this repo and none is to be created — Task 22 owns that surface.
 
 - [ ] **Step 4: Count the vermilion**
 
@@ -653,12 +653,12 @@ git commit -m "feat(league): league home is rebuilt, and 51 vermilion elements b
 
 ---
 
-### Task 10: `/league/[leagueId]/season/new`
+### Task 10: `/leagues/[leagueId]/seasons/new`
 
-**Board:** `5.2  /league/[id]/season/new`
+**Board:** `5.2  /leagues/[id]/seasons/new`
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/season/new/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/seasons/new/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
 - Port: `src/lib/season-settings.ts`, `src/lib/season-schedule.ts` — **already present.**
 
 **Interfaces:**
@@ -697,14 +697,14 @@ git commit -m "feat(season): the season wizard is rebuilt, and week numbers are 
 
 ---
 
-### Task 11: `/season/[seasonId]`
+### Task 11: `/seasons/[seasonId]`
 
-**Board:** `3.1  /season/[seasonId]` — **and the two sticky notes beside it.**
+**Board:** `3.1  /seasons/[seasonId]` — **and the two sticky notes beside it.**
 
 **The largest read screen in the app:** three tabs, a role-gated strip, and the bump chart.
 
 **Files:**
-- Create: `src/app/(member)/season/[seasonId]/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/seasons/[seasonId]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/season-home.ts`
 
 **Interfaces:**
@@ -760,12 +760,12 @@ git commit -m "feat(season): season home is rebuilt, and the commissioner queue 
 
 ---
 
-### Task 12: `/season/[seasonId]/weeks/[weekId]`
+### Task 12: `/seasons/[seasonId]/weeks/[weekId]`
 
-**Board:** `3.2  /season/[id]/weeks/[weekId] — settled`
+**Board:** `3.2  /seasons/[id]/weeks/[weekId] — settled`
 
 **Files:**
-- Create: `src/app/(member)/season/[seasonId]/weeks/[weekId]/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/seasons/[seasonId]/weeks/[weekId]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/week-board-view.ts`
 - Modify: the bid page's `PosterCard` — pass the `href` left unset
 
@@ -793,7 +793,7 @@ Your result first. Then the reveal — each film with opening, Tomatometer, scor
 
 - [ ] **Step 5: Give `PosterCard` its destination**
 
-The bid page's card takes an optional `href` that has been unset since it was built, waiting on Task 14's route. Pass `/league/${leagueId}/films/${tmdbId}`. If Task 14 has not run yet, leave it unset and **note it in the report** rather than pointing it at the catalog.
+The bid page's card takes an optional `href` that has been unset since it was built, waiting on Task 14's route. Pass `/leagues/${leagueId}/films/${tmdbId}`. If Task 14 has not run yet, leave it unset and **note it in the report** rather than pointing it at the catalog.
 
 - [ ] **Step 6: Add `error.tsx`**
 
@@ -869,14 +869,14 @@ git commit -m "feat(films): the catalog page carries the film and never the play
 
 ---
 
-### Task 14: `/league/[leagueId]/films/[tmdbId]`
+### Task 14: `/leagues/[leagueId]/films/[tmdbId]`
 
-**Board:** `2.3  /league/[id]/films/[tmdbId] — NEW route`
+**Board:** `2.3  /leagues/[id]/films/[tmdbId] — NEW route`
 
 **Why it exists.** ADR-408 says the film page shows **one scope** — the context league's own record — because commissioner-entered box office and Tomatometer values make play data league-local. The principle is untouched; the carrier changes from `?league=` to a path segment, which makes the league view bookmarkable and lets the trail name which league you are looking from.
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/films/[tmdbId]/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/films/[tmdbId]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/film-league-record.ts`
 - Port: `src/lib/film-detail.ts` — **already present.**
 
@@ -982,12 +982,12 @@ git commit -m "feat(players): the profile is rebuilt, and the six stats stay a l
 
 ---
 
-### Task 16: `/league/[leagueId]/records`
+### Task 16: `/leagues/[leagueId]/records`
 
-**Board:** `4.3  /league/[id]/records`
+**Board:** `4.3  /leagues/[id]/records`
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/records/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/records/page.tsx`, `_components/*.tsx`, `error.tsx`
 
 **Interfaces:**
 - Consumes: `getLeagueRecordBook(ctx, leagueId) -> LeagueRecordBook` from [src/lib/league-records.ts](../../../src/lib/league-records.ts) — **already written, and it is the composer this screen needs. No new one.** It carries the career table (`CareerRow[]`) and the record entries (`RecordEntry`, each with its `marquee` flag).
@@ -1025,14 +1025,14 @@ git commit -m "feat(league): the record book is rebuilt"
 
 ---
 
-### Task 17: `/league/[leagueId]/announcements`
+### Task 17: `/leagues/[leagueId]/announcements`
 
-**Board:** `4.5  /league/[id]/announcements`
+**Board:** `4.5  /leagues/[id]/announcements`
 
 **Announcements keeps all three routes** (IA map §5.4). It is a small CRUD surface, and an individual announcement is a thing you link someone to — which is why it was not folded into tabs.
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/announcements/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/announcements/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/announcements.ts`
 
 **Interfaces:**
@@ -1063,7 +1063,7 @@ git commit -m "feat(league): the announcements list is rebuilt"
 
 ---
 
-### Task 18: `/league/[leagueId]/announcements/[announcementId]`
+### Task 18: `/leagues/[leagueId]/announcements/[announcementId]`
 
 **Board:** `4.7  /announcements/[id]`
 
@@ -1104,13 +1104,13 @@ git commit -m "feat(league): reading an announcement is rebuilt"
 
 ---
 
-### Task 19: `/league/[leagueId]/announcements/new`
+### Task 19: `/leagues/[leagueId]/announcements/new`
 
 **Board:** `4.6  /announcements/new`
 
 **Files:**
 - Create: the route's `page.tsx`, `_components/*.tsx`, `error.tsx`
-- Create: `src/app/(member)/league/[leagueId]/announcements/actions.ts`
+- Create: `src/app/(member)/leagues/[leagueId]/announcements/actions.ts`
 
 **Interfaces:**
 - Produces: `postAnnouncement(prev, formData) -> Promise<ActionResult>`.
@@ -1198,14 +1198,14 @@ git commit -m "feat(account): the account page is rebuilt"
 
 ---
 
-### Task 21: `/league/[leagueId]/dues`
+### Task 21: `/leagues/[leagueId]/dues`
 
-**Board:** `4.4  /league/[id]/dues`
+**Board:** `4.4  /leagues/[id]/dues`
 
 **Real money, tracked outside the game. The app records who paid whom, never how.**
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/dues/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/dues/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
 - Create: `src/lib/league-dues.ts`
 
 **Interfaces:**
@@ -1248,14 +1248,14 @@ git commit -m "feat(league): dues is rebuilt, with the balance sign explained"
 
 ---
 
-### Task 22: `/league/[leagueId]/settings`
+### Task 22: `/leagues/[leagueId]/settings`
 
-**Board:** `4.11  /league/[id]/settings  (NEW)`
+**Board:** `4.11  /leagues/[id]/settings  (NEW)`
 
 **Why it exists.** IA map §7.2 — **configuration centralizes, operations distribute.** Four things live here: identity, house rules, member roles, invites. **Nothing operational.** Closing a week, capturing results, generating payouts and starting a season all stay next to the object they act on.
 
 **Files:**
-- Create: `src/app/(member)/league/[leagueId]/settings/page.tsx`, `_components/*.tsx`, `error.tsx`
+- Create: `src/app/(member)/leagues/[leagueId]/settings/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/league-settings.ts`
 - Modify: `src/lib/actions/league.ts` — the role writes
 
@@ -1270,7 +1270,7 @@ A left rail of four sections; the board draws all four stacked.
 
 - [ ] **Step 2: Gate the route, not just the controls**
 
-A player who types this URL gets `notFound()`. Follow `requireSeasonMember`'s reasoning: **`notFound()` and never a redirect**, because sending someone to `/home` tells them the page is real and just not theirs.
+A player who types this URL gets `notFound()`. Follow `requireSeasonMember`'s reasoning: **`notFound()` and never a redirect**, because sending someone to `/leagues` tells them the page is real and just not theirs.
 
 - [ ] **Step 3: Wire the role actions to the existing RPCs — write no new ones**
 
@@ -1308,14 +1308,14 @@ git commit -m "feat(league): settings becomes a route, and the never-zero rule f
 
 ---
 
-### Task 23: `/season/[seasonId]/payouts`
+### Task 23: `/seasons/[seasonId]/payouts`
 
-**Boards:** `5.1a /season/[id]/payouts — player` **and** `5.1b — commissioner`. **Two boards, one route.**
+**Boards:** `5.1a /seasons/[id]/payouts — player` **and** `5.1b — commissioner`. **Two boards, one route.**
 
 **The merge, and the condition it must satisfy** (IA map §2): the player's view opens with **their own result**; the commissioner's controls are **additive and secondary** — *not* the player page with a toolbar bolted on top, and *not* the workbench with the player's summary demoted.
 
 **Files:**
-- Create: `src/app/(member)/season/[seasonId]/payouts/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
+- Create: `src/app/(member)/seasons/[seasonId]/payouts/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
 - Create: `src/lib/payouts.ts`
 
 **Interfaces:**
@@ -1349,7 +1349,7 @@ The `finalizeBlocker` disables Finalize until the season is over, **and states i
 
 - [ ] **Step 4: Keep the email-linked address working**
 
-The season-settled statement links `/season/[seasonId]/payouts`. The address does not change; confirm the link resolves.
+The season-settled statement links `/seasons/[seasonId]/payouts`. The address does not change; confirm the link resolves.
 
 - [ ] **Step 5: Add `error.tsx`**
 
@@ -1427,10 +1427,10 @@ Record: which screens revealed defects the gates could not see, which states wer
 
 ## Decisions carried into this plan
 
-- **The route map is 25** — 21 kept, plus `/league/[leagueId]/films/[tmdbId]` from the film split, plus `/`, `/login` and `/league/[leagueId]/settings`. `/commish/[seasonId]/payouts` folded into `/season/[seasonId]/payouts`; `/league` folded into `/home`.
+- **The route map is 25** — 21 kept, plus `/leagues/[leagueId]/films/[tmdbId]` from the film split, plus `/`, `/login` and `/leagues/[leagueId]/settings`. `/commish/[seasonId]/payouts` folded into `/seasons/[seasonId]/payouts`; `/leagues` folded into `/leagues`.
 - **Elevation is two tiers:** panels flat with a border, floating layers only carry a shadow.
 - **The commissioner Queue is a strip, not a route** — and `getOverdueWeeks` was a composer with no UI, folded into `getSeasonHome` rather than deleted as dead code.
-- **Configuration centralizes, operations distribute** — the test that settled the commissioner question and produced `/league/[leagueId]/settings` as the one legitimate second commissioner page.
+- **Configuration centralizes, operations distribute** — the test that settled the commissioner question and produced `/leagues/[leagueId]/settings` as the one legitimate second commissioner page.
 - **`/how-it-works` survives the landing page** — the landing **sells**, how-it-works **explains**.
 - **Ruling 78:** desktop-only review at 1440×900 for this phase, with the named reversal conditions.
 - **A film is not exclusively scoped to a league**, which is why the hybrid — a top-level catalog resource and a league-scoped one — is the documented right answer rather than a query parameter.

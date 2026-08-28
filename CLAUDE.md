@@ -97,8 +97,12 @@ utility. To recolour the app, edit the values — never the components.
 - **`--radius` drives every corner.** No component hardcodes one.
 - **`--color-*: initial`** deletes Tailwind's stock palette, so `bg-blue-500`
   emits no CSS at all. Raw palette classes are impossible, not forbidden.
-- **`--primary` (vermilion `#EB4B37`) is a background only** — 3.42:1, it fails
-  as text. One per surface.
+- **The accent is two tokens, one per ground.** `--primary` (`#C52F1B`) is the
+  paper-side red at 5.04:1 — legal as a ground and as text, one per surface;
+  `--nav-primary` (`#EB4B37`) is the ink-side red at 5.59:1 and appears
+  **nowhere but an ink surface**. No red is legible on both.
+- **`--edge` (`#84827E`) draws control boundaries**, `--border` (`#DCDBD9`)
+  draws panels. A field needs 3:1; a panel edge is decoration.
 - **Dark is wired but not switched on.** Keep both blocks in sync anyway;
   registry components read them and `a11y:contrast` sweeps both.
 - Three values are counterintuitive and must not be "unified" —
@@ -124,7 +128,12 @@ red build rather than a wrong number.
 ## Building a screen
 
 The route set is settled: **25 pages plus 6 route handlers**, in
-[Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every screen has a drawn board
+[Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every address takes one shape
+(§7.5): **plural collections, singular items, never more than two levels deep,
+and every truncation lands on a real page** — chop `/bid` and you get the week,
+chop the week and you get the season, chop the season and you get `/leagues`.
+A season is addressed at `/seasons/[seasonId]`, not under its league, because
+the full chain would be four levels of mostly-uuid. Every screen has a drawn board
 on the design canvas, and one task in
 [Docs/superpowers/plans/2026-08-28-movie-pool-screens.md](Docs/superpowers/plans/2026-08-28-movie-pool-screens.md).
 **Open the board before writing the screen** — the board is the approved

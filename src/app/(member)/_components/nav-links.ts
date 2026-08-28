@@ -8,16 +8,16 @@ import type { NavLeague } from "@/lib/nav";
  * would drift the first time a route moved.
  *
  * The grouping is not invented — it is how the 25-route map already divides.
- * Everything under `/season/[seasonId]` belongs to a season that ends; every
- * `/league/[leagueId]` address outlives it.
+ * Everything under `/seasons/[seasonId]` belongs to a season that ends; every
+ * `/leagues/[leagueId]` address outlives it.
  */
 export type NavLink = {
   label: string;
   href: string;
   /**
    * The pathname that lights this item up, or `null` for a destination the
-   * path cannot identify. Prefix by default — `/league/x` claims
-   * `/league/x/records` — and `exact` where the item is a parent whose
+   * path cannot identify. Prefix by default — `/leagues/x` claims
+   * `/leagues/x/records` — and `exact` where the item is a parent whose
    * children belong to a sibling item instead.
    */
   match: string | null;
@@ -27,7 +27,7 @@ export type NavLink = {
 export function seasonLinks(league: NavLeague | null): NavLink[] {
   const season = league?.currentSeason;
   if (!season) return [];
-  const base = `/season/${season.id}`;
+  const base = `/seasons/${season.id}`;
   const links: NavLink[] = [
     // EXACT, and the drive is what caught it: a prefix match here lit "Season
     // home" up while the viewer was three routes deeper on the bid page, next
@@ -53,7 +53,7 @@ export function seasonLinks(league: NavLeague | null): NavLink[] {
 
 export function leagueLinks(league: NavLeague | null): NavLink[] {
   if (!league) return [];
-  const base = `/league/${league.id}`;
+  const base = `/leagues/${league.id}`;
   const links: NavLink[] = [
     { label: "League home", href: base, match: base, exact: true },
     { label: "Record book", href: `${base}/records`, match: `${base}/records` },

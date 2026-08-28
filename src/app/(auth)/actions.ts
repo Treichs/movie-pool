@@ -129,7 +129,7 @@ export async function signUp(
 
   // THE INVITE PATH DEPENDS ON THIS. A brand-new account has no leagues, so the
   // landing rule sends them to /league — but someone who arrived on an
-  // invitation link was bounced here from /join/<token>, and `next` carries
+  // invitation link was bounced here from /invites/<token>, and `next` carries
   // them back to the invitation they came to accept rather than to an empty
   // state telling them to ask a commissioner for one.
   redirect(await destinationAfterAuth(supabase, formData));

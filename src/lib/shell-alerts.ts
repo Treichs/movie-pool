@@ -44,9 +44,9 @@ export async function getShellAlerts(
       kind: "invite",
       title: `${invite.leagueName} invited you`,
       detail: `From ${invite.invitedBy}`,
-      // NOT `/join/[token]`: the token is in the emailed link and this read
-      // does not carry it. `/home` is where an invite is accepted in the app.
-      href: "/home",
+      // NOT `/invites/[token]`: the token is in the emailed link and this read
+      // does not carry it. `/leagues` is where an invite is accepted in the app.
+      href: "/leagues",
     });
   }
 
@@ -94,7 +94,7 @@ export async function getShellAlerts(
       kind: "unbid-week",
       title: `Week ${String(week.number).padStart(2, "0")} is taking bids`,
       detail: `${league.name} — you have not bid yet`,
-      href: `/season/${week.seasonId}/weeks/${week.id}/bid`,
+      href: `/seasons/${week.seasonId}/weeks/${week.id}/bid`,
     });
   }
 
