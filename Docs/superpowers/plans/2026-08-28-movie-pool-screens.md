@@ -10,6 +10,25 @@
 
 **Spec:** [Docs/ia-screen-map.md](../../ia-screen-map.md) is the route contract. [Docs/movie_pool_official_rules.md](../../movie_pool_official_rules.md) is the rulebook and outranks every screen. The design canvas holds one board per screen, and **the board is the approved layout**.
 
+**Design canvas:** <https://claude.ai/code/artifact/224e174f-ce5d-4490-8995-004408f7c4bf> — "Movie Pool Phase 6 Screens", 27 artboards. Every screen task names its **board** by number, and that number is the artboard's title on this canvas. **Open the board before writing the screen.**
+
+The number reads `<section>.<screen>`, and the section says where in the app the screen sits:
+
+| Section | What it covers | Boards |
+|---|---|---|
+| `0` | The pitch — the signed-out landing page | `0.1` |
+| `1` | Getting in — the four auth screens | `1.1`–`1.4` |
+| `2` | Readable without a league — how it works, films, players | `2.1`–`2.4` |
+| `3` | Playing a season | `3.1`, `3.2` |
+| `4` | A league, its records, and your account | `4.1`–`4.11` |
+| `5` | Commissioner-only | `5.1a`, `5.1b`, `5.2` |
+
+A letter suffix (`1.3b`, `5.1a`/`5.1b`) is a **second board for the same route** — a distinct state or role, drawn separately because it is a real screen rather than a toast.
+
+**A board's title can name a pre-rename address.** The canvas was drawn on 2026-08-23; the routing pass on 2026-08-28 ([ia-screen-map.md](../../ia-screen-map.md) §7.5) renamed four addresses, and the boards were not retitled. Board `4.1` is still called `/home` and builds `/leagues`. **The route contract wins over a board's title; the board's layout wins over everything else.**
+
+**The shell has its own board, drawn after the canvas:** <https://claude.ai/code/artifact/9a7b3dbb-4c6c-43e7-a15f-1274b038fbb4> — "Movie Pool App Shell". Task 1 was built from it.
+
 **Reference repo:** `C:\Dev\Git\movie_pool_app` — the previous implementation. **Read it freely; it is reference, not a base.** Its five component tiers, nine-link governance chain and 1,400-line `tokens.css` are what this rebuild exists to be rid of. Where a task says *port*, it means copy the working logic; where it says *build*, it means search the registry and compose fresh.
 
 ---
@@ -191,7 +210,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ### Task 1: The app shell
 
-**Board:** the canvas has no board for the signed-in chrome. **Open the canvas first and confirm that.** If one exists, it wins. If not, this task's first output is a shape to approve before any code — do not build a shell nobody has looked at.
+**Board:** the Phase 6 canvas has no board for the signed-in chrome, so one was drawn for it — <https://claude.ai/code/artifact/9a7b3dbb-4c6c-43e7-a15f-1274b038fbb4>, "Movie Pool App Shell". It is the approved shape, and it is what this task built.
 
 **What it is.** The frame every signed-in screen renders inside: the league switcher, the season-scoped nav, the live bid countdown, the account menu, and the breadcrumb trail. ADR-023 settled the model: **a vertical sidebar with one league in focus at a time, the rest reachable through a switcher.**
 
