@@ -67,6 +67,25 @@
   --scrim: #000000;
   --scrim-foreground: #FFFFFF;
 
+  /* A PERMANENTLY-INK SURFACE, declared at the SAME value in :root and .dark.
+     The nav bar and the auth screens' ink pane are both this: a surface that
+     overrides the page's background must override its foreground with it, so
+     the family is complete rather than borrowing --foreground and inverting
+     with the theme. An inverting ink pane is a photographic negative of the
+     film motif half the time.
+
+     It is also what keeps the vermilion legal on those screens: #EB4B37 is
+     5.57:1 on ink and only 3.42:1 on paper, so a wordmark that stays on --nav
+     is accessible where the same mark on --background is not.
+
+     --nav-muted-foreground is NOT --muted-foreground. That one measured 3.89:1
+     here — a real failure — and #8E8D8B is the dark-mode sheet neutral, which
+     serves both modes because --nav is #000000 in both. */
+  --nav: #000000;
+  --nav-foreground: #F5F4F3;
+  --nav-muted-foreground: #8E8D8B;
+  --nav-border: #000000;
+
   /* Bump-chart series. Ten hues derived from one surviving anchor (#7AC49F). */
   --series-1: #7AC49F;
   --series-2: #95CAD0;
@@ -127,6 +146,14 @@
   --warning-foreground: #000000;
   --scrim: #000000;
   --scrim-foreground: #FFFFFF;
+
+  /* Same ink in both modes — see :root. Only --nav-border lifts, because
+     #000000 against dark's --background (#0B0A09) is almost no separation and
+     the split must never vanish. */
+  --nav: #000000;
+  --nav-foreground: #F5F4F3;
+  --nav-muted-foreground: #8E8D8B;
+  --nav-border: #33322F;
 
   --series-1: #2C6347;
   --series-2: #1F4347;
@@ -198,6 +225,27 @@
   --color-series-9: var(--series-9);
   --color-series-10: var(--series-10);
 
+  --color-nav: var(--nav);
+  --color-nav-foreground: var(--nav-foreground);
+  --color-nav-muted-foreground: var(--nav-muted-foreground);
+  --color-nav-border: var(--nav-border);
+
+  /* PAGE AND PROSE MEASURES. The three `ch` values bound a line of text; the
+     page frame is a different question in a different unit — 72rem is the
+     width the route files already use, so a page and its loading state agree.
+     Yields max-w-measure-tight / -default / -wide / -page. */
+  --container-measure-tight: 45ch;
+  --container-measure-default: 65ch;
+  --container-measure-wide: 80ch;
+  --container-measure-page: 72rem;
+
+  /* THE ONE ROUNDED CORNER THAT IS NOT DERIVED FROM --radius, and it must not
+     be: a film perforation is a rounded rectangle, and one that squared itself
+     when the corner language was retuned would be a bug. The geometry is the
+     brand mark's own — 26x34 at rx 7 — so the shape on screen is the shape in
+     the logo. Yields rounded-perf. */
+  --radius-perf: 7px;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -232,6 +280,12 @@
 
   --text-display: 4rem;
   --text-display--line-height: 0.86;
+  /* A SIZE STEP OF `display`, NOT A NEW ROLE. Same axes (--fvs-display), one
+     size up, and it exists for exactly one thing: the landing hero's headline,
+     which is the largest type the app ever sets. It is applied as
+     `text-display lg:text-display-lg` so the promise still fits a phone. */
+  --text-display-lg: 6rem;
+  --text-display-lg--line-height: 0.84;
   --text-h1: 2.75rem;
   --text-h1--line-height: 0.9;
   --text-h2: 1.875rem;

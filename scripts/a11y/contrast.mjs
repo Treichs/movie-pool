@@ -456,6 +456,8 @@ const GROUND_WASH_TOKENS = ["primary", "warning", "success", "destructive", "hig
 const NOT_A_GROUND_WASH = {
   background: "a near-opaque restatement of the page ground itself, which is already a base",
   surface: "same — `bg-surface/90` is a sticky bar over its own surface, already a base",
+  card:
+    "same again, and this repo's spelling of it: `bg-card/95` is the bid page's sticky summary bar over its own surface. --card IS one of the base grounds swept below, and 95% of it over --background lands within a rounding error of it, so measuring the composite would restate a pair already covered.",
   nav: "the nav bar's own ground; text there is --nav-foreground, never a state colour",
   "nav-foreground": "the landing hero's inverted panel; it carries its own inverted text",
   scrim: "a modal overlay — the dialog sits ABOVE it on --popover, never on it",
@@ -1309,12 +1311,13 @@ export function analyse(cssPath = CSS_DEFAULT, srcDir = SRC_DEFAULT) {
 // repo's component tree, where ~200 components between them wrote enough
 // `text-*`/`bg-*` utilities that most state tokens were live. This repo is 25
 // registry primitives and a starter page, so `deriveStateKinds()` finds only
-// destructive, primary and ring — 132 pairs, and every one of them passes.
+// destructive, primary and ring, plus the nav family the auth screens
+// restored — 137 pairs, and every one of them passes.
 //
 // THIS NUMBER IS A RATCHET, NOT A CEILING. It rises as screens land and put
 // more tokens into use. Raise it in the same commit as the screen that raises
 // the count; lowering it is what needs a reason.
-export const MIN_PAIRS = 132;
+export const MIN_PAIRS = 137;
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 if (isMain) {

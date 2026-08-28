@@ -18,6 +18,12 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // WEIGHT WITHOUT COLOUR. The heaviest control on a surface, deliberately
+        // not vermilion: --primary is a background token capped at one meaning
+        // ("live and yours"), and a screen that spends it on a Save button has
+        // nothing left to say it with. Ink is how this system says "primary
+        // action" where the accent is already committed elsewhere.
+        ink: "bg-foreground text-background hover:bg-foreground/85",
       },
       size: {
         default:

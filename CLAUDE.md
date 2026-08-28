@@ -34,11 +34,14 @@ npm run types:gen  regenerate the schema type after a migration
 
 ## The two rules that replace an architecture
 
-**1. Components have two tiers.**
+**1. Components have two tiers** (registry code, and everything else)**.**
 
 - `src/components/ui/` — shadcn and registry code. **Edited in place** when the
   app needs a different shape. There is one `button`, one `card`, one `table`;
   differences are variants on that file, never a second file.
+- `src/components/reui/` — where `@reui` items install themselves. Left where
+  the CLI puts them so their update path keeps working; treated exactly like
+  `ui/`, edited in place, never forked.
 - Everything else starts in the route's `_components/` and moves to
   `src/components/` **the first time a second route needs it** — never in
   anticipation. The cost of getting it wrong is one file move.
@@ -68,8 +71,17 @@ The shadcn MCP server is configured — ask it rather than running the search by
 hand. Configured namespaces: `@shadcn`, `@shadcnblocks`, `@reui`,
 `@animate-ui`, `@8bitcn`.
 
-**Never pass `-y` to `add`** — it skips the prompt standing between a block
-install and a primitive you have modified. Always `--dry-run` first.
+**`--dry-run` first, every time. `-o/--overwrite` is the flag that can lose
+work** — it is the only one that skips the "already exists" prompt. That prompt
+defaults to **No**, so a bare `add` cannot silently replace a file you adapted;
+in a non-interactive context a conflict is skipped outright rather than written.
+`-y` gates the new-style/new-theme confirmation and does not touch file
+overwrites, so it is not the dangerous flag it was once described as.
+
+Read `~ overwrite` in a dry run as **"this file differs from the registry
+copy"**, not "this file is about to be taken": identical files are classified
+`skip` silently, so the flagged paths are exactly the ones already customised
+here. Any of them is a stop-and-read — `--diff <path>` before deciding.
 
 Reach for the registry whenever you are about to write a styled `div`, a button
 inside a field, a callout, an empty state, a loading placeholder or a
