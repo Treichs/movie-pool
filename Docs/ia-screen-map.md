@@ -181,7 +181,7 @@ The two disappearing destinations are reached from **code**, not from mail, so t
 
 ---
 
-## 7. Three routes changed after this map was approved (2026-08-23)
+## 7. Routes changed after this map was approved (2026-08-23)
 
 Decided on the Phase 6 design canvas, after the developer reviewed the addresses rather than the layouts. **The map is 25, not 23.**
 

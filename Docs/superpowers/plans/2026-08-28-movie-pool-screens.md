@@ -121,7 +121,8 @@ Use the **`ui-review` skill** ([.claude/skills/ui-review/SKILL.md](../../../.cla
 
 Both in [scripts/a11y/contrast.mjs](../../../scripts/a11y/contrast.mjs), both with their reasoning in the file:
 
-- **`MIN_PAIRS` is 137.** It rises as screens put more tokens into use. Raise it in the same commit as the screen that raises the count; lowering it needs a reason.
+- **`MIN_PAIRS` is 143.** It rises as screens put more tokens into use. Raise it in the same commit as the screen that raises the count; lowering it needs a reason. It went 137 → 143 on 2026-08-28, when `--edge` and `--nav-primary` entered the sweep.
+- **A state token named `<surface>-<role>` is swept against that surface only.** `--nav-primary` is 5.59:1 on `--nav` and 3.42:1 on paper; sweeping it against every ground would fail it for being used correctly. This rule replaced a hand-written carve-out that had exempted `--primary` from text checks entirely — the carve-out is gone, and the file records why.
 - **`MIN_STACK_DEPTH` is 1.** Raise it to 2 in the same commit as the first screen that renders a tinted panel inside a tinted panel.
 
 ### Commit discipline
@@ -139,10 +140,12 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 | Route | Where | Note |
 |---|---|---|
 | `/` — landing | [src/app/page.tsx](../../../src/app/page.tsx), `src/app/_components/` | Board `0.1`. Signed-in visitors are redirected; `?next=` is honoured over the ordinary landing rule. |
-| `/login` | [src/app/(auth)/login/](../../../src/app/(auth)/login/) | Board `1.1`. **The pattern every auth screen copies** — its page comment explains why `<main>` wraps the whole shell rather than the form. |
-| `/seasons/[seasonId]/weeks/[weekId]/bid` | [src/app/seasons/](../../../src/app/seasons/) | **The template every screen copies.** Its board is the app itself; the canvas has none. |
+| `/login` | [src/app/(auth)/login/](<../../../src/app/(auth)/login/>) | Board `1.1`. **The pattern every auth screen copies** — its page comment explains why `<main>` wraps the whole shell rather than the form. |
+| `/seasons/[seasonId]/weeks/[weekId]/bid` | [src/app/(member)/seasons/](<../../../src/app/(member)/seasons/>) | **The template every screen copies.** Its board is the app itself; the canvas has none. Task 1 moved it into the `(member)` group and §7.5 renamed `season` → `seasons`. |
 | The six route handlers | `src/app/auth/`, `src/app/api/` | OAuth exchange, token-hash confirm, three crons, avatar composition. |
-| `src/proxy.ts` | [src/proxy.ts](../../../src/proxy.ts) | Next 16's renamed middleware: session refresh, signed-out bounce to `/login`, last-league cookie. |
+| `src/proxy.ts` | [src/proxy.ts](../../../src/proxy.ts) | Next 16's renamed middleware: session refresh, signed-out bounce to `/login`, last-league cookie. **`PUBLIC_PATHS` already lists all six public addresses** ([src/lib/supabase/proxy.ts](../../../src/lib/supabase/proxy.ts)) — Tasks 2, 3, 4 and 5 need no change here. |
+| The signed-in shell | [src/app/(member)/layout.tsx](<../../../src/app/(member)/layout.tsx>), `(member)/_components/` | Task 1, below. Two bands, a league switcher, a notification bell, a mobile drawer and a bottom nav. |
+| `src/lib/shell-alerts.ts` | [src/lib/shell-alerts.ts](../../../src/lib/shell-alerts.ts) | The bell's composer. Two extra queries, and only while a week is actually open. |
 
 **Carried forward from the bid page, deliberately unfinished:**
 
@@ -178,7 +181,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 | # | Task | Route | Board |
 |---|---|---|---|
-| **1** | The app shell | `(member)/layout.tsx` | see task |
+| **1** | The app shell — **DONE**, `8df8de2` | `(member)/layout.tsx` | its own board |
 | **2** | Sign up | `/signup` | `1.2` |
 | **3** | Forgot password | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password | `/reset-password` | `1.4` |
@@ -208,83 +211,28 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 1: The app shell
+### Task 1: The app shell — DONE (`8df8de2`)
 
-**Board:** the Phase 6 canvas has no board for the signed-in chrome, so one was drawn for it — <https://claude.ai/code/artifact/9a7b3dbb-4c6c-43e7-a15f-1274b038fbb4>, "Movie Pool App Shell". It is the approved shape, and it is what this task built.
+**Board:** the Phase 6 canvas has no board for the signed-in chrome, so one was drawn for it — <https://claude.ai/code/artifact/9a7b3dbb-4c6c-43e7-a15f-1274b038fbb4>, "Movie Pool App Shell". It is the approved shape, and it is what was built.
 
-**What it is.** The frame every signed-in screen renders inside: the league switcher, the season-scoped nav, the live bid countdown, the account menu, and the breadcrumb trail. ADR-023 settled the model: **a vertical sidebar with one league in focus at a time, the rest reachable through a switcher.**
+**What shipped.** [src/app/(member)/layout.tsx](<../../../src/app/(member)/layout.tsx>) gates with `requireUser`, makes three reads — the leagues with their open weeks, the profile, the alerts — and hands them to `AppShell` in [(member)/_components/](<../../../src/app/(member)/_components/>): `app-shell` · `nav-links` · `league-switcher` · `account-menu` · `notification-bell` · `mobile-drawer` · `bottom-nav`. **The layout renders no `<main>`** — every page owns its own landmark, and two would fail condition 7 on every screen at once.
 
-**Files:**
-- Create: `src/app/(member)/layout.tsx`
-- Create: `src/app/(member)/_components/*.tsx` — the shell's own pieces
-- Move: `src/app/seasons/` → `src/app/(member)/seasons/` (the bid page; the URL does not change)
-- Modify: `src/lib/nav.ts:105-120` — see Step 6
+**The gate is in the layout AND in every page, on purpose.** A layout is not a security boundary in the App Router: it does not re-run on every client navigation, and a page rendered without it would be rendered without its check too.
 
-**Interfaces:**
-- Consumes: `getNavLeagues(supabase, userId) -> NavLeague[]` and `leagueLandingPath(supabase, leagueId) -> string`, both already in [src/lib/nav.ts](../../../src/lib/nav.ts). **They exist and have zero consumers. Import them; do not re-derive.**
-- Produces: the layout every task from 6 onward renders inside. Its pieces stay in `(member)/_components/` unless a route outside the group needs one.
+**Three ways the built shell departs from the shape this task first described. Each is a decision, not a drift:**
 
-`NavLeague` carries, per league: `id`, `name`, `avatarPair`, `avatarGlyph`, `isCommissioner`, `currentSeason` (`{ id, name, status, number }` or null), `seasonIds`, and `openWeek` (`{ id, number, seasonId, bidDeadline }` or null).
+1. **Two horizontal bands, not a vertical sidebar.** ADR-023's "one league in focus, the rest a click away" is carried by the switcher, not by a sidebar; the artboard settled the geometry. Band 1 is ink and is the same black bar the signed-out header already paints — signing in should not change what the top of the app looks like. Band 2 is paper, so navigation reads as part of the page, and the switcher holds its right end.
+2. **A notification bell, not a bid countdown.** The countdown stays on the bid page ([`deadline-countdown.tsx`](<../../../src/app/(member)/seasons/[seasonId]/weeks/[weekId]/bid/_components/deadline-countdown.tsx>)), where the clock it counts belongs to the thing you are looking at.
+3. **No breadcrumb trail.** With every address at most two levels deep (§7.5) and every truncation landing on a real page, the nav band already says where you are.
 
-- [ ] **Step 1: Read the reference, then decide what to keep**
+**What it consumed and what it left behind.** `getNavLeagues` and `leagueLandingPath` in [src/lib/nav.ts](../../../src/lib/nav.ts) had zero consumers and now have one. The deploy-window retry inside `getNavLeagues` was deleted, as its own comment instructed; the outage it guarded is preserved as a comment rather than as code. `src/app/season/` moved to `src/app/(member)/seasons/[seasonId]/weeks/[weekId]/bid/` — the group is invisible in the URL, and the `season` → `seasons` rename belongs to §7.5, not to this task.
 
-The old repo's chrome is `C:\Dev\Git\movie_pool_app\src\components\blocks\chrome\`: `app-topnav`, `league-switcher`, `account-menu`, `nav-drawer`, `nav-bid-timer`, `page-breadcrumbs`, `page-header`. Read them for the *behaviour* they encode. **Do not port them wholesale** — they are the five-tier structure this rebuild is rid of.
+**Two Windows facts worth keeping.** `git mv` on an app directory fails with *Permission denied* while `next dev` holds a handle on it — `cp -r` then `rm -rf` is the way through. Afterwards `.next` must be deleted, because a stale `.next/types/validator.ts` still names the old route path and fails `typecheck` with `TS2307`; on this machine only PowerShell's `Remove-Item -Recurse -Force .next` succeeds.
 
-- [ ] **Step 2: Search the registries before composing anything**
+**Two defects the gates could not see, both found by driving it:**
 
-```bash
-npx shadcn@latest search @shadcn -q "sidebar"
-npx shadcn@latest add sidebar --dry-run
-npx shadcn@latest search @shadcnblocks -q "dashboard shell"
-```
-
-A sidebar with a switcher in its header is a solved shape in every registry configured here. **`--dry-run` first.** A `~ overwrite` on `src/lib/utils.ts` or `ui/button.tsx` is a stop-and-read, never an accept.
-
-- [ ] **Step 3: Build the layout**
-
-```tsx
-// src/app/(member)/layout.tsx
-export default async function MemberLayout({ children }: { children: React.ReactNode }) {
-  const ctx = await requireUser();
-  const leagues = await getNavLeagues(ctx.supabase, ctx.user.id);
-  return <AppShell leagues={leagues}>{children}</AppShell>;
-}
-```
-
-**The layout does not render `<main>`.** Each page owns its own landmark, and two would fail condition 7 on every screen at once.
-
-- [ ] **Step 4: The countdown is the shell's one vermilion element**
-
-`openWeek.bidDeadline` is fetched eagerly by `getNavLeagues` precisely because a countdown cannot be lazy — it must be right before the first click. A null deadline renders **nothing**, never a count to an invented moment.
-
-- [ ] **Step 5: Move the bid page into the group**
-
-```bash
-git mv "src/app/season" "src/app/(member)/season"
-```
-
-The URL is unchanged — `(member)` is a group, not a segment. Confirm with `npm run build` that `/seasons/[seasonId]/weeks/[weekId]/bid` still appears in the route list.
-
-- [ ] **Step 6: Delete the deploy-window fallback in `nav.ts`**
-
-`getNavLeagues` retries its select without the avatar columns if the first attempt fails, because migration `20260803060000` once lagged a deploy and every member's league list silently vanished. That migration is applied everywhere. The file's own comment says *"Delete this once applied everywhere — it is a bridge, not a design."* Delete the retry; keep the `?? null` reads.
-
-- [ ] **Step 7: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 8: Drive it**
-
-The shell has no page of its own, so drive it through the bid page. As `dev-player`: the sidebar lists both fixture leagues, the switcher changes focus, the countdown ticks against a real deadline. As `dev-commish`: the commissioner entries appear. As `dev-outsider`: **the zero-league state renders an honest empty shell, not a broken one** — that account belongs to no league and is the state most likely to throw.
-
-- [ ] **Step 9: Commit**
-
-```bash
-git add -A
-git commit -m "feat(shell): the signed-in frame, and nav.ts finally has a consumer"
-```
+- Two `text-primary` sites on ink grounds went muddy under the deeper red. `a11y:contrast` checks token pairs, not which token a component reached for, so it passed. **This is exactly the failure the design-system section warns about, it happened on the first screen, and it will happen again.**
+- The nav dropdown highlighted two items at once, because prefix matching let "Season home" claim the bid page's route. `isCurrent` in `nav-links.ts` now takes an `exact` flag, and a link whose current-state lives in a query string carries `match: null` rather than a route it cannot own.
 
 ---
 
@@ -348,6 +296,7 @@ git commit -m "feat(auth): signup is rebuilt, and its right half explains the ga
 
 **Files:**
 - Create: `src/app/(auth)/forgot-password/page.tsx`, `forgot-password-form.tsx`, `error.tsx`
+- **No proxy change.** `/forgot-password` joined `PUBLIC_PATHS` on 2026-08-28 (`9bde804`). Without it the screen bounced to `/login` — sending someone back to the form they could not complete.
 
 **Interfaces:**
 - Consumes: `requestPasswordReset` from `(auth)/actions.ts` — already written.
@@ -390,6 +339,7 @@ git commit -m "feat(auth): forgot-password gets the rail treatment and a real se
 
 **Files:**
 - Create: `src/app/(auth)/reset-password/page.tsx`, `reset-password-form.tsx`, `error.tsx`
+- **No proxy change.** `/reset-password` joined `PUBLIC_PATHS` on 2026-08-28 (`9bde804`), and the reason is subtler than the last one: the emailed link lands on `/auth/callback` first, so a visitor usually arrives here already signed in — but not when the exchange fails or the link opens in a browser the cookie never reached. That is exactly the case Step 3's copy exists to explain, and a gate would have answered it with a redirect.
 
 **Interfaces:**
 - Consumes: `completePasswordReset` from `(auth)/actions.ts` — already written.
@@ -1446,7 +1396,10 @@ Record: which screens revealed defects the gates could not see, which states wer
 
 ## Decisions carried into this plan
 
-- **The route map is 25** — 21 kept, plus `/leagues/[leagueId]/films/[tmdbId]` from the film split, plus `/`, `/login` and `/leagues/[leagueId]/settings`. `/commish/[seasonId]/payouts` folded into `/seasons/[seasonId]/payouts`; `/leagues` folded into `/leagues`.
+- **The route map is 25** — 21 kept, plus `/leagues/[leagueId]/films/[tmdbId]` from the film split, plus `/`, `/login` and `/leagues/[leagueId]/settings`. `/commish/[seasonId]/payouts` folded into `/seasons/[seasonId]/payouts`; `/league` and `/home` both folded into `/leagues`.
+- **Every address takes one shape** — [ia-screen-map.md](../../ia-screen-map.md) §7.5, settled 2026-08-28 from documented practice (NN/g's *URL as UI*, Google's AIP-122, Google Search Central on URL structure). Plural collections, singular items, never more than two levels deep, and **every truncation lands on a real page**. Four addresses were renamed; none was live, so nothing is owed. A season is addressed at `/seasons/[seasonId]` rather than under its league because the full chain would be four levels of mostly-uuid.
+- **The accent is two tokens, one per ground** — the palette pass of 2026-08-28. No single red is legible on both: paper-legal needs relative luminance ≤ 0.162, ink-legal needs ≥ 0.175, and the windows do not overlap. `--edge` was added in the same pass because a field at `#EDECEA` on `#F5F4F3` is 1.07:1 with a 1.26:1 border — a control identified by nothing at all.
+- **The bell shows what is waiting on you, not what has happened.** The schema can answer the first; there is no notification store and no read state on announcements to answer the second. Announcements join the bell the day someone adds a `read_at`, which is a migration and a decision, not a line of UI.
 - **Elevation is two tiers:** panels flat with a border, floating layers only carry a shadow.
 - **The commissioner Queue is a strip, not a route** — and `getOverdueWeeks` was a composer with no UI, folded into `getSeasonHome` rather than deleted as dead code.
 - **Configuration centralizes, operations distribute** — the test that settled the commissioner question and produced `/leagues/[leagueId]/settings` as the one legitimate second commissioner page.
