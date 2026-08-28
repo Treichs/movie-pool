@@ -1,69 +1,70 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+import { resolveLandingPath, safeNextPath } from "@/lib/landing";
+import { createClient } from "@/lib/supabase/server";
+
+import { LandingBeats } from "./_components/landing-beats";
+import { LandingClose } from "./_components/landing-close";
+import { LandingHero } from "./_components/landing-hero";
+import { LandingHighlights } from "./_components/landing-highlights";
+import { LandingNav } from "./_components/landing-nav";
+
+/**
+ * `/` — THE LANDING PAGE (ADR-435, IA map §7.1).
+ *
+ * This address used to be a two-audience Mode: a sign-in form when signed out,
+ * a `resolveLandingPath` redirect when signed in. Sign-in moved to `/login`,
+ * which now has its own screen, and what is left here is the pitch.
+ *
+ * ── IT STILL HAS TWO AUDIENCES, AND ONLY ONE OF THEM SEES A PAGE ──────────
+ * A member does not need to be sold the game they are already playing, so the
+ * signed-in half is kept exactly as it was: an explicit, validated `?next=`
+ * wins over the ordinary landing rule, because it means the visitor asked for a
+ * specific page and was bounced on the way. Nothing in this repo sends `?next=`
+ * HERE today — the proxy bounces to `/login` — but the parameter is honoured
+ * rather than dropped so a hand-built or emailed link to `/?next=…` cannot
+ * silently land someone in the wrong place.
+ *
+ * ── THE ROUTE PLACES; IT DOES NOT STYLE ───────────────────────────────────
+ * Every piece of type and colour lives in a `_components/` file that can be
+ * read on its own. What this file owns is the order of the beats, the page
+ * measure, and the `<main>` — which has to come from here, because neither the
+ * root layout nor `(member)/layout.tsx` renders one.
+ *
+ * `<LandingNav />` sits OUTSIDE `<main>`: it is a banner landmark, and putting
+ * it inside would leave the page with a header nested in its content.
+ *
+ * ── NO COMPOSER, AND THAT IS THE POINT ────────────────────────────────────
+ * Rule 2 says a page imports its read from `src/lib/`. This page has no read:
+ * the copy is fixed and the only query is "is anyone signed in", which is the
+ * gate rather than the data. There is nothing for `src/lib/` to grow here.
+ */
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect(safeNextPath(next) ?? (await resolveLandingPath(supabase, user.id)));
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <>
+      <LandingNav />
+      <main>
+        <LandingHero />
+        <div className="mx-auto flex max-w-measure-page flex-col gap-14 px-8 pt-14 pb-18">
+          <LandingBeats />
+          <LandingHighlights />
+          <LandingClose />
         </div>
       </main>
-    </div>
+    </>
   );
 }
