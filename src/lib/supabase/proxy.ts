@@ -14,7 +14,23 @@ import type { Database } from "./types";
 //
 // `/login` MUST be in this list. Without it the sign-in screen bounces to
 // itself, which is unreachable rather than merely wrong.
-const PUBLIC_PATHS = ["/", "/login", "/signup", "/how-it-works"];
+//
+// SO MUST BOTH PASSWORD SCREENS, for the same reason and a subtler one. Anyone
+// on `/forgot-password` is by definition signed out, so bouncing them to
+// `/login` sends them back to the form they could not complete. `/reset-password`
+// is reached from an emailed link that lands on `/auth/callback` first: the
+// callback exchanges the code for a session, so the visitor usually arrives
+// here already signed in — but not when the exchange fails or the link is
+// opened in a browser the cookie never reached, and that is exactly the case
+// the screen exists to explain. A gate here would answer it with a redirect.
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/how-it-works",
+];
 
 function isPublicPath(pathname: string) {
   return (
