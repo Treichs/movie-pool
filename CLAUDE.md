@@ -26,9 +26,8 @@ shadcn/ui on Base UI · Supabase (Postgres + Auth + RLS) · Vercel.
 
 ```
 npm run dev        localhost:3000
-npm run verify     typecheck · lint · build
-                   (a11y:contrast and types:fresh join it once the data
-                    layer lands — see Docs/rebuild-phase-6.md Task 0.1)
+npm run verify     typecheck · lint · a11y:contrast · types:fresh · build
+npm run seed:dev   the persistent dev fixtures — idempotent, safe to re-run
 npm run types:gen  regenerate the schema type after a migration
 ```
 
@@ -127,9 +126,12 @@ red build rather than a wrong number.
 The route set is settled: **25 pages plus 6 route handlers**, in
 [Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every screen has a drawn board
 on the design canvas, and one task in
-[Docs/rebuild-phase-6.md](Docs/rebuild-phase-6.md). **Open the board before
-writing the screen** — the board is the approved layout, the task is the
-approved mechanics.
+[Docs/superpowers/plans/2026-08-28-movie-pool-screens.md](Docs/superpowers/plans/2026-08-28-movie-pool-screens.md).
+**Open the board before writing the screen** — the board is the approved
+layout, the task is the approved mechanics.
+
+The drive that closes a screen is the **`ui-review` skill**, not a harness you
+invent.
 
 A screen is done when:
 
