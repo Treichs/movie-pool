@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { User } from "@supabase/supabase-js";
 
@@ -145,4 +145,75 @@ export async function getAccount(
     .eq("id", userId)
     .maybeSingle();
   return (data as { display_name: string | null; email: string | null }) ?? null;
+}
+
+
+/**
+ * THE GATE IS STRUCTURAL, not a convention 25 pages remember.
+ *
+ * A read takes a `SeasonContext`, never a raw client. The type refuses to let a
+ * composer be called without a gate having run first, so no check is needed —
+ * which is the whole difference from `requireMemberOf` above, where every page
+ * opens with its own call and nothing fails if one forgets.
+ *
+ * `notFound()` rather than a redirect, and that is the second deliberate
+ * divergence from `requireMemberOf`, which sends a non-member to `/home`. A
+ * redirect to a dashboard tells the caller "that season is real, just not
+ * yours" — exactly the fact a blind-bid game must not leak about a league they
+ * were never invited to. Both gates are kept, side by side, so the difference
+ * is visible rather than spread across two files.
+ */
+export type SeasonContext = {
+  readonly db: SupabaseClient;
+  readonly userId: string;
+  /**
+   * The MEMBERSHIP row's id — `season_members.id`, not the account's.
+   *
+   * Every money-shaped read in this app is keyed by the seat rather than the
+   * person: `member_remaining_budget(p_season_member_id)`, `bids.season_member_id`
+   * and `v_standings.season_member_id` all take it. Without it here, every
+   * composer would open by re-deriving the row the gate just read — either a
+   * second round trip per read, or a `current_member_id` RPC the gate has
+   * already paid for. `userId` stays alongside it because the ACCOUNT is the
+   * right identity for anything outliving a season (avatars, profile links),
+   * and the two are not interchangeable.
+   */
+  readonly memberId: string;
+  readonly seasonId: string;
+  readonly role: "commissioner" | "player";
+};
+
+/**
+ * The season-scoped gate. Every composer that reads inside a season takes its
+ * result.
+ *
+ * THERE IS NO `season_membership_role` RPC. What exists is
+ * `current_member_id(p_season_id)` (the id but not the role) and
+ * `is_commissioner(p_season_id)` (the role but not the id), so using RPCs here
+ * would mean two round trips to answer one question. The membership row carries
+ * both columns, and RLS on `season_members` already refuses it to a non-member,
+ * so one `maybeSingle()` is the whole gate.
+ */
+export async function requireSeasonMember(seasonId: string): Promise<SeasonContext> {
+  const db = await createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) notFound();
+
+  const { data } = await db
+    .from("season_members")
+    .select("id, role")
+    .eq("season_id", seasonId)
+    .eq("profile_id", user.id)
+    .maybeSingle();
+  if (!data) notFound();
+
+  return {
+    db,
+    userId: user.id,
+    memberId: data.id,
+    seasonId,
+    role: data.role,
+  };
 }
