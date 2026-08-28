@@ -11,7 +11,8 @@
     "verify": "npm run typecheck && npm run lint && npm run a11y:contrast && npm run types:fresh && npm run build",
     "a11y:contrast": "node scripts/a11y/contrast.mjs",
     "types:fresh": "node scripts/types-fresh.mjs",
-    "types:gen": "node --env-file=.env.local scripts/gen-types.mjs"
+    "types:gen": "node --env-file=.env.local scripts/gen-types.mjs",
+    "seed:dev": "node --env-file=.env.local scripts/seed-dev.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
