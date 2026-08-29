@@ -189,7 +189,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **6** | Home — **DONE** | `/leagues` | `4.1` |
 | **7** | Accept an invite — **DONE** | `/invites/[token]` | `4.9` |
 | **8** | Create a league — **DONE** | `/leagues/new` | `4.8` |
-| **9** | League home | `/leagues/[leagueId]` | `4.2` |
+| **9** | League home — **DONE** | `/leagues/[leagueId]` | `4.2` |
 | **10** | Start a season | `/leagues/[leagueId]/seasons/new` | `5.2` |
 | **11** | Season home | `/seasons/[seasonId]` | `3.1` |
 | **12** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` |
@@ -495,61 +495,50 @@ The league, its season, its twenty weeks and its invitation were then deleted an
 
 ---
 
-### Task 9: `/leagues/[leagueId]`
+### Task 9: `/leagues/[leagueId]` — DONE
 
-**Board:** `4.2  /leagues/[leagueId]`
+**Board:** `4.2  /league/[leagueId]` — built to the League Home prototype (<https://claude.ai/code/artifact/3db8d4ab-80a3-445f-91d8-aa4a22322818>), which is the approved layout for this screen and supersedes the board where the two differ.
 
-**Files:**
-- Create: `src/app/(member)/leagues/[leagueId]/page.tsx`, `_components/*.tsx`, `error.tsx`
-- Create: `src/lib/league-home.ts`
+**Files:** [src/app/(member)/leagues/[leagueId]/](<../../../src/app/(member)/leagues/>) — `page.tsx`, `error.tsx`, and five `_components/`: `season-thread`, `seasons-table`, `member-roster`, `record-book-panel`, `announcements-panel`. Composer `getLeagueHome(ctx, leagueId)` added to `src/lib/league.ts`.
 
-**Interfaces:**
-- Consumes, all already written in `src/lib/`: `getLeague`, `getLeagueRoster`, `getLeagueSeasons`, `getLeagueRunningSince` (`league.ts`) and `getLeagueRecordBook` (`league-records.ts`). **Import them; the DAG that forbade a composer calling a composer is deleted.**
-- Produces: `getLeagueHome(ctx, leagueId) -> LeagueHome` in `src/lib/league-home.ts` — identity, seasons, members with career figures, the record-book aggregates, and the announcements rail. **Task 22 consumes it for the identity facts.**
+**THE REGISTRY SWEEP, AND ITS ANSWER WAS MOSTLY "ALREADY VENDORED".** `badge`, `table`, `empty`, `collapsible`, `breadcrumb`, `avatar`, `item`, `separator` are all installed and were used rather than re-composed.
 
-- [ ] **Step 1: Open the board, and know about the uppercase trap**
+- **`ui/collapsible` was installed and unused on this screen**, and it closes a real behaviour gap: board 4.2 ends the members list with the words *"Four more members"* and no way to see them. The overflow is now a working disclosure. **A caption became a control for the price of an import.**
+- **`@shadcn/progress` was rejected, and the reason is structural.** It would have carried the dues proportion. Its dependency is **`radix-ui`**, and this project is **pure Base UI** — `@base-ui/react` is the only primitive package in `package.json`. Installing it drags a second primitive family into a codebase that deliberately has one, for one bar. `@reui/progress` is the Base-UI alternative and returns **401, licence-gated**, which CLAUDE.md already records. **Verdict: no progress bar.** Moot in the end — see dues below.
+- `Badge` gained an **`ink` variant**, edited in place. The app has a filled mark that is not the accent — a standing label like "Commissioner" must not compete with the one thing asking to be acted on — and `button.tsx` already carries an `ink` variant under the same name for the same reason.
 
-**The title is the league switcher, and it sits inside a `<button>`.** A previous session found the `<h1>` computing `text-transform: uppercase` correctly while rendering title-case, because the user-agent rule on form controls beats inheritance. `getComputedStyle` reported the rule as applied while the pixels disagreed. **The case must come from a class on the element, not from the base `h1` rule.**
+**THE COMPOSER REUSES THE CAREER TABLE AS THE ROSTER.** `CareerRow` already carries `name`, `isMe`, `isCommissioner`, `seasons`, `titles` and `points` — every column the members list draws — and `league-records.ts` says so itself: *"the career table can stand in for the roster (ADR-083)"*. Calling `getLeagueRoster` too would be a second query answering a question already answered.
 
-- [ ] **Step 2: The record-book aggregates carry no member**
+**Four departures from board 4.2, each with its reason:**
 
-ADR-085: average winning bid, average points per film, league points-per-dollar, films ever owned. **They are the league's own numbers**, and putting a name in one turns the panel into a leaderboard.
+1. **The live season leads in a band of its own; the seasons table is the archive.** The board puts the running season in row one and highlights it, which makes the table's first row behave unlike every other row.
+2. **No champion column on the seasons table.** Not an omission — a recorded decision. `league-records.ts` notes that a `championsRoll` existed for one review cycle and was *"removed on the developer's review — the champions already read off the career table"*. Titles therefore live where that decision put them: a **Titles** column on the members list.
+3. **The H1 is a title, not a switcher.** The shell already carries one in the paper band.
+4. **No "Start a season" in the page head.** The thread offers it in exactly the states where it is possible; two identical primary buttons in one viewport is the duplication this layout exists to remove.
 
-- [ ] **Step 3: Build the page**
+**⚠ DUES IS NOT BUILT, AND CANNOT BE.** Board 4.2 draws a dues panel, the prototype moved it under the season band as a conditional strip, and **Task 21 is a whole screen for it** — but there is **no dues table, no payments table and no composer anywhere in the schema**, checked across all 116 migrations. It is an unmodelled domain, not an unwritten read. **Task 21 needs a data model designed before it can be built**, and this page cannot show a balance until then. Raised, not stubbed.
 
-Seasons table, members with a role badge, the record-book panel linking to `/records`, the announcements rail, the dues summary, and a **link** to `/leagues/[id]/settings`. There is no settings dialog in this repo and none is to be created — Task 22 owns that surface.
+**The gate is the read.** `leagues` gates SELECT on `is_league_member`, so a league the viewer does not belong to comes back null and the page 404s — the same answer a non-existent league gives, which is the right one to hand a stranger holding an id. **Driven: an unknown uuid returns 404.**
 
-- [ ] **Step 4: Count the vermilion**
+**Three defects found by driving it, all fixed:**
 
-The old league page painted **51 vermilion elements**, measured 2026-08-22, against a system rule of one per surface. In the browser console on this page:
+- **The thread named one champion out of a tie.** `dev-player` and `dev-grace` both hold one title in the seeded league, and sorting by titles announced whichever the sort landed on — the exact error the seasons table refuses to make. A champion is named only when one member holds the most titles.
+- **Fixing that produced a copy bug**: a league with a finished season but a tied title was told it *"has not played a season yet"*. Three states, three sentences.
+- **"1 hour" for 38 minutes.** `timeUntil` rounds to whole hours — generous everywhere else and wrong in the one window the gate's escalation exists for. Inside the hour the gate does its own arithmetic and reads minutes; the shared helper keeps its coarseness for its other callers.
 
-```js
-[...document.querySelectorAll("*")].filter(e => {
-  const s = getComputedStyle(e);
-  return [s.backgroundColor, s.color, s.borderColor].some(v => v.includes("235, 75, 55"));
-}).length
-```
+**The drive, at 1440×900 and 390×844.** Console clean, one `<main>`, one `<h1>`, every control named, no mobile overflow.
 
-Expected: **1**. Higher means a shared component is painting it — fix the component, not this page.
+| State | Driven as | Result |
+|---|---|---|
+| Week open | `dev-player`, Dev League | gate reads `3 hours / until bids close` beside the red action |
+| **Last hour** | deadline moved to 38 min, then restored | meter takes the ink ground, `38 min / left to bid` in `--nav-primary` |
+| Between seasons | `dev-commish`, Dev Closing Credits | "1 season played, and the next one is not started" + Start a season |
+| Never played | Dev League before seeding | "This league has not played a season yet" |
+| Not a member | unknown uuid | **404** |
+| Record book | Dev Closing Credits | real aggregates from 7 scored films |
+| Record book, empty | Dev League | "Nothing to average yet" rather than a row of noughts |
 
-- [ ] **Step 5: Add `error.tsx`**
-
-- [ ] **Step 6: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 7: Drive it as both roles**
-
-Player and commissioner. Confirm the title renders in caps **in the browser**, not in `getComputedStyle`.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add -A
-git commit -m "feat(league): league home is rebuilt, and 51 vermilion elements become one"
-```
+**Not driven:** the roster disclosure — **no fixture league has more than five members**, so the overflow never renders. `seed:dev` would need a sixth member in one league to exercise it.
 
 ---
 

@@ -1,5 +1,10 @@
-import type { SupabaseClient } from "@/lib/supabase";
 import type { WeekStatus } from "@/lib/commish";
+import {
+  getLeagueRecordBook,
+  type CareerRow,
+  type LeagueAggregates,
+} from "@/lib/league-records";
+import type { SupabaseClient } from "@/lib/supabase";
 
 // League data helpers (phase 11 / ADR-016). RLS scopes every read to
 // leagues the caller belongs to.
@@ -370,4 +375,85 @@ export async function getLeagueAnnouncement(
     .maybeSingle();
   if (error || !data) return null;
   return toAnnouncement(data as unknown as AnnouncementRow);
+}
+
+// ---------------------------------------------------------------------------
+// LEAGUE HOME (board 4.2) — the composer for `/leagues/[leagueId]`.
+// ---------------------------------------------------------------------------
+
+/**
+ * THE CAREER TABLE IS THE ROSTER, and that is not a shortcut.
+ * `CareerRow` already carries `name`, `isMe`, `isCommissioner`, `seasons` and
+ * `points` — every column board 4.2's members list draws — and
+ * `league-records.ts` says so itself: "the career table can stand in for the
+ * roster (ADR-083)". Calling `getLeagueRoster` as well would be a second query
+ * answering a question this one has already answered.
+ *
+ * DUES IS ABSENT, AND IT IS ABSENT FROM THE DATABASE. Board 4.2 draws a dues
+ * panel and the plan carries a whole screen for it (Task 21), but there is no
+ * dues table, no payments table and no composer — checked across all 116
+ * migrations on 2026-08-29. It is a domain nobody has modelled yet, not a read
+ * nobody has written, so this page cannot show a balance and the prototype's
+ * dues strip has nothing to render. Raised rather than stubbed.
+ */
+export type LeagueHome = {
+  league: { id: string; name: string; glyph: string | null };
+  isCommissioner: boolean;
+  runningSince: string | null;
+  /** Every season, newest first — the archive AND the record book's input. */
+  seasons: LeagueSeason[];
+  current: LeagueCurrentSeason;
+  /** The earliest week still taking bids, which is what the thread counts to. */
+  openWeek: LeagueWeek | null;
+  career: CareerRow[];
+  aggregates: LeagueAggregates | null;
+  announcements: LeagueAnnouncement[];
+};
+
+export async function getLeagueHome(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueHome | null> {
+  const { supabase, user } = ctx;
+
+  // THE GATE IS THE FIRST READ AND IT IS RLS'S. `leagues` gates SELECT on
+  // `is_league_member`, so a league the viewer does not belong to comes back
+  // null and the page 404s — indistinguishable from one that does not exist,
+  // which is the correct answer to give a stranger holding an id.
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const [seasons, runningSince, current, announcements] = await Promise.all([
+    getLeagueSeasons(supabase, leagueId),
+    getLeagueRunningSince(supabase, leagueId),
+    getLeagueCurrentSeason(supabase, leagueId, user.id),
+    getLeagueAnnouncements(supabase, leagueId, 2),
+  ]);
+
+  // The record book takes the seasons this page already fetched rather than
+  // fetching its own — its parameter exists for exactly that.
+  const book = await getLeagueRecordBook(supabase, seasons, user.id);
+
+  const career = book?.career ?? [];
+  const me = career.find((row) => row.isMe);
+
+  // Two weeks can be open at once (2026-08-03), and the earliest is the one
+  // with a deadline actually approaching — the same rule `getNavLeagues` uses
+  // for the shell's countdown, so the two never disagree.
+  const openWeek =
+    current.weeks
+      .filter((w) => w.status === "open")
+      .sort((a, b) => a.number - b.number)[0] ?? null;
+
+  return {
+    league: { id: league.id, name: league.name, glyph: league.avatar_glyph },
+    isCommissioner: me?.isCommissioner ?? false,
+    runningSince,
+    seasons,
+    current,
+    openWeek,
+    career,
+    aggregates: book?.aggregates ?? null,
+    announcements,
+  };
 }
