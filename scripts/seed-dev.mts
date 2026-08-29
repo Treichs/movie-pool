@@ -307,9 +307,22 @@ async function main() {
     // deadline: a re-run has to push both fields back out to "now" every
     // time, or the fixture goes stale (and un-biddable, then DB-rejected on
     // the next re-seed) the moment the script isn't re-run within the window.
+    //
+    // THE STATUS GOES BACK TO `open` TOO, ADDED 2026-08-29. Without it a re-run
+    // produced an impossible row — a CLOSED week with a deadline three hours in
+    // the future — and every reader that asks "is a week taking bids" filters
+    // on `status = 'open'`, not on the clock. So the nav countdown, the bell's
+    // unbid-week alert and `/leagues`' open-week chip were all undrivable the
+    // moment anything closed week 1, and re-seeding looked like it had fixed
+    // them because the deadline moved. The deadline is the fixture's headline;
+    // the status is what makes it mean anything.
     const { error } = await admin
       .from("weeks")
-      .update({ opening_date: week1OpeningDate, bid_deadline: week1BidDeadline })
+      .update({
+        opening_date: week1OpeningDate,
+        bid_deadline: week1BidDeadline,
+        status: "open",
+      })
       .eq("id", week.id);
     if (error) throw new Error(`week 1 refresh: ${error.message}`);
     console.log("  refreshed week 1 (opening_date + bid_deadline, 3h out)");

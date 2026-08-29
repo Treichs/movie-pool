@@ -1,5 +1,7 @@
-import type { SupabaseClient } from "@/lib/supabase";
+import { getProfile } from "@/lib/auth";
+import { getMyInvites, type MyInvite } from "@/lib/invites";
 import { getNavLeagues, type NavLeague } from "@/lib/nav";
+import type { SupabaseClient } from "@/lib/supabase";
 
 // Data for HOME — the signpost that replaced the Dashboard (2026-08-03).
 //
@@ -56,4 +58,67 @@ export async function getHomeLeagues(
     closesAt: l.openWeek?.bidDeadline ?? null,
     openWeekNumber: l.openWeek?.number ?? null,
   }));
+}
+
+/** What `/leagues` renders. The invites are the only thing on the page that
+ *  asks the viewer to act, which is why they are a field of their own rather
+ *  than something the page fetches on the side. */
+export type Home = {
+  displayName: string;
+  email: string;
+  leagues: HomeLeague[];
+  invites: MyInvite[];
+};
+
+/**
+ * URGENCY ORDER, and it is the one editorial decision this module makes.
+ *
+ * The page answers "what needs me, and where". Alphabetical order answers
+ * neither — it is a filing system, and a filing system is what the spreadsheet
+ * was. So a league with bidding open sorts above one without, and among those,
+ * the deadline closing soonest sorts first.
+ *
+ * It matters at one league as much as at five: the row that moves to the top is
+ * the row that has a clock on it, and a player with a single league still needs
+ * to see at a glance whether this is a week they owe something in.
+ *
+ * NOT SORTED BY: points, rank, or anything else a season knows. Those are
+ * statistics, and this module's whole point is that it holds none — see the
+ * header. Sorting by one would smuggle it in through the back door.
+ */
+export function byUrgency(a: HomeLeague, b: HomeLeague): number {
+  const openA = a.closesAt !== null;
+  const openB = b.closesAt !== null;
+  if (openA !== openB) return openA ? -1 : 1;
+  if (openA && openB) {
+    const diff = Date.parse(a.closesAt!) - Date.parse(b.closesAt!);
+    if (diff !== 0) return diff;
+  }
+  // Then a live season above a league between seasons or not yet started —
+  // "there is something to look at" above "there is not".
+  const liveA = a.currentSeason?.status === "active";
+  const liveB = b.currentSeason?.status === "active";
+  if (liveA !== liveB) return liveA ? -1 : 1;
+  return a.name.localeCompare(b.name);
+}
+
+/** The `/leagues` composer. Three reads, all of which the shell's layout has
+ *  already made for its own purposes — Next dedupes them within one render, so
+ *  this costs the profile query and nothing else. */
+export async function getHome(ctx: {
+  supabase: SupabaseClient;
+  user: { id: string; email?: string };
+}): Promise<Home> {
+  const [leagues, invites, profile] = await Promise.all([
+    getHomeLeagues(ctx.supabase, ctx.user.id),
+    getMyInvites(ctx.supabase),
+    getProfile(ctx.supabase, ctx.user.id),
+  ]);
+
+  return {
+    displayName: profile?.display_name ?? ctx.user.email ?? "there",
+    email: ctx.user.email ?? "",
+    leagues: [...leagues].sort(byUrgency),
+    invites,
+  };
 }

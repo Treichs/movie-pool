@@ -186,7 +186,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **3** | Forgot password — **DONE** | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password — **DONE** | `/reset-password` | `1.4` |
 | **5** | How it works — **DONE** | `/how-it-works` | `2.1` |
-| **6** | Home | `/leagues` | `4.1` |
+| **6** | Home — **DONE** | `/leagues` | `4.1` |
 | **7** | Accept an invite | `/invites/[token]` | `4.9` |
 | **8** | Create a league | `/leagues/new` | `4.8` |
 | **9** | League home | `/leagues/[leagueId]` | `4.2` |
@@ -365,54 +365,39 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 6: `/leagues`
+### Task 6: `/leagues` — DONE
 
 **Board:** `4.1  /home`
 
-**`/leagues` IS the league list** — it absorbed what the IA map called `/home`, and before that a separate `/league` index whose own description was *"`/home`'s empty state wearing a URL"*. One address, three names in its history, and the routing pass on 2026-08-28 settled it: the collection is `/leagues`, and its index is the signed-in front door. **The composer file stays `src/lib/home.ts`** — renaming it would put `leagues.ts` one letter from `league.ts`, which is how a wrong import happens.
+**`/leagues` IS the league list** — it absorbed what the IA map called `/home`, and before that a separate `/league` index whose own description was *"`/home`'s empty state wearing a URL"*. One address, three names in its history. **The composer file stays `src/lib/home.ts`** — renaming it would put `leagues.ts` one letter from `league.ts`.
+
+**What it is for, settled 2026-08-29 after comparing route maps with products that share this grain.** A doorway, not a room: the only screen about the viewer's *relationship to leagues* rather than about a league. Three jobs and nothing else — the zero-league state, the two actions that are not about a particular league (accept an invitation, start one), and "what am I part of, and what needs me".
+
+**Why it is not a cross-league dashboard.** Fantasy platforms do aggregate — Yahoo's Home tab is a card per league, reorderable, with a team switcher on long-press — and it works because their players are in many leagues at once bidding on the same players. Real usage here is **one main league and occasionally a second** (ADR-094). At one league an aggregate is a page with one number on it. `src/lib/home.ts` already carried the rule this respects: *"if a statistic ever appears in this file, that is the regression."*
 
 **Files:**
-- Create: `src/app/(member)/leagues/page.tsx`, `_components/*.tsx`, `error.tsx` — **the folder name is the URL**, so this is `leagues/`, not `home/`. The composer keeps the name `home.ts`; the route does not.
-- Modify: `src/lib/home.ts` — it already exports `getHomeLeagues(supabase, userId) -> HomeLeague[]`; add the screen composer beside it.
+- Create: [src/app/(member)/leagues/](<../../../src/app/(member)/leagues/>) — `page.tsx`, `actions.ts`, `error.tsx`, and five `_components/`: `greeting`, `invite-card`, `league-rows`, `side-panels`, `no-leagues`.
+- Modify: `src/lib/home.ts` — `getHome(ctx) -> Home` and `byUrgency`, beside the existing `getHomeLeagues`.
 
-**Interfaces:**
-- Consumes: `getHomeLeagues` from `src/lib/home.ts` and `getMyInvites(supabase) -> MyInvite[]` from `src/lib/invites.ts`. **Both already written — import them.**
-- Produces: `getHome(ctx) -> Home` in `src/lib/home.ts` — the viewer's leagues with their live state, pending invites, and the zero-league flag.
+**URGENCY ORDER IS THE ONE THING ADDED BEYOND THE BOARD.** A league with bidding open sorts above one without; among those, the deadline closing soonest first; then a live season above one between seasons; then alphabetical. Alphabetical order answers nothing — it is a filing system, and a filing system is what the spreadsheet was. **Proved in the browser:** with a live deadline seeded, *Dev League* moved from second to first and the other two held their order.
 
-- [ ] **Step 1: Open the board**
+**NO RANK, THOUGH THE BOARD DRAWS ONE.** Board 4.1's rows read "Season 34 · nine players · **you are 2nd**". A per-league rank is still a standing, it costs a leaderboard query per league on the one page built to be thin, and it already has a home on League Home scoped to a season. Raised rather than quietly dropped — **say the word and it goes in.**
 
-**The pending invite is the one vermilion element on this surface.** Not "Start a league", not the open-week chip on a league card. The invite is the only thing asking you to act.
+**The deadline is time remaining, not a wall clock.** The board draws "Bids due 8pm". Eight o'clock where? One instant, read from many timezones, and the server has none of them. "Bids close in 3 hours" is the same fact, timezone-free, and is what the row is for. Null before mount, per the countdown's own rule.
 
-- [ ] **Step 2: Confirm nothing still points at an address this route absorbed**
+**The greeting is a client component for the same reason** — "Evening, Dana" and the date are facts about the viewer's clock. The name renders on the server; one word and one line fill in on mount.
 
-```bash
-git grep -nE '"/league"|"/home"' -- 'src/**/*.ts' 'src/**/*.tsx'
-```
+**The drive, at 1440×900, in three states.**
 
-Expected: nothing. `/league` and `/home` are both retired into `/leagues`. `chooseLandingPath` ([src/lib/landing.ts](../../../src/lib/landing.ts)) already returns `/leagues` for the zero-league case — **the comment above that line still says `/league` and is stale; the code is right.**
+- **`dev-player` (3 leagues):** urgency order held, the open-week chip and "bids close in 3 hours" rendered on the right row only.
+- **`dev-outsider` (0 leagues, 1 invite):** the landing rule delivered them here, and both states rendered together — the invitation above, the empty state below.
+- **The write completed and was confirmed in the database, not from a banner.** Accepting wrote `league_members` (player) and `season_members`, and stamped the invite's `accepted_at`. The league count on the row went 2 → 3 and **the shell's switcher gained the league without a reload**, which is what `revalidatePath("/", "layout")` is there for. All three rows were then reverted and the fixture re-verified at 0 leagues, 0 season memberships, 1 pending invite.
 
-- [ ] **Step 3: Build the page**
+Console clean, one `<main>`, one `<h1>`, every control named.
 
-Greeting, invites, the league list, and the getting-started links. **The zero-league case renders the creation prompt** — that is the state `/leagues` used to own, and it is the state `dev-outsider` lands in.
+**One copy defect found by driving it:** the empty state closed with "waiting on an invitation? it will appear here" — reassuring with nothing, a flat contradiction printed directly beneath the invitation `dev-outsider` had just been sent. The line is now conditional.
 
-- [ ] **Step 4: Add `error.tsx`**
-
-- [ ] **Step 5: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 6: Drive it in three states**
-
-With leagues (`dev-player`), with a pending invite (**accept one and confirm the membership row exists**), and with none (`dev-outsider`).
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add -A
-git commit -m "feat(home): /leagues is the front door, and the invite takes the accent"
-```
+**A FIXTURE DEFECT WAS FOUND AND FIXED IN `scripts/seed-dev.mts`.** Re-seeding refreshed week 1's deadline but left its `status` at whatever it had become — producing an impossible row, a **closed** week with a deadline three hours in the future. Every reader that asks "is a week taking bids" filters on `status = 'open'`, not on the clock, so the nav countdown, the bell's unbid-week alert and this page's open-week chip were all undrivable from the moment anything closed week 1 — and re-seeding *looked* like it had fixed them, because the deadline moved. The refresh now sets `status: "open"` too.
 
 ---
 
