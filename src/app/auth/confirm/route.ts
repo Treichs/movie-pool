@@ -37,20 +37,19 @@ export async function GET(request: NextRequest) {
       token_hash: tokenHash,
     });
     if (!error) {
-      // An explicit destination wins.
+      // An explicit destination wins, and for recovery there IS one: the
+      // dashboard's recovery template appends `&next=%2Freset-password`
+      // itself (email_change appends `%2Faccount` the same way). Verified
+      // against the live project config on 2026-08-29 — do not re-derive it
+      // from this repo, which cannot see a mail template.
       //
-      // A RECOVERY LINK THEN DEFAULTS TO /reset-password, and this line is why
-      // the screen is reachable at all. The comment here used to say "a
-      // recovery link asked for /reset-password" — it does not, and never did:
-      // `requestPasswordReset` passes `emailLinkTarget(origin)`, which is
-      // `${origin}/auth/confirm` with no `next` on it. So every recovery link
-      // fell through to the landing rule, signed the visitor in, and dropped
-      // them on their league with their password still forgotten. Proved on
-      // 2026-08-29 by following a real token: it landed on /leagues/<id>.
-      //
-      // The default lives HERE rather than on the sent link, so it holds for
-      // any recovery token however it was minted, and so nothing has to be
-      // added to Supabase's redirect allowlist.
+      // THE RECOVERY FALLBACK BELOW IS DEFENCE IN DEPTH, NOT THE MECHANISM.
+      // A recovery token can still arrive here without `next` — one minted by
+      // the admin API, or a template edited back towards a default — and the
+      // landing rule is the wrong answer for every one of them: it signs the
+      // visitor in and drops them on their league with the password they came
+      // to change still forgotten. Sending them to the screen the flow is for
+      // costs one line and cannot be wrong.
       //
       // Without either, verifying signed them in, so this is a landing like any
       // other (ADR-104): an invited player confirming their email arrives at

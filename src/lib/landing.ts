@@ -18,12 +18,12 @@ import { getNavLeagues, type NavLeague } from "@/lib/nav";
 //
 //   1. the remembered league's ACTIVE season, if it has one
 //   2. otherwise that league's own page
-//   3. no league at all → /league, which IS the empty state and the wizard
+//   3. no league at all → /leagues, which IS the empty state and the wizard
 //   4. several leagues, none remembered → INFER one and land on its league page
 //
 // Steps 3 and 4 were a single "/leagues" until ADR-121 retired that page. They
 // split because they are not the same question: one person has nowhere to go,
-// the other has too many places and no way to rank them. /league answers the
+// the other has too many places and no way to rank them. /leagues answers the
 // first — it was unreachable until this rule pointed at it. The second is
 // answered by inference plus the switcher already sitting in League Home's
 // title, not by asking; see the long note on the branch itself.
@@ -120,7 +120,15 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 // Matches /leagues/<uuid> and anything below it. Deliberately strict about the
 // shape so a path like /leagues/new can never be stored as a league id.
-const LEAGUE_PATH = /^\/league\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
+//
+// IT SAID `/league/` UNTIL 2026-08-29, singular, while its own comment said
+// plural and the route had been `/leagues/` since the §7.5 rename. So it never
+// matched anything: the cookie was never written, and `chooseLandingPath`'s
+// remembered-league branch below was unreachable code that looked alive.
+// Nothing failed, which is why it survived — a landing rule that silently falls
+// through to "your only league" is indistinguishable from a working one until
+// somebody belongs to two.
+const LEAGUE_PATH = /^\/leagues\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
 
 export function leagueIdFromPath(pathname: string): string | null {
   return LEAGUE_PATH.exec(pathname)?.[1]?.toLowerCase() ?? null;
@@ -162,7 +170,7 @@ export function chooseLandingPath(
   leagues: Pick<NavLeague, "id" | "currentSeason">[],
   rememberedLeagueId: string | null | undefined
 ): string {
-  // Belongs to nothing: /league IS that empty state — the explanation of what a
+  // Belongs to nothing: /leagues IS that empty state — the explanation of what a
   // league is, plus the creation wizard (ADR-121). It was unreachable until
   // this line pointed at it: nothing linked it, no breadcrumb named it, and the
   // top nav dropped it on 2026-08-05.
