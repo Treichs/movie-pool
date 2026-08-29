@@ -11,6 +11,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
 import type { CareerRow } from "@/lib/league-records";
 
 const FIRST = 5;
@@ -20,30 +28,29 @@ const FIRST = 5;
  *  as ragged noise. */
 function Row({ member }: { member: CareerRow }) {
   return (
-    <li
-      className={`flex items-center gap-3.5 border-b px-3 py-2.5 last:border-b-0 ${
-        member.isMe ? "bg-muted" : ""
-      }`}
+    <Item
+      size="sm"
+      render={<Link href={`/players/${member.profileId}`} />}
+      className={`rounded-none border-b last:border-b-0 hover:bg-muted ${member.isMe ? "bg-muted" : ""}`}
     >
-      <Link
-        href={`/players/${member.profileId}`}
-        className="flex min-w-0 flex-wrap items-center gap-2.5 hover:underline"
-      >
+      <ItemMedia>
         <span
           aria-hidden
-          className="type-micro flex size-6.5 shrink-0 items-center justify-center rounded-full border bg-muted text-micro"
+          className="type-micro flex size-6.5 items-center justify-center rounded-full border bg-muted text-micro"
         >
           {member.name.charAt(0).toUpperCase()}
         </span>
-        <span
-          className={`min-w-16 truncate text-ui ${member.isMe ? "type-h3" : "type-ui"}`}
-        >
+      </ItemMedia>
+      <ItemContent className="flex-row flex-wrap items-center gap-2.5">
+        <ItemTitle className={member.isMe ? "type-h3 text-ui" : "type-ui text-ui"}>
           {member.name}
-        </span>
+        </ItemTitle>
         {member.isMe && <Badge variant="secondary">You</Badge>}
         {member.isCommissioner && <Badge variant="ink">Commissioner</Badge>}
-      </Link>
-      <span className="ml-auto flex shrink-0 items-baseline gap-6">
+      </ItemContent>
+      {/* Tabular and column-width fixed, so 6,412.9 and 812.4 stack on their
+          decimal — a list people read as a ranking must not read as ragged. */}
+      <ItemActions className="gap-6">
         <span className="type-numeral w-6 text-right text-ui text-muted-foreground">
           {member.seasons}
         </span>
@@ -56,8 +63,8 @@ function Row({ member }: { member: CareerRow }) {
             maximumFractionDigits: 1,
           })}
         </span>
-      </span>
-    </li>
+      </ItemActions>
+    </Item>
   );
 }
 
@@ -86,20 +93,20 @@ export function MemberRoster({
 
   return (
     <div className="rounded border bg-card">
-      <ul>
+      <ItemGroup>
         {head.map((m) => (
-          <Row key={m.profileId} member={m} />
-        ))}
-      </ul>
+              <Row key={m.profileId} member={m} />
+            ))}
+      </ItemGroup>
 
       {rest.length > 0 && (
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleContent>
-            <ul>
+            <ItemGroup>
               {rest.map((m) => (
                 <Row key={m.profileId} member={m} />
               ))}
-            </ul>
+            </ItemGroup>
           </CollapsibleContent>
           <div className="flex items-center justify-between gap-3 border-t px-3 py-2">
             <CollapsibleTrigger

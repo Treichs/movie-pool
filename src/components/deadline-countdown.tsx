@@ -18,7 +18,18 @@ import { cn } from "@/lib/utils";
  * server value — the HTML would be stale before it reached the browser, and
  * rendering one guarantees a hydration mismatch.
  */
-export function DeadlineCountdown({ target }: { target: string }) {
+export function DeadlineCountdown({
+  target,
+  size = "hero",
+}: {
+  target: string;
+  /** `hero` is the bid slate's 4.5rem figure; `inline` is the season strip's,
+   *  beside three other numbers. The THRESHOLD does not change with the size —
+   *  it moved here on 2026-08-29 when the season page needed a countdown and
+   *  nearly got a second one with its own idea of urgent. */
+  size?: "hero" | "inline";
+}) {
+  const scale = size === "hero" ? "text-numeral-xl" : "text-h3";
   const [left, setLeft] = useState<number | null>(null);
 
   useEffect(() => {
@@ -30,10 +41,10 @@ export function DeadlineCountdown({ target }: { target: string }) {
   }, [target]);
 
   if (left === null) {
-    return <span className="type-numeral text-numeral-xl tabular-nums opacity-0">--:--</span>;
+    return <span className={cn("type-numeral tabular-nums opacity-0", scale)}>--:--</span>;
   }
   if (left <= 0) {
-    return <span className="type-numeral text-numeral-xl tabular-nums">Closed</span>;
+    return <span className={cn("type-numeral tabular-nums", scale)}>Closed</span>;
   }
 
   const totalMin = Math.floor(left / 60000);
@@ -56,7 +67,7 @@ export function DeadlineCountdown({ target }: { target: string }) {
 
   return (
     <span
-      className={cn("type-numeral text-numeral-xl tabular-nums", urgent && "text-primary")}
+      className={cn("type-numeral tabular-nums", scale, urgent && "text-primary")}
       aria-live="off"
     >
       {text}

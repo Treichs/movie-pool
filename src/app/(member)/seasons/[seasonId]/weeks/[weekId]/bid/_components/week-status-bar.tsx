@@ -1,6 +1,6 @@
 import type { WeekBidBoard } from "@/lib/week-bid";
 
-import { DeadlineCountdown } from "./deadline-countdown";
+import { DeadlineCountdown } from "@/components/deadline-countdown";
 
 /**
  * THE CLOCK AND THE MONEY, and nothing else.

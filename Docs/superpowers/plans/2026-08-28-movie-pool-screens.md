@@ -191,7 +191,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **8** | Create a league — **DONE** | `/leagues/new` | `4.8` |
 | **9** | League home — **DONE** | `/leagues/[leagueId]` | `4.2` |
 | **10** | Start a season — **DONE** | `/leagues/[leagueId]/seasons/new` | `5.2` |
-| **11** | Season home | `/seasons/[seasonId]` | `3.1` |
+| **11** | Season home — **DONE** | `/seasons/[seasonId]` | `3.1` |
 | **12** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` |
 | **13** | Film — catalog | `/films/[tmdbId]` | `2.2` |
 | **14** | Film — league record | `/leagues/[leagueId]/films/[tmdbId]` | `2.3` |
@@ -605,66 +605,53 @@ The season, its six weeks and its five memberships were deleted afterwards and D
 
 ---
 
-### Task 11: `/seasons/[seasonId]`
+### Task 11: `/seasons/[seasonId]` — DONE
 
-**Board:** `3.1  /seasons/[seasonId]` — **and the two sticky notes beside it.**
+**Board:** `3.1  /seasons/[seasonId]` — and both sticky notes.
 
-**The largest read screen in the app:** three tabs, a role-gated strip, and the bump chart.
+**Files:** [src/app/(member)/seasons/[seasonId]/](<../../../src/app/(member)/seasons/>) — `page.tsx`, `error.tsx`, and eight `_components/`: `season-picker`, `standing-strip`, `queue-strip`, `season-tabs`, `weeks-tab`, `leaderboard-tab`, `you-tab`, `bump-chart`. Composer `getSeasonHome(ctx)` in `src/lib/season-home.ts`.
 
-**Files:**
-- Create: `src/app/(member)/seasons/[seasonId]/page.tsx`, `_components/*.tsx`, `error.tsx`
-- Create: `src/lib/season-home.ts`
+**THE QUEUE RENDERED FOR THE FIRST TIME.** `getOverdueWeeks` has sat in `commish.ts` with **zero consumers** since it was written — a composer with no UI, which is the defect the plan's closing check exists to catch. Driven as `dev-frank`: *"Week 04 results are not captured · Results opened Mon, Aug 10 · 3 of 3 films still to capture"*, linking to the week. `dev-player` on the same season sees **no strip at all** — and never fetches it, because the role gates the READ rather than the render.
 
-**Interfaces:**
-- Consumes, all already written: `getSeasonHub(ctx, seasonId) -> SeasonHub` (`season-hub.ts`), the leaderboard and trend reads (`leaderboard.ts`, `season-trend.ts`), and `getOverdueWeeks` (`commish.ts`).
-- Produces: `getSeasonHome(ctx, seasonId) -> SeasonHome` in `src/lib/season-home.ts` — the header facts, the viewer's own standing, the weeks rows, the leaderboard, and — **when `ctx.role === "commissioner"`** — the overdue-week queue.
+**Both sticky notes honoured.** The season picker is a header control beside the H1, not a quarter-width rail — and it hides itself when a league has run only one season, because a picker with one option cannot do anything. The Queue is a strip on this page rather than a route, which is the whole of what the retired commissioner tree becomes.
 
-- [ ] **Step 1: Open the board and read both sticky notes**
+**`?tab=` is honoured and switching writes nothing back.** Driven: `?tab=leaderboard` lands on Leaderboard (the Monday-scores email links it), and clicking through to You leaves the address untouched. A tab is a view of one page, not a place; pushing history for it would turn Back into a tab cycler.
 
-Two decisions are drawn rather than described: the **season picker is a header control**, not a quarter-width left rail; and the **commissioner Queue is a strip on this page, not a route.**
+---
 
-- [ ] **Step 2: Fold the Queue into the composer**
+### Components, after the developer's correction mid-task
 
-`getOverdueWeeks` / `OverdueWeek` are in [src/lib/commish.ts](../../../src/lib/commish.ts) with **zero consumers** — a composer with no UI. Call it from `getSeasonHome` behind the role check. **Import it; do not port or re-derive it.**
+**Told during this task: "don't hand roll components or behaviour that should be registered or reused."** It landed while I was doing exactly that, and the audit found four:
 
-The overdue rule, from its own comment: a week whose opening weekend has passed, whose status is neither `final` nor `skipped`, and whose eligible films still have no `captured_at`. **A week still marked `open` past its opening weekend counts** — that combination is a deadline that did not fire, and surfacing it is the entire point.
+1. **A second countdown.** I was writing a new `Deadline` while `deadline-countdown.tsx` already existed on the bid page — with a **documented three-hour urgency threshold**. Mine had its own idea of urgent, which is the drift the rule exists to prevent. It moved to [src/components/deadline-countdown.tsx](../../../src/components/deadline-countdown.tsx) with a `size` prop (`hero` for the bid slate's 4.5rem figure, `inline` here); the threshold did not move.
+2. **The Queue rows.** Hand-rolled flex rows that re-derived `ui/item` — media, title, description, whole row a link, including the description-aware alignment that stops a media block centring against two lines.
+3. **The same mistake already shipped twice.** `/leagues`' league rows (Task 6) and League Home's roster (Task 9) were both hand-rolled flex rows. **Both were rebuilt on `Item` in this task** rather than left as precedent.
+4. **The bump chart.** I was about to draw axes and paths in SVG. `@shadcn/chart` installs clean — one file, no overwrites — and its only dependency is **recharts**, a charting library rather than a competing primitive family. That is a different trade from the radix rejections: recharts duplicates nothing the project has, and hand-drawn axis arithmetic only ever works for the data in front of you.
 
-- [ ] **Step 3: Order the open-week lookup by week number**
+**The series hues are the app's own.** `--series-1` … `--series-10` are handed to the chart through `ChartConfig`, which is the wrapper's own mechanism for exactly that. **The Y axis is reversed**, because a rank of 1 is the best position and the smallest number — plotted normally, leading would look like losing. The viewer's line is thicker and nothing else distinguishes it; a second colour channel would fight ten hues that already carry identity.
 
-The old hub found the open week over a list ordered by `created_at`. Harmless with one open week, **wrong in principle with two** — and two open weeks is a supported state.
+---
 
-- [ ] **Step 4: Build the page**
+**Two defects of my own, found by driving it:**
 
-Header with the picker and the status chip; the viewer's own standing strip; the Queue strip when commissioner; then the three tabs — **Weeks leads**, because it is the only tab with a deadline in it.
+- **A dead `invert` prop on the delta figures.** `HubDeltas.rank` is already documented "places CLIMBED, positive is up" — the composer did the inversion, so the prop never changed the output and a second flip would have shown a promotion as a fall. Removed rather than left as configurability nobody asked for.
+- **A status map keyed on the wrong enum.** I wrote it against the schema's six-value `week_status`; `WeekStatus` in `commish.ts` is five and deliberately omits `locked`. Mirroring the app type is what lets TypeScript prove the map exhaustive.
 
-**The countdown is the one vermilion element on this surface.** Not the "Place bids" button, not the status chip.
+**Per-week scores are derived from `myFilms`, not fetched.** `SeasonHub` has no per-week total and adding a read for one would duplicate what the films list already carries. Summing by week costs nothing and cannot disagree with the You tab, because it **is** that list. **A week with no owned film shows a dash, not a zero** — zero is a real score a player can earn.
 
-- [ ] **Step 5: Build the bump chart on the real series hues**
+**The drive, at 1440×900.** Console clean, one `<main>`, one `<h1>`, every control named.
 
-Consume them as `var(--series-N)`, N in 1…10. They are real hues in both `:root` and `.dark`; do not substitute.
+| | |
+|---|---|
+| Tabs | Weeks · Leaderboard · You, Weeks leading |
+| Standing (`dev-player`) | 4th of 5 · 106.26 points · $66 left · 4 films |
+| Weeks tab | per-week scores 21.95 / 51.45 / 32.86, then a dash for the unscored week |
+| Leaderboard | five real rows, both provisional awards, **5 chart lines** rendered |
+| `?tab=leaderboard` | lands on Leaderboard; switching leaves the URL alone |
+| Queue (`dev-frank`, commissioner) | one overdue week, correct link |
+| Queue (`dev-player`) | **absent, and never fetched** |
 
-- [ ] **Step 6: Keep the tab-from-URL behaviour**
-
-`?tab=leaderboard` must land on Leaderboard — the Monday-scores email links it (`api/cron/notify/route.ts:189`). Switching a tab writes nothing to the URL; arriving at one that names a tab must honour it.
-
-- [ ] **Step 7: Add `error.tsx`**
-
-- [ ] **Step 8: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 9: Drive it as both roles**
-
-As `dev-player`: three tabs, the countdown ticking, **no Queue strip.** As `dev-commish`: the Queue strip renders and its two actions go where they claim. **The Queue has never been seen by anyone** — this is its first render, so look at it properly rather than confirming it exists.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add -A
-git commit -m "feat(season): season home is rebuilt, and the commissioner queue finally renders"
-```
+**Not driven:** the two-open-weeks state, and a season with ten or more players — the seeded leagues have five, so only five of the ten series hues were exercised.
 
 ---
 
