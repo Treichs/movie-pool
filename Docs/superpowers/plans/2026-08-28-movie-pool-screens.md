@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the remaining 22 screens of the 25-route contract, in the order a real person meets them, on top of an app shell that does not exist yet.
+**Goal:** Build out the 25-route contract on top of an app shell that did not exist when this plan was written. **Thirteen routes are built and twelve remain** — run `find src/app -name "page.tsx" | wc -l` rather than trusting this sentence. The original order was the path a real person takes through the app; it was re-ordered on 2026-08-29 for the reasons under *Task Order*.
 
 **Architecture:** Next.js App Router with React Server Components. Every page is a *placer*: it gates, calls one composer from `src/lib/`, and hands the result to components. Writes are `'use server'` actions colocated in the segment's own `actions.ts`. Authorization precedes every fetch, enforced by the type system rather than by memory — a composer takes an authenticated context, and the only way to obtain one is a `require*` helper that has already checked.
 
@@ -29,6 +29,8 @@ A letter suffix (`1.3b`, `5.1a`/`5.1b`) is a **second board for the same route**
 
 **The shell has its own board, drawn after the canvas:** <https://claude.ai/code/artifact/9a7b3dbb-4c6c-43e7-a15f-1274b038fbb4> — "Movie Pool App Shell". Task 1 was built from it.
 
+**Status at a glance:** <https://claude.ai/code/artifact/3957217c-e687-4adf-adda-44225b68580b> — "Twenty-Five Screens". Every route in build order, built or pending, with each screen's notes and constraints. Its badges are read from the filesystem, not from this plan, so **it is the check on this document rather than a copy of it.**
+
 **Reference repo:** `C:\Dev\Git\movie_pool_app` — the previous implementation. **Read it freely; it is reference, not a base.** Its five component tiers, nine-link governance chain and 1,400-line `tokens.css` are what this rebuild exists to be rid of. Where a task says *port*, it means copy the working logic; where it says *build*, it means search the registry and compose fresh.
 
 ---
@@ -50,7 +52,7 @@ npm run verify   →  typecheck · lint · a11y:contrast · types:fresh · build
 1. `page.tsx` renders from a `src/lib` composer, with the authz gate preceding the fetch.
 2. Its writes are `'use server'` actions in the segment's own `actions.ts`, returning `ActionResult`, calling `revalidatePath`. A write two routes share moves to `src/lib/actions/`.
 3. Route-private components live in the segment's `_components/`. **A component moves to `src/components/` the first time a second screen needs it — never in anticipation.** The cost of getting it wrong is one file move.
-4. The segment has an `error.tsx`.
+4. The segment has an `error.tsx` **built on `ErrorScreen`**, and — if the screen reads anything — a `loading.tsx` **built on `PageSkeleton`**, scoped by a route group if the segment has children. See *What every remaining screen inherits*.
 5. Anything the screen replaced, and its now-unreferenced components, are deleted in the same commit.
 6. `npm run verify` is green.
 7. The screen has been driven in a browser at **1440×900** — desktop only (Ruling 78).
@@ -158,6 +160,53 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 
 ---
 
+## What every remaining screen inherits — added 2026-08-29
+
+**None of this existed when this plan was written.** Two passes over the eleven built screens produced five shared components, a loading convention and one Next.js trap. The per-task steps below still say things like *"add `error.tsx`"* and describe panels and figures as things to build; **they are now things to import.** Read this section before starting any task, or each screen re-derives what already exists — which is the exact failure the passes were run to fix.
+
+### The five components
+
+| Import | What it replaces | Why it exists |
+|---|---|---|
+| `ErrorScreen` from `@/components/error-screen` | the whole body of an `error.tsx` | Thirteen boundaries carried the same forty lines and had begun to disagree: four restated `type-h1`, one restated `type-body`. A segment's `error.tsx` is now ~15 lines — a headline, the reassurance, and where "back" goes. `console.error` lives inside the component. |
+| `Card variant="flat"` from `@/components/ui/card` | `rounded border bg-card p-N` | Written by hand sixteen times, drifted across `p-4`/`p-5`/`p-6`/`p-8` and two radii. `size="sm"` is 16px for a rail panel; the default is 20px for anything spanning the page. It carries **surface only** — no gap, no type size, because callers own both. |
+| `Figure` from `@/components/figure` | a stacked eyebrow-over-numeral | Existed three times under three names. `size="lg"` is the reading figure on `/how-it-works`. **Stacked only** — the row-shaped label/value pair has two callers that disagree about their element, and both are called `Fact`, locally. |
+| `TextLink` from `@/components/text-link` | `className="text-link underline underline-offset-4"` | Typed out thirteen times in three spellings, one of which underlined on hover only. `size` is `inherit` \| `ui` \| `micro`. **Not `<Button variant="link">`** — that carries the button box and is wrong inside a sentence, though its token is fixed so the two cannot disagree about colour. |
+| `useNow(ms)` from `@/hooks/use-now` | `useState(null)` + an interval effect | Four components carried the same "null on the server, tick, clean up" wiring. **The mechanism is shared; every interval, threshold and format stays with the caller** — a per-second clock is right on a bid slate and wrong on a list of leagues. |
+
+### Loading states are now part of a screen's definition
+
+`PageSkeleton`, `SkeletonRow`, `SkeletonPanel`, `SkeletonFigure` and `SkeletonLine` live in `@/components/page-skeleton`. **Every remaining screen that does a real read ships a `loading.tsx`.**
+
+Three rules the existing five follow:
+
+1. **Mirror the page's shape** at the same sizes and positions, so nothing jumps when the data lands. A skeleton is a promise about layout, not a spinner.
+2. **Fake nothing that would be a lie.** No grey bar stands in for a number or a name. Row counts are fixed, not guessed. **Nothing role-dependent is drawn** — no commissioner queue, no "You commission" badge — because the role has not been read yet.
+3. **One `aria-busy` region and one visually hidden `role="status"` per page**, reading *"Loading &lt;what&gt;"* in the reader's words. Everything beneath is `aria-hidden`: announcing forty empty boxes is worse than announcing nothing.
+
+### ⚠ The route-group trap — two screens hit this
+
+`loading.tsx` **wraps its own page *and every child segment below it*** ([the Next.js file convention](../../../node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md): *"It will automatically wrap the `page.js` file and any children below in a `<Suspense>` boundary."*).
+
+Driven, that produced **two `<main>` elements at once** on a hard load of `/leagues/[leagueId]`, with the outer region announcing *"Loading your leagues"* over a league. `/seasons/[seasonId]` had the identical trap over the bid slate.
+
+**The fix is a route group**, which scopes the boundary without touching the URL:
+
+```
+leagues/(list)/page.tsx  +  leagues/(list)/loading.tsx   ← scoped to /leagues
+leagues/[leagueId]/…                                     ← unaffected
+```
+
+`error.tsx` does **not** need this — only the nearest boundary renders when an error propagates.
+
+**Check it on any new page that has child segments.** Of the remaining twelve, the ones with children are `/leagues/[leagueId]/announcements` (Tasks 19 and 20 sit below it) and `/films/[tmdbId]` only if something is ever nested under it. Verify in the served HTML: exactly one `aria-busy` and one `role="status"` per route.
+
+### The seven conditions gain an eighth
+
+Condition 4 — *"the segment has an `error.tsx`"* — now reads: **the segment has an `error.tsx` built on `ErrorScreen`, and a `loading.tsx` built on `PageSkeleton` if it reads anything.**
+
+---
+
 ## File Structure
 
 Every screen follows one shape:
@@ -192,22 +241,46 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **9** | League home — **DONE** | `/leagues/[leagueId]` | `4.2` |
 | **10** | Start a season — **DONE** | `/leagues/[leagueId]/seasons/new` | `5.2` |
 | **11** | Season home — **DONE** | `/seasons/[seasonId]` | `3.1` |
-| **12** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` |
-| **13** | Film — catalog | `/films/[tmdbId]` | `2.2` |
-| **14** | Film — league record | `/leagues/[leagueId]/films/[tmdbId]` | `2.3` |
-| **15** | A player's profile | `/players/[profileId]` | `2.4` |
-| **16** | The record book | `/leagues/[leagueId]/records` | `4.3` |
-| **17** | Announcements list | `…/announcements` | `4.5` |
-| **18** | Reading one | `…/announcements/[announcementId]` | `4.7` |
-| **19** | Writing one | `…/announcements/new` | `4.6` |
-| **20** | Account | `/account` | `4.10` |
-| **21** | Dues | `/leagues/[leagueId]/dues` | `4.4` |
-| **22** | League settings | `/leagues/[leagueId]/settings` | `4.11` |
-| **23** | Payouts | `/seasons/[seasonId]/payouts` | `5.1a` / `5.1b` |
+**THE REMAINING TWELVE WERE RE-ORDERED ON 2026-08-29.** The task numbers below are the new build order; **the task numbers in the section headings further down are the original ones and did not move**, because a task's content is unchanged and renumbering twelve headings would break every reference to them. Read this table as the order and the headings as the identity.
+
+| # | Task | Route | Board | Was |
+|---|---|---|---|---|
+| **12** | Account | `/account` | `4.10` | 20 |
+| **13** | A player's profile | `/players/[profileId]` | `2.4` | 15 |
+| **14** | Film — catalog | `/films/[tmdbId]` | `2.2` | 13 |
+| **15** | Film — league record | `/leagues/[leagueId]/films/[tmdbId]` | `2.3` | 14 |
+| **16** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` | 12 |
+| **17** | The record book | `/leagues/[leagueId]/records` | `4.3` | 16 |
+| **18** | Announcements list | `…/announcements` | `4.5` | 17 |
+| **19** | Reading one | `…/announcements/[announcementId]` | `4.7` | 18 |
+| **20** | Writing one | `…/announcements/new` | `4.6` | 19 |
+| **21** | Dues | `/leagues/[leagueId]/dues` | `4.4` | 21 |
+| **22** | League settings | `/leagues/[leagueId]/settings` | `4.11` | 22 |
+| **23** | Payouts | `/seasons/[seasonId]/payouts` | `5.1a` / `5.1b` | 23 |
 
 **Why the shell is first, ahead of sign-up.** Every auth screen's success path lands inside the app — sign-up confirms to `/leagues`, reset signs you in. Building them first means each drive stops at a 404 and "it worked" cannot be shown. One day of shell buys an honest drive on all 22.
 
-**Task 12 must not be skipped ahead of Task 11.** The week board redirects to the already-built `/bid` when a week is biddable, and that redirect is the only thing keeping the two screens from disagreeing about which state owns the URL.
+### Why the remaining twelve moved
+
+The original order was **the user's path through the app**, which is the right order for building a coherent story and the wrong one for keeping the app walkable while it is half-built. Two forces override it, and both were found by auditing the built screens rather than by reading the plan.
+
+**1. Eleven links on built screens already point at pages that do not exist.** Every one 404s today.
+
+| Target | Linked from | Sites |
+|---|---|---|
+| `/account` | the shell's bottom nav, the mobile drawer, the account menu, `/leagues`' right rail | **4** |
+| `/players/[profileId]` | every roster name, every leaderboard row, the account menu | **3** |
+| `/leagues/[id]/settings` | League Home's header button, the member roster | **2** |
+| `…/announcements` and `…/announcements/[id]` | League Home's announcements panel | **2** |
+| `/leagues/[id]/records` | League Home's record book panel | **1** |
+
+`/account` is the worst by a distance: **three of its four link sites are in the app shell**, so the dead link is on *every signed-in screen* rather than on one page. `/players/[profileId]` is next. Building those two first is two screens' work and it stops the shell lying.
+
+**2. The week board needs a route that used to come after it.** Task 12's step 5 gives the bid page's `PosterCard` the `href` it has carried unset since it was built, and that destination is `/leagues/[id]/films/[tmdbId]` — created by what was Task 14. The old order handled this by saying "leave it unset and note it", which books a second visit to a finished screen. **The two film routes now come first**, so the poster links get their destination once, inside the task that needs them. Nothing in either film task depends on the week board.
+
+**Task 16 (the week board) must still not be skipped ahead of Task 11.** It redirects to the already-built `/bid` when a week is biddable, and that redirect is the only thing keeping the two screens from disagreeing about which state owns the URL. Task 11 is done, so this is satisfied.
+
+**What did not move, and why.** Announcements stays a block of three consecutive tasks: they share one composer file and one mental model, and splitting them costs a re-read. Dues, settings and payouts stay last — they are the deepest surfaces, two of them are commissioner-only, and none is linked from anywhere a player passes through on the way to something else.
 
 ---
 
@@ -518,7 +591,18 @@ The league, its season, its twenty weeks and its invitation were then deleted an
 3. **The H1 is a title, not a switcher.** The shell already carries one in the paper band.
 4. **No "Start a season" in the page head.** The thread offers it in exactly the states where it is possible; two identical primary buttons in one viewport is the duplication this layout exists to remove.
 
-**⚠ DUES IS NOT BUILT, AND CANNOT BE.** Board 4.2 draws a dues panel, the prototype moved it under the season band as a conditional strip, and **Task 21 is a whole screen for it** — but there is **no dues table, no payments table and no composer anywhere in the schema**, checked across all 116 migrations. It is an unmodelled domain, not an unwritten read. **Task 21 needs a data model designed before it can be built**, and this page cannot show a balance until then. Raised, not stubbed.
+**⚠ DUES IS NOT BUILT — AND THE REASON RECORDED HERE WAS WRONG. CORRECTED 2026-08-29.**
+
+The original note said dues was *"an unmodelled domain"* with *"no dues table, no payments table and no composer anywhere in the schema, checked across all 116 migrations"*, and that Task 21 was blocked on designing one. **All of that is false**, and it is kept rather than deleted because of how it was reached: the check was `grep` for the word **dues**, which appears in **zero** migrations. The domain is filed under its engineering name.
+
+What is actually there:
+
+- **`settlement_payments`** — the table (`20260805030000_settlement_payments.sql`). Its header defends why a table with amounts in it does not breach *money is derived, never stored*: a payment is not computable from the game at all.
+- **`record_settlement_payment`**, **`clear_settlement_payment`**, **`get_league_payments`** — the RPCs, all in `database.types.ts`.
+- **`getLeaguePayments(...) -> LeaguePaymentRow[]`** in `src/lib/settlement.ts`, already written.
+- Keyed on `season_member_id`, deliberately, so regenerating a settlement cannot orphan payment history. Recordable only against a **finalised** settlement.
+
+**So Task 21 needs no migration, and this page's dues strip is buildable whenever it is wanted.** The lesson worth keeping: searching the schema for a *product* word missed a domain named for its *engineering* concept. Search for the concept — payments, balances, owed — before declaring anything unmodelled.
 
 **The gate is the read.** `leagues` gates SELECT on `is_league_member`, so a league the viewer does not belong to comes back null and the page 404s — the same answer a non-existent league gives, which is the right one to hand a stranger holding an id. **Driven: an unknown uuid returns 404.**
 
@@ -655,7 +739,7 @@ The season, its six weeks and its five memberships were deleted afterwards and D
 
 ---
 
-### Task 12: `/seasons/[seasonId]/weeks/[weekId]`
+### Task 12: `/seasons/[seasonId]/weeks/[weekId]` — **BUILD ORDER 16**
 
 **Board:** `3.2  /seasons/[id]/weeks/[weekId] — settled`
 
@@ -688,7 +772,9 @@ Your result first. Then the reveal — each film with opening, Tomatometer, scor
 
 - [ ] **Step 5: Give `PosterCard` its destination**
 
-The bid page's card takes an optional `href` that has been unset since it was built, waiting on Task 14's route. Pass `/leagues/${leagueId}/films/${tmdbId}`. If Task 14 has not run yet, leave it unset and **note it in the report** rather than pointing it at the catalog.
+The bid page's card takes an optional `href` that has been unset since it was built, waiting on the league-scoped film route. Pass `/leagues/${leagueId}/films/${tmdbId}`.
+
+**Under the 2026-08-29 re-order that route is already built when this task runs** — it is build-order 15, this is 16 — so the escape hatch the original plan offered is gone and the `href` is set here, for real. If for any reason it is not, leave it unset and **note it in the report** rather than pointing it at the catalog, which carries no pool history.
 
 - [ ] **Step 6: Add `error.tsx`**
 
@@ -711,7 +797,9 @@ git commit -m "feat(week): the week board is rebuilt, and the reveal leads with 
 
 ---
 
-### Task 13: `/films/[tmdbId]` — the catalog view
+### Task 13: `/films/[tmdbId]` — the catalog view — **BUILD ORDER 14**
+
+**Why it moved ahead of the week board** (2026-08-29): the week board's step 5 gives the bid page's `PosterCard` a destination that Task 14 creates. Building both film routes first means that `href` is set once, in the task that needs it, instead of being left unset with a note.
 
 **Board:** `2.2  /films/[tmdbId] — catalog`
 
@@ -764,7 +852,7 @@ git commit -m "feat(films): the catalog page carries the film and never the play
 
 ---
 
-### Task 14: `/leagues/[leagueId]/films/[tmdbId]`
+### Task 14: `/leagues/[leagueId]/films/[tmdbId]` — **BUILD ORDER 15**
 
 **Board:** `2.3  /leagues/[id]/films/[tmdbId] — NEW route`
 
@@ -831,7 +919,9 @@ git commit -m "feat(films): the league record gets its own address, and a foreig
 
 ---
 
-### Task 15: `/players/[profileId]`
+### Task 15: `/players/[profileId]` — **BUILD ORDER 13**
+
+**Why it moved forward** (2026-08-29): three built screens link here and all three 404 — every name in a league roster, every row of the season leaderboard, and the account menu. Second only to `/account` for dead links.
 
 **Board:** `2.4  /players/[profileId]`
 
@@ -877,7 +967,7 @@ git commit -m "feat(players): the profile is rebuilt, and the six stats stay a l
 
 ---
 
-### Task 16: `/leagues/[leagueId]/records`
+### Task 16: `/leagues/[leagueId]/records` — **BUILD ORDER 17**
 
 **Board:** `4.3  /leagues/[id]/records`
 
@@ -920,7 +1010,7 @@ git commit -m "feat(league): the record book is rebuilt"
 
 ---
 
-### Task 17: `/leagues/[leagueId]/announcements`
+### Task 17: `/leagues/[leagueId]/announcements` — **BUILD ORDER 18**
 
 **Board:** `4.5  /leagues/[id]/announcements`
 
@@ -958,7 +1048,7 @@ git commit -m "feat(league): the announcements list is rebuilt"
 
 ---
 
-### Task 18: `/leagues/[leagueId]/announcements/[announcementId]`
+### Task 18: `/leagues/[leagueId]/announcements/[announcementId]` — **BUILD ORDER 19**
 
 **Board:** `4.7  /announcements/[id]`
 
@@ -999,7 +1089,7 @@ git commit -m "feat(league): reading an announcement is rebuilt"
 
 ---
 
-### Task 19: `/leagues/[leagueId]/announcements/new`
+### Task 19: `/leagues/[leagueId]/announcements/new` — **BUILD ORDER 20**
 
 **Board:** `4.6  /announcements/new`
 
@@ -1041,9 +1131,15 @@ git commit -m "feat(league): the announcement composer is rebuilt"
 
 ---
 
-### Task 20: `/account`
+### Task 20: `/account` — **BUILD ORDER 12, THE NEXT ONE**
 
 **Board:** `4.10  /account`
+
+**Why it moved to the front** (2026-08-29): it is the most-linked unbuilt page in the app, and **three of its four link sites are in the shell itself** — the bottom nav's "You" tab, the mobile drawer and the account menu. The dead link is therefore on *every signed-in screen*, not on one page. `/leagues`' right rail is the fourth.
+
+```bash
+git grep -n '"/account"' -- src/app src/components   # expect 4 sites
+```
 
 **Files:**
 - Create: `src/app/(member)/account/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
@@ -1093,11 +1189,13 @@ git commit -m "feat(account): the account page is rebuilt"
 
 ---
 
-### Task 21: `/leagues/[leagueId]/dues`
+### Task 21: `/leagues/[leagueId]/dues` — **BUILD ORDER 21**
 
 **Board:** `4.4  /leagues/[id]/dues`
 
 **Real money, tracked outside the game. The app records who paid whom, never how.**
+
+**NOT BLOCKED, and an earlier note in this plan said it was.** Task 9's DONE record claimed dues had no data model and that this task needed one designed first. That was wrong — see the correction there. `settlement_payments`, its three RPCs and `getLeaguePayments` all exist. **This task needs no migration.**
 
 **Files:**
 - Create: `src/app/(member)/leagues/[leagueId]/dues/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
@@ -1143,7 +1241,7 @@ git commit -m "feat(league): dues is rebuilt, with the balance sign explained"
 
 ---
 
-### Task 22: `/leagues/[leagueId]/settings`
+### Task 22: `/leagues/[leagueId]/settings` — **BUILD ORDER 22**
 
 **Board:** `4.11  /leagues/[id]/settings  (NEW)`
 
@@ -1203,7 +1301,7 @@ git commit -m "feat(league): settings becomes a route, and the never-zero rule f
 
 ---
 
-### Task 23: `/seasons/[seasonId]/payouts`
+### Task 23: `/seasons/[seasonId]/payouts` — **BUILD ORDER 23**
 
 **Boards:** `5.1a /seasons/[id]/payouts — player` **and** `5.1b — commissioner`. **Two boards, one route.**
 
@@ -1283,13 +1381,25 @@ Expected: **25**, matching IA map §1, plus the six route handlers.
 
 - [ ] **Step 2: Every segment has a boundary**
 
+**Strip route groups before comparing**, or this check lies. A `(list)` or `(overview)` group holds the `page.tsx` while its `error.tsx` sits in the parent — correct, and a naive `dirname` comparison reports it as a missing boundary. Two such groups exist already.
+
 ```bash
-diff <(find src/app -name "page.tsx" | xargs -n1 dirname | sort) <(find src/app -name "error.tsx" | xargs -n1 dirname | sort)
+strip() { sed -E 's#/\([^)]*\)##g' | sort -u; }
+diff <(find src/app -name "page.tsx"  | xargs -n1 dirname | strip) \
+     <(find src/app -name "error.tsx" | xargs -n1 dirname | strip)
 ```
 
 Expected: no output. A directory on the left only is a segment that will blow its error up to the whole app.
 
-- [ ] **Step 3: Every page renders exactly one `<main>`**
+- [ ] **Step 3: Every reading screen has a loading state, and only one fires**
+
+```bash
+find src/app -name "loading.tsx" | sort
+```
+
+Then, signed in, for each route: fetch the served HTML and count. **Exactly one `aria-busy="true"` and one `role="status"` per route.** Two means a `loading.tsx` is wrapping a child segment it should not — the route-group trap, which `/leagues` and `/seasons/[seasonId]` both hit before it was found.
+
+- [ ] **Step 4: Every page renders exactly one `<main>`**
 
 ```bash
 git grep -c "<main" -- 'src/app/**/page.tsx'
@@ -1297,7 +1407,7 @@ git grep -c "<main" -- 'src/app/**/page.tsx'
 
 Four member pages rendered none in the old repo and nothing caught it.
 
-- [ ] **Step 4: Every composer has a consumer**
+- [ ] **Step 5: Every composer has a consumer**
 
 ```bash
 for f in src/lib/*.ts; do
@@ -1308,13 +1418,13 @@ done
 
 `getOverdueWeeks` sat with zero consumers for weeks precisely because nothing looked.
 
-- [ ] **Step 5: Run the whole gate one last time**
+- [ ] **Step 6: Run the whole gate one last time**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 6: Write the phase digest**
+- [ ] **Step 7: Write the phase digest**
 
 Record: which screens revealed defects the gates could not see, which states were never driven for want of a fixture, and whether the payouts merge held.
 
