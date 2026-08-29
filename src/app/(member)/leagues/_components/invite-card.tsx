@@ -2,11 +2,10 @@
 
 import { useState, useTransition } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { acceptInviteById, declineInvite } from "@/lib/actions/league";
 import type { MyInvite } from "@/lib/invites";
-
-import { acceptInvite, declineInvite } from "../actions";
 
 /**
  * A PENDING INVITATION — the one thing on this page asking the viewer to act,
@@ -67,7 +66,7 @@ export function InviteCard({ invite }: { invite: MyInvite }) {
         <Button
           variant="ink"
           disabled={pending || answered}
-          onClick={() => answer(() => acceptInvite(invite.id))}
+          onClick={() => answer(() => acceptInviteById(invite.id))}
         >
           {pending ? "Just a moment…" : "Accept"}
         </Button>
