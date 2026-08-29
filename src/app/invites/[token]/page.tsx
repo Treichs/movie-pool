@@ -23,6 +23,18 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** One row of the facts panel. A `<dl>`, because that is exactly what these
+ *  are — a label and its value — and a screen reader then reads them as pairs
+ *  rather than as eight loose strings. */
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between px-5 py-3.5">
+      <dt className="type-body text-ui text-muted-foreground">{label}</dt>
+      <dd className="type-numeral text-ui">{value}</dd>
+    </div>
+  );
+}
+
 function Dead({
   title,
   children,
@@ -178,14 +190,38 @@ export default async function InvitePage({
         </p>
       </div>
 
-      {/* WHAT BOARD 4.9 DRAWS HERE AND THIS DOES NOT: a panel of four league
-          facts — members, bankroll, winning tiers, when the next season starts
-          — plus the members' avatars. None of them is reachable. Every one of
-          those tables is RLS'd to members (is_league_member, is_season_member),
-          and peek_league_invite is the SECURITY DEFINER window through that
-          wall — it returns the league's NAME and three flags, and nothing else.
-          Showing them needs that function extended, which is a migration and
-          therefore the developer's call, not a screen task's. Raised 2026-08-29. */}
+      {/* THE FACTS PANEL, which board 4.9 draws and which cost a migration to
+          make possible: every table behind these is RLS'd to members, so
+          peek_league_invite had to be extended to answer at all
+          (20260829010000). The board's fourth row is "next season starts";
+          `seasons` has no start date, and what a person actually needs to know
+          is whether joining puts them in the season already running — which is
+          the rule `accept_league_invite` applies, asked before the click
+          instead of discovered after it.
+
+          THE MEMBERS' AVATARS ARE NOT HERE, deliberately. That is a roster —
+          names and faces of people who never agreed to be shown to whoever
+          holds a link — and the count answers the question the panel is for. */}
+      <dl className="divide-y rounded border bg-card">
+        <Fact label="Members" value={String(invite.memberCount)} />
+        {invite.bankroll !== null && (
+          <Fact label="Season bankroll" value={`$${invite.bankroll}`} />
+        )}
+        {invite.winningTiers !== null && (
+          <Fact label="Winning tiers" value={String(invite.winningTiers)} />
+        )}
+        <Fact
+          label="This season"
+          value={
+            invite.joinsCurrentSeason === null
+              ? "None running yet"
+              : invite.joinsCurrentSeason
+                ? "You are in it"
+                : "You play from the next one"
+          }
+        />
+      </dl>
+
       <InviteDecision token={token} />
     </Frame>
   );

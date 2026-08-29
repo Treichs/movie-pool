@@ -69,6 +69,16 @@ export type InvitePeek = {
   alreadyMember: boolean;
   expired: boolean;
   targetedAt: string | null;
+  /** Everyone on the league's roster today. */
+  memberCount: number;
+  /** The season you would be joining, or null between seasons. The three are
+   *  null together — a league with no active season has no bankroll to report,
+   *  and null is a more honest answer than a bankroll of $0. */
+  bankroll: number | null;
+  winningTiers: number | null;
+  /** True when joining puts you straight into that season; false when bidding
+   *  has already begun and you play from the next one. */
+  joinsCurrentSeason: boolean | null;
 };
 
 /** What a token points at, before accepting. Null when the token is bogus. */
@@ -84,6 +94,10 @@ export async function peekInvite(
       already_member: boolean;
       expired: boolean;
       targeted_at: string | null;
+      member_count: number;
+      bankroll: number | null;
+      winning_tiers: number | null;
+      joins_current_season: boolean | null;
     }[]
   )[0];
   if (!row) return null;
@@ -92,5 +106,9 @@ export async function peekInvite(
     alreadyMember: row.already_member,
     expired: row.expired,
     targetedAt: row.targeted_at,
+    memberCount: row.member_count,
+    bankroll: row.bankroll,
+    winningTiers: row.winning_tiers,
+    joinsCurrentSeason: row.joins_current_season,
   };
 }

@@ -401,7 +401,7 @@ Console clean, one `<main>`, one `<h1>`, every control named.
 
 ---
 
-### Task 7: `/invites/[token]` — DONE, with one thing owed
+### Task 7: `/invites/[token]` — DONE
 
 **Board:** `4.9  /invites/[token]`
 
@@ -433,9 +433,18 @@ Console clean, one `<main>`, one `<h1>`, every control named.
 
 ---
 
-**⚠ OWED: BOARD 4.9 DRAWS SIX FACTS THAT NO READ CAN SUPPLY.** Members, season bankroll, winning tiers, when the next season starts, and the members' avatars. Every table behind them is RLS'd to members — `leagues`, `league_members`, `seasons` and `season_settings` all gate on `is_league_member` / `is_season_member`, confirmed against `pg_policies` — and `peek_league_invite` is the one `SECURITY DEFINER` window through that wall. It returns **the league's name and three flags**, and nothing else.
+**THE FACTS PANEL COST A MIGRATION, AND IT WAS APPROVED AND SHIPPED.** Board 4.9 draws four league facts, and none was reachable: `leagues`, `league_members`, `seasons` and `season_settings` all gate SELECT on `is_league_member` / `is_season_member` — confirmed against `pg_policies` — so a person holding an invitation can read nothing at all. `peek_league_invite` is the one `SECURITY DEFINER` window through that wall and it returned the league's name and three flags.
 
-The screen shipped is honest and complete for what it can know, and it is visibly thinner than the board. Closing the gap means **extending `peek_league_invite`**, which is a migration and therefore the developer's call rather than a screen task's. **If it is wanted:** one migration adding member count, bankroll, `top_n_distinct` and the next season's start date to the function's return, `npm run types:gen`, then the panel. Nothing else about this screen changes.
+[`20260829010000_peek_invite_shows_the_league.sql`](../../../supabase/migrations/20260829010000_peek_invite_shows_the_league.sql) adds `member_count`, `bankroll`, `winning_tiers` and `joins_current_season`. `drop` then `create`, not `create or replace` — Postgres refuses to replace a function whose OUT parameters change. Applied, `npm run types:gen` run, and `types:fresh` now fingerprints **115** migrations with 0 stale.
+
+**Two departures from the board inside that panel.**
+
+1. **The fourth row is not "next season starts".** `seasons` has no start date to report — only `created_at` and `status`. What a person actually needs is whether joining puts them in the season already running, which is the rule `accept_league_invite` applies; the panel now asks it **before** the click rather than leaving it to be discovered after. Rendered from `season_bidding_has_begun`, the same function the write uses, so the screen and the outcome cannot disagree.
+2. **The members' avatars are not built.** That is a roster — names and faces of people who never agreed to be shown to whoever holds a link — and the count answers the question the panel exists for.
+
+Every season field is null together when a league is between seasons, and the panel omits those rows rather than printing a bankroll of $0.
+
+**Driven as `dev-outsider`:** Members 2 · Season bankroll $100 · Winning tiers 3 · This season "You are in it". Console clean, one `<main>`, every control named.
 
 ---
 

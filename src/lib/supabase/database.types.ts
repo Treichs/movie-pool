@@ -1489,9 +1489,13 @@ export type Database = {
         Args: { p_token: string }
         Returns: {
           already_member: boolean
+          bankroll: number
           expired: boolean
+          joins_current_season: boolean
           league_name: string
+          member_count: number
           targeted_at: string
+          winning_tiers: number
         }[]
       }
       place_bid: {
@@ -1862,4 +1866,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 1ebdf41757828d492f86356070bba14771cbfc99349c0dd01b288ba2bce54640
+// @migrations-sha256 d78dbc99c823466588c2d2866a04d3b66d5dd21a76cb01c3d2fd7e74b2c38de7
