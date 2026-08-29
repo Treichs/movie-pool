@@ -31,12 +31,23 @@ export function PasswordInput({
   autoComplete = "current-password",
   required = true,
   placeholder,
+  value,
+  onChange,
+  trailing,
 }: {
   id: string;
   name?: string;
   autoComplete?: string;
   required?: boolean;
   placeholder?: string;
+  /** Controlled only when BOTH are passed. `/reset-password` needs it: its
+   *  strength meter and its match check both read what has been typed. */
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** An extra glyph in the same inline-end slot, before the reveal toggle —
+   *  board 1.4's match check. Decorative: pass `aria-hidden` and say the same
+   *  thing in text, because a tick inside a field is not a label. */
+  trailing?: React.ReactNode;
 }) {
   const [shown, setShown] = useState(false);
 
@@ -49,8 +60,11 @@ export function PasswordInput({
         autoComplete={autoComplete}
         required={required}
         placeholder={placeholder}
+        value={value}
+        onChange={onChange}
       />
       <InputGroupAddon align="inline-end">
+        {trailing}
         <InputGroupButton
           type="button"
           size="icon-xs"

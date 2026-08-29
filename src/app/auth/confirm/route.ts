@@ -37,14 +37,29 @@ export async function GET(request: NextRequest) {
       token_hash: tokenHash,
     });
     if (!error) {
-      // An explicit destination wins — a recovery link asked for
-      // /reset-password and must get there, since the landing rule would
-      // otherwise drop a signed-in user on their league instead.
+      // An explicit destination wins.
       //
-      // Without one, verifying signed them in, so this is a landing like any
+      // A RECOVERY LINK THEN DEFAULTS TO /reset-password, and this line is why
+      // the screen is reachable at all. The comment here used to say "a
+      // recovery link asked for /reset-password" — it does not, and never did:
+      // `requestPasswordReset` passes `emailLinkTarget(origin)`, which is
+      // `${origin}/auth/confirm` with no `next` on it. So every recovery link
+      // fell through to the landing rule, signed the visitor in, and dropped
+      // them on their league with their password still forgotten. Proved on
+      // 2026-08-29 by following a real token: it landed on /leagues/<id>.
+      //
+      // The default lives HERE rather than on the sent link, so it holds for
+      // any recovery token however it was minted, and so nothing has to be
+      // added to Supabase's redirect allowlist.
+      //
+      // Without either, verifying signed them in, so this is a landing like any
       // other (ADR-104): an invited player confirming their email arrives at
       // the league that invited them rather than at a signpost.
-      redirect(next ?? (await landingPathForCurrentUser(supabase)));
+      const fallback =
+        type === "recovery"
+          ? "/reset-password"
+          : await landingPathForCurrentUser(supabase);
+      redirect(next ?? fallback);
     }
   }
 

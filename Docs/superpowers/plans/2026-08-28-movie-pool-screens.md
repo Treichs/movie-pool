@@ -184,7 +184,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **1** | The app shell — **DONE**, `8df8de2` | `(member)/layout.tsx` | its own board |
 | **2** | Sign up — **DONE** | `/signup` | `1.2` |
 | **3** | Forgot password — **DONE** | `/forgot-password` | `1.3` / `1.3b` |
-| **4** | Reset password | `/reset-password` | `1.4` |
+| **4** | Reset password — **DONE** | `/reset-password` | `1.4` |
 | **5** | How it works | `/how-it-works` | `2.1` |
 | **6** | Home | `/leagues` | `4.1` |
 | **7** | Accept an invite | `/invites/[token]` | `4.9` |
@@ -289,46 +289,34 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 4: `/reset-password`
+### Task 4: `/reset-password` — DONE
 
 **Board:** `1.4  /reset-password`
 
-**Files:**
-- Create: `src/app/(auth)/reset-password/page.tsx`, `reset-password-form.tsx`, `error.tsx`
-- **No proxy change.** `/reset-password` joined `PUBLIC_PATHS` on 2026-08-28 (`9bde804`), and the reason is subtler than the last one: the emailed link lands on `/auth/callback` first, so a visitor usually arrives here already signed in — but not when the exchange fails or the link opens in a browser the cookie never reached. That is exactly the case Step 3's copy exists to explain, and a gate would have answered it with a redirect.
+**What shipped.** Three files in [src/app/(auth)/reset-password/](<../../../src/app/(auth)/reset-password/>): `page.tsx` (which decides between two states), `reset-password-form.tsx` (the meter, the match check, the submit), `error.tsx`. `PasswordInput` gained three optional props — `value`, `onChange`, `trailing` — edited in place, because the meter and the tick both have to read what has been typed.
 
-**Interfaces:**
-- Consumes: `completePasswordReset` from `(auth)/actions.ts` — already written.
-- Consumes: `AuthSplitShell` with `variant="rail"`.
+**A ROUTE HANDLER BUG MADE THIS SCREEN UNREACHABLE, and it was fixed here.**
+`/auth/confirm`'s comment claimed *"a recovery link asked for `/reset-password`"*. It never did: `requestPasswordReset` passes `emailLinkTarget(origin)`, which is `${origin}/auth/confirm` with no `next` on it, so every recovery link fell through to the landing rule — signing the visitor in and dropping them on their league with their password still forgotten. **Proved by following a real token on 2026-08-29: it landed on `/leagues/<id>`.** `/auth/confirm` now defaults `type=recovery` to `/reset-password`. The default lives there rather than on the sent link so it holds for any recovery token however minted, and so nothing has to be added to Supabase's redirect allowlist.
 
-- [ ] **Step 1: Open the board**
+**The no-session state is not on the board, and is the reason the route is public.** `PUBLIC_PATHS`'s own note says the link usually arrives with a session but not when the exchange failed, the link was spent, or it was opened in a browser the cookie never reached. The check is in the page, before the form: discovering a dead link only after typing a password twice is the version of this screen that wastes someone's time at the moment they have least patience. It names the third cause explicitly, because it looks identical to an expired link from the inside.
 
-The strength meter is **four ink steps with a word, not a red-amber-green ramp.** There is no amber in this palette, so a traffic light cannot be built from it honestly — and the red that does exist is the brand's, which would make a weak password look like a feature.
+**Four ink steps and a word, and the rule is small on purpose.** Eight characters is the only thing the server enforces, so anything shorter is named rather than scored; above it the meter reads length past twelve and how many of the four character families appear. No red-amber-green: there is no amber in this palette, and the red that exists is the brand's, which would make a weak password look like a feature.
 
-- [ ] **Step 2: Two fields**
+**Two accessibility decisions.** The four bars are `aria-hidden` and the word beside them carries the same fact through `aria-live="polite"` — it is the only feedback the meter gives a non-sighted user. The board's match tick is decorative, so it is `aria-hidden` and paired with an `sr-only` `role="status"` line reading "Passwords match."
 
-`password` and `confirm`, with the confirm field showing a check when they match.
+**One defect the gates could not see.** `<Button render={<Link/>}>` renders an `<a>`, and Base UI logs an error unless it is told so: *"a component that acts as a button expected a native `<button>`"*. It is right — a link claiming button semantics breaks forms and assistive tech. Both call sites now pass `nativeButton={false}`, which is what the landing page already does.
 
-- [ ] **Step 3: Add `error.tsx`, and mind its copy**
+**The drive, at 1440×900.** Console clean, one `<main>` in both states, every control named.
 
-A reset link is single-use, so a failure here needs to say whether the link is spent. **If the boundary cannot tell, say what to do — request a new link — rather than guessing.**
+- Signed out with no session: the expired state renders.
+- A real recovery token through `/auth/confirm` lands on `/reset-password`, signed in, eyebrow reading the account's own address.
+- The meter was exercised across its range — `short` → 1 bar "Too short"; `lowercaseonly` → 3 "Good"; `Abcd1234` → 3 "Good"; `Task4-Drive-Pass!` → 4 "Strong". The tick appears only on a match, and the `sr-only` status reads "Passwords match."
+- **The reset really resets.** After submitting, the new password signed in and **the old one was refused with "Invalid login credentials"** — the change was verified from both directions, not assumed from a redirect.
+- **`dev-Passw0rd!` was restored** through the admin API and re-verified by signing in with it, so every later task's fixtures still work.
 
-- [ ] **Step 4: Run the gate**
+**Not driven:** a real inbox, again — the recovery token was minted with the admin API rather than received by mail. The other-session invalidation (`signOut({ scope: "others" })`) and the "your password was reset" notification email both ran server-side and were not observed.
 
-```bash
-npm run verify
-```
-
-- [ ] **Step 5: Drive it end to end**
-
-Request a reset for a seeded account, **open the real link from the real email**, set a new password, and confirm you can sign in with it. **Then set it back to `dev-Passw0rd!`** so every later task's fixtures still work. That restoration is why this task closes the auth run.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add -A
-git commit -m "feat(auth): reset-password is rebuilt, with an ink strength meter"
-```
+**Raised, not closed: an ordinary signed-in session reaches this form** and can set a new password without knowing the old one. [src/lib/reauth.ts](../../../src/lib/reauth.ts) exists for exactly that class of problem and is `/account`'s tool (**Task 20**). Whether this route should additionally require a recovery-grade session is a policy call for the developer, not something to invent inside a screen task.
 
 ---
 
