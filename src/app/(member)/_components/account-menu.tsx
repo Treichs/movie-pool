@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { initialsFrom } from "@/lib/format";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -30,12 +31,7 @@ export function AccountMenu({
   email: string;
   profileId: string;
 }) {
-  const initials = name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = initialsFrom(name);
 
   return (
     <DropdownMenu>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@/lib/supabase";
 import type { NotifyKind } from "@/lib/notifications";
+import { initialsFrom } from "@/lib/format";
 
 /**
  * THE ACCOUNT SCREEN'S READ — board 4.10.
@@ -65,15 +66,6 @@ export const NOTIFY_COPY: Record<NotifyKind, { title: string; detail: string }> 
     },
   };
 
-export function initialsOf(name: string): string {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 /**
  * ONE READ FOR THE WHOLE SCREEN.
  *
@@ -109,7 +101,7 @@ export async function getAccountPage(
     displayName: profile.display_name,
     bio: profile.bio,
     email: profile.email,
-    initials: initialsOf(profile.display_name),
+    initials: initialsFrom(profile.display_name),
     emailConfirmed: Boolean(user?.email_confirmed_at),
     providers,
     preferences: {

@@ -112,3 +112,21 @@ export function relativeDay(iso: string): string {
   if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
   return `${Math.floor(days / 30)} months ago`;
 }
+
+/**
+ * Up to two initials from a display name.
+ *
+ * Derived inline in three places before this existed — the shell's account
+ * menu, the account page's own avatar, and the player profile card — which is
+ * exactly one more than the rule allows. `.slice(0, 2)` on the joined letters
+ * rather than on the words, so "Jean-Luc" gives "J" and not "JL": the split is
+ * on spaces, and a hyphenated first name is one word.
+ */
+export function initialsFrom(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
