@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+const TABS = ["weeks", "leaderboard", "you"];
 
 /**
  * THE THREE TABS — Weeks, Leaderboard, You. **Weeks leads**, because it is the
@@ -14,8 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  * tab is a view of one page, not a place, and pushing history entries for it
  * would turn the browser's Back button into a tab cycler.
  *
- * The panels are all rendered on the server and handed in; this component owns
- * only which one is visible.
+ * ── UNCONTROLLED, AND THEREFORE NOT A CLIENT COMPONENT ────────────────────
+ * This held a `useState` mirroring what `Tabs` already tracks, which made the
+ * whole file `"use client"` for a value nothing else read. `defaultValue` says
+ * the same thing — seed it, then leave it alone — and lets the primitive own
+ * its own state. The panels are server-rendered and handed in either way.
  */
 export function SeasonTabs({
   initial,
@@ -28,12 +29,8 @@ export function SeasonTabs({
   leaderboard: React.ReactNode;
   you: React.ReactNode;
 }) {
-  const [tab, setTab] = useState(
-    ["weeks", "leaderboard", "you"].includes(initial) ? initial : "weeks"
-  );
-
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v ?? "weeks")}>
+    <Tabs defaultValue={TABS.includes(initial) ? initial : "weeks"}>
       <TabsList>
         <TabsTrigger value="weeks">Weeks</TabsTrigger>
         <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRightIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { useNow } from "@/hooks/use-now";
 import {
   Item,
   ItemActions,
@@ -51,18 +51,11 @@ function state(league: HomeLeague): string {
  * attached. This reads in hours and re-reads once a minute.
  */
 function Closing({ at }: { at: string }) {
-  const [label, setLabel] = useState<string | null>(null);
-  useEffect(() => {
-    const tick = () => setLabel(timeUntil(at, new Date()));
-    tick();
-    const id = setInterval(tick, 60_000);
-    return () => clearInterval(id);
-  }, [at]);
-
-  if (!label) return null;
+  const now = useNow(60_000);
+  if (!now) return null;
   return (
     <span className="type-micro text-micro text-muted-foreground">
-      Bids close {label}
+      Bids close {timeUntil(at, now)}
     </span>
   );
 }

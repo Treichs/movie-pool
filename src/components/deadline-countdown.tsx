@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useNow } from "@/hooks/use-now";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,9 +13,9 @@ import { cn } from "@/lib/utils";
  * shrink the figure and the token stops being accessible, which is exactly why
  * the design system reserves it for the hero numeral on a surface.
  *
- * SERVER-RENDERED AS NULL, then filled on mount. A countdown has no correct
- * server value — the HTML would be stale before it reached the browser, and
- * rendering one guarantees a hydration mismatch.
+ * SERVER-RENDERED AS NULL, then filled on mount — see `useNow`, which owns
+ * that wiring for the four surfaces that need a clock. This one ticks every
+ * second because it is the only place where the seconds themselves matter.
  */
 export function DeadlineCountdown({
   target,
@@ -30,15 +29,8 @@ export function DeadlineCountdown({
   size?: "hero" | "inline";
 }) {
   const scale = size === "hero" ? "text-numeral-xl" : "text-h3";
-  const [left, setLeft] = useState<number | null>(null);
-
-  useEffect(() => {
-    const deadline = new Date(target).getTime();
-    const tick = () => setLeft(deadline - Date.now());
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [target]);
+  const now = useNow(1000);
+  const left = now === null ? null : new Date(target).getTime() - now.getTime();
 
   if (left === null) {
     return <span className={cn("type-numeral tabular-nums opacity-0", scale)}>--:--</span>;

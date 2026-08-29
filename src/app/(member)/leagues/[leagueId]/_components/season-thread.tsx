@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, PlusIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useNow } from "@/hooks/use-now";
 import { timeUntil } from "@/lib/format";
 import type { LeagueWeek } from "@/lib/league";
 
@@ -43,30 +43,22 @@ function Gate({
   href: string;
   hasBid: boolean;
 }) {
-  const [left, setLeft] = useState<string | null>(null);
-  const [urgent, setUrgent] = useState(false);
+  // HALF A MINUTE, not a second: this is a label in hours, and a per-second
+  // clock on a league page is motion with no decision attached.
+  const now = useNow(30_000);
 
-  useEffect(() => {
-    if (!deadline) return;
-    const tick = () => {
-      const ms = Date.parse(deadline) - Date.now();
-      const close = ms <= 3_600_000;
-      setUrgent(close);
-      // INSIDE THE HOUR, MINUTES. `timeUntil` rounds to whole hours, so 38
-      // minutes reads as "1 hour" — generous everywhere else and wrong in the
-      // one window the escalation exists for. The shared helper keeps its
-      // coarseness for its other callers; this branch does its own arithmetic.
-      if (close && ms > 0) {
-        const mins = Math.max(1, Math.ceil(ms / 60_000));
-        setLeft(`${mins} min`);
-      } else {
-        setLeft(timeUntil(deadline, new Date()));
-      }
-    };
-    tick();
-    const id = setInterval(tick, 30_000);
-    return () => clearInterval(id);
-  }, [deadline]);
+  const ms = now && deadline ? Date.parse(deadline) - now.getTime() : null;
+  const urgent = ms !== null && ms <= 3_600_000;
+  // INSIDE THE HOUR, MINUTES. `timeUntil` rounds to whole hours, so 38 minutes
+  // reads as "1 hour" — generous everywhere else and wrong in the one window
+  // the escalation exists for. The shared helper keeps its coarseness for its
+  // other callers; this branch does its own arithmetic.
+  const left =
+    ms === null || !deadline || !now
+      ? null
+      : urgent && ms > 0
+        ? `${Math.max(1, Math.ceil(ms / 60_000))} min`
+        : timeUntil(deadline, now);
 
   const label = hasBid ? "Review your bids" : "Place your bids";
 

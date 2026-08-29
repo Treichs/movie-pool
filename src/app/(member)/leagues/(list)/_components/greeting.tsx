@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useNow } from "@/hooks/use-now";
 
 /**
  * THE GREETING, and the reason it is a client component is a timezone.
@@ -23,16 +23,9 @@ function salutation(hour: number): string {
 }
 
 export function Greeting({ name }: { name: string }) {
-  const [now, setNow] = useState<Date | null>(null);
-  // The same shape the bid page's countdown uses, and for two reasons: the
-  // lint rule refuses a bare `setState` as an effect body, and the date does
-  // roll over — a tab left open past midnight should not still say Tuesday.
-  useEffect(() => {
-    const tick = () => setNow(new Date());
-    tick();
-    const id = setInterval(tick, 60_000);
-    return () => clearInterval(id);
-  }, []);
+  // A MINUTE, because the date rolls over: a tab left open past midnight
+  // should not still say Tuesday.
+  const now = useNow(60_000);
 
   return (
     <div className="flex flex-col gap-1.5">
