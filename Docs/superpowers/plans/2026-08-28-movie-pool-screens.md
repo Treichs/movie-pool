@@ -183,7 +183,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 |---|---|---|---|
 | **1** | The app shell — **DONE**, `8df8de2` | `(member)/layout.tsx` | its own board |
 | **2** | Sign up — **DONE** | `/signup` | `1.2` |
-| **3** | Forgot password | `/forgot-password` | `1.3` / `1.3b` |
+| **3** | Forgot password — **DONE** | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password | `/reset-password` | `1.4` |
 | **5** | How it works | `/how-it-works` | `2.1` |
 | **6** | Home | `/leagues` | `4.1` |
@@ -263,46 +263,29 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 3: `/forgot-password`
+### Task 3: `/forgot-password` — DONE
 
-**Board:** `1.3  /forgot-password` **and** `1.3b  /forgot-password — sent`. Two boards, one route: **the sent state is a real state, not a toast.**
+**Boards:** `1.3  /forgot-password` **and** `1.3b  /forgot-password — sent`. Two boards, one route: **the sent state is a real state, not a toast.**
 
-**Files:**
-- Create: `src/app/(auth)/forgot-password/page.tsx`, `forgot-password-form.tsx`, `error.tsx`
-- **No proxy change.** `/forgot-password` joined `PUBLIC_PATHS` on 2026-08-28 (`9bde804`). Without it the screen bounced to `/login` — sending someone back to the form they could not complete.
+**What shipped.** Three files in [src/app/(auth)/forgot-password/](<../../../src/app/(auth)/forgot-password/>): `page.tsx`, `forgot-password-form.tsx` (both states), `error.tsx`. First use of `AuthSplitShell variant="rail"`. `requestPasswordReset` finally has a caller.
 
-**Interfaces:**
-- Consumes: `requestPasswordReset` from `(auth)/actions.ts` — already written.
-- Consumes: `AuthSplitShell` with **`variant="rail"`** — a 96px perforated ink strip, no `ink` slot. Passing `ink` to it is a compile error, by design.
+**Why the sent state is a screen.** It is the only place a person is told what to do when nothing arrives, and the reply never varies — `requestPasswordReset` says the same sentence whether or not the address has an account, and does not read Supabase's result at all, because a form that answered differently would be an account-enumeration oracle. So the copy says "IF an account exists", the resend cannot report success or failure, and in-flight is the only honest feedback it has.
 
-- [ ] **Step 1: Open both boards**
+**Three decisions worth keeping:**
 
-The treatment differs from the front door deliberately: this is **an interruption reached from an email, not a place you arrive**, so it gets the rail rather than the half-page field.
+1. **No signed-in redirect, unlike `/login` and `/signup`.** Those two bounce a signed-in visitor because being signed in is what they exist to achieve. It proves nothing here — a session that persisted on one device says nothing about whether its owner remembers the password — so bouncing would answer a real request with a page that cannot help.
+2. **The email field is controlled.** Two reasons: the sent state names the address and the action does not return it, so the component is the only thing that knows it; and React 19's form reset, the defect `/signup` was built around, would otherwise wipe a malformed address before it could be corrected.
+3. **The resend hides the field rather than showing it again.** Changing the address there would be a second request wearing a resend's label. Someone who mistyped goes back and starts over, which is what the panel's own copy tells them.
 
-- [ ] **Step 2: Build the form state to board `1.3`**
+**Ink, not green.** The confirmation is a bordered ink panel with a mail glyph. `--success` exists and was not reached for: "we sent an email" — to an address that may be on no account at all — is not a success worth colouring.
 
-- [ ] **Step 3: Build the sent state to board `1.3b`**
+**The drive, at 1440×900, signed out.** Console clean, exactly one `<main>`, every control named, the alert carrying `role="status"`.
 
-It carries **ink, not green** — the board draws it that way and the 2026-08-28 palette ruling keeps it: a state colour is reached for deliberately, and "we sent an email" is not a state worth spending one on. It names the address it sent to and says the link expires in one hour.
+- **The send is real, and provable without an inbox:** submitting `dev-player@moviepool.local` moved that row's `recovery_sent_at` from null to `2026-08-29 00:01:10+00`, so Supabase minted and dispatched a recovery token.
+- **The resend path WAS tested.** Clicking "Send it again" re-ran the action and held the sent state.
+- **The anti-enumeration property was tested, not assumed:** an address with no account rendered a screen byte-identical to the real one apart from the address it names.
 
-- [ ] **Step 4: Add `error.tsx`**
-
-- [ ] **Step 5: Run the gate**
-
-```bash
-npm run verify
-```
-
-- [ ] **Step 6: Drive both states**
-
-Submit a real address for a seeded account and confirm the email actually sends — `pool@moviepool.app` is live. Then confirm the sent state renders. **Report whether you tested the resend path**; if the fixture makes it unreachable, say so rather than claiming it works.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add -A
-git commit -m "feat(auth): forgot-password gets the rail treatment and a real sent state"
-```
+**Not driven:** delivery. The fixtures are `@moviepool.local`, which no mail server will accept, and sending to a real address to watch it land would leave mail in somebody's inbox. The token was verified as minted rather than as received. **The drive left `recovery_sent_at` set on `dev-player`** — a token that expires within the hour and is unusable without the hash from the mail. Nothing was created, so there was nothing to delete.
 
 ---
 
