@@ -1,11 +1,10 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
-import Link from "next/link";
-
 import { GoogleMark } from "@/components/google-mark";
 import { PasswordInput } from "@/components/password-input";
 import { SubmitButton } from "@/components/submit-button";
+import { TextLink } from "@/components/text-link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,12 +107,11 @@ export function SignInForm({
             {state.unconfirmedEmail && (
               <>
                 {" "}
-                <Link
+                <TextLink
                   href={`/signup?resend=${encodeURIComponent(state.unconfirmedEmail)}`}
-                  className="text-link underline underline-offset-4"
                 >
                   Send it again
-                </Link>
+                </TextLink>
               </>
             )}
           </AlertDescription>
@@ -138,12 +136,12 @@ export function SignInForm({
           <Field>
             <div className="flex items-center">
               <FieldLabel htmlFor={passwordId}>Password</FieldLabel>
-              <Link
-                href="/forgot-password"
-                className="ml-auto text-sm text-link underline-offset-4 hover:underline"
-              >
+              {/* Underlined like every other link, not on hover only. It was
+                  the one link in the app that behaved differently, and it sits
+                  beside one that does not. */}
+              <TextLink href="/forgot-password" className="ml-auto text-sm">
                 Forgot your password?
-              </Link>
+              </TextLink>
             </div>
             <PasswordInput id={passwordId} />
           </Field>
@@ -170,9 +168,7 @@ export function SignInForm({
                   link, so losing `next` here would break the very flow it
                   exists for. */}
               Don&apos;t have an account?{" "}
-              <Link href={signUpHref} className="text-link underline underline-offset-4">
-                Create one
-              </Link>
+              <TextLink href={signUpHref}>Create one</TextLink>
             </FieldDescription>
           </Field>
         </FieldGroup>

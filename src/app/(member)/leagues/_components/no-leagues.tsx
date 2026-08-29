@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { TextLink } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -36,12 +37,9 @@ export function NoLeagues({ awaitingInvite }: { awaitingInvite: boolean }) {
         >
           Start a league
         </Button>
-        <Link
-          href="/how-it-works"
-          className="type-ui text-ui text-link underline underline-offset-4"
-        >
+        <TextLink href="/how-it-works" size="ui">
           Read how it works first
-        </Link>
+        </TextLink>
       </div>
       {awaitingInvite && (
         <p className="type-micro text-micro text-muted-foreground">

@@ -1,3 +1,5 @@
+import { Figure } from "@/components/figure";
+import { Card } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -37,16 +39,12 @@ function Delta({
   // a fall. The prop never changed the output and is gone.
   const up = value !== null && value > 0;
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="type-eyebrow text-eyebrow text-muted-foreground">
-        {label}
-      </span>
-      <span className="type-numeral text-h3">
-        {value === null
-          ? "—"
-          : `${up ? "+" : ""}${value.toFixed(digits)}`}
-      </span>
-    </div>
+    <Figure
+      label={label}
+      value={
+        value === null ? "—" : `${up ? "+" : ""}${value.toFixed(digits)}`
+      }
+    />
   );
 }
 
@@ -59,14 +57,16 @@ export function YouTab({
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <section
+      <Card
+        variant="flat"
+        role="region"
         aria-label="Since last week"
-        className="flex flex-wrap gap-8 rounded border bg-card p-5"
+        className="flex-row flex-wrap gap-8"
       >
         <Delta label="Places moved" value={deltas.rank} />
         <Delta label="Points added" value={deltas.points} digits={2} />
         <Delta label="Points per dollar" value={deltas.efficiency} digits={2} />
-      </section>
+      </Card>
 
       <section className="flex flex-col gap-3">
         <h3 className="type-eyebrow text-eyebrow text-muted-foreground">

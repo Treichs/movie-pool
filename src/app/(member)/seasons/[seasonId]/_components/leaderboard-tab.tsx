@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -105,7 +106,7 @@ export function LeaderboardTab({ data }: { data: LeaderboardData }) {
       {(awards.bestEfficiency || awards.dessert) && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {awards.bestEfficiency && (
-            <div className="flex flex-col gap-1.5 rounded border bg-card p-4">
+            <Card variant="flat" size="sm" className="gap-1.5">
               <span className="type-eyebrow text-eyebrow text-muted-foreground">
                 Best pick so far
               </span>
@@ -119,10 +120,10 @@ export function LeaderboardTab({ data }: { data: LeaderboardData }) {
                 </span>{" "}
                 points per dollar
               </span>
-            </div>
+            </Card>
           )}
           {awards.dessert && (
-            <div className="flex flex-col gap-1.5 rounded border bg-card p-4">
+            <Card variant="flat" size="sm" className="gap-1.5">
               <span className="type-eyebrow text-eyebrow text-muted-foreground">
                 Dessert so far
               </span>
@@ -136,17 +137,17 @@ export function LeaderboardTab({ data }: { data: LeaderboardData }) {
                 </span>{" "}
                 points per dollar
               </span>
-            </div>
+            </Card>
           )}
         </div>
       )}
 
-      <section className="flex flex-col gap-3 rounded border bg-card p-4">
+      <Card variant="flat" size="sm" className="gap-3">
         <h3 className="type-eyebrow text-eyebrow text-muted-foreground">
           How the season has moved
         </h3>
         <BumpChart series={data.allTrends} scoredWeeks={data.scoredWeeks} />
-      </section>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthSplitShell } from "@/components/auth-split-shell";
+import { TextLink } from "@/components/text-link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/components/ui/field";
@@ -101,12 +102,7 @@ export default async function ResetPasswordPage() {
             </Button>
 
             <FieldDescription>
-              <Link
-                href="/login"
-                className="text-link underline underline-offset-4"
-              >
-                Back to sign in
-              </Link>
+              <TextLink href="/login">Back to sign in</TextLink>
             </FieldDescription>
           </FieldGroup>
         )}

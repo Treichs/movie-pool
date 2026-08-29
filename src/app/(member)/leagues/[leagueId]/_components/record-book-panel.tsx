@@ -1,5 +1,5 @@
-import Link from "next/link";
-
+import { TextLink } from "@/components/text-link";
+import { Card } from "@/components/ui/card";
 import type { LeagueAggregates } from "@/lib/league-records";
 
 /**
@@ -10,7 +10,10 @@ import type { LeagueAggregates } from "@/lib/league-records";
  * about a market that has not opened yet. A row with no answer is left out
  * rather than printed as a nought.
  */
-function Figure({ label, value }: { label: string; value: string | null }) {
+/** Label left, number right — the same shape the invitation page calls `Fact`.
+ *  Deliberately NOT the shared `Figure`, which stacks: the two used to share
+ *  that name while laying out differently, which is what this rename fixes. */
+function Fact({ label, value }: { label: string; value: string | null }) {
   if (value === null) return null;
   return (
     <div className="flex items-baseline justify-between gap-4">
@@ -40,17 +43,14 @@ export function RecordBookPanel({
     : [];
 
   return (
-    <div className="flex flex-col gap-3.5 rounded border bg-card p-4">
+    <Card variant="flat" size="sm" className="gap-3.5">
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="type-eyebrow text-eyebrow text-muted-foreground">
           Record book
         </h2>
-        <Link
-          href={`/leagues/${leagueId}/records`}
-          className="type-micro text-micro text-link underline underline-offset-4"
-        >
+        <TextLink href={`/leagues/${leagueId}/records`} size="micro">
           Open
-        </Link>
+        </TextLink>
       </div>
 
       {rows.length === 0 ? (
@@ -60,7 +60,7 @@ export function RecordBookPanel({
       ) : (
         <>
           {rows.map((r) => (
-            <Figure key={r.label} label={r.label} value={r.value} />
+            <Fact key={r.label} label={r.label} value={r.value} />
           ))}
           <p className="type-micro text-micro text-muted-foreground">
             Drawn from {aggregates!.filmsScored} scored film
@@ -68,6 +68,6 @@ export function RecordBookPanel({
           </p>
         </>
       )}
-    </div>
+    </Card>
   );
 }

@@ -6,6 +6,7 @@ import { ArrowRightIcon, PlusIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { timeUntil } from "@/lib/format";
 import type { LeagueWeek } from "@/lib/league";
 
@@ -131,15 +132,14 @@ export function SeasonThread({
    *  name: a league can finish a season and still have no single titleholder. */
   finishedSeasons: number;
 }) {
-  const shell =
-    "flex flex-wrap items-center justify-between gap-6 rounded border bg-card p-5";
+  const shell = "flex-row flex-wrap items-center justify-between gap-6";
 
   // NO SEASON AT ALL. The commissioner is offered the next one; everyone else
   // is told plainly that there is nothing to play and who to expect it from,
   // which beats an empty page that looks broken.
   if (!seasonId) {
     return (
-      <section aria-label="This season" className={shell}>
+      <Card variant="flat" role="region" aria-label="This season" className={shell}>
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <Badge variant="secondary">No season running</Badge>
@@ -171,7 +171,7 @@ export function SeasonThread({
             Start a season
           </Button>
         )}
-      </section>
+      </Card>
     );
   }
 
@@ -179,7 +179,7 @@ export function SeasonThread({
   // still the destination; there is simply no clock on it.
   if (!openWeek) {
     return (
-      <section aria-label="This season" className={shell}>
+      <Card variant="flat" role="region" aria-label="This season" className={shell}>
         <div className="flex min-w-0 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <Badge variant="secondary">Between weeks</Badge>
@@ -198,13 +198,15 @@ export function SeasonThread({
           Open the season
           <ArrowRightIcon />
         </Button>
-      </section>
+      </Card>
     );
   }
 
   const week = String(openWeek.number).padStart(2, "0");
   return (
-    <section
+    <Card
+      variant="flat"
+      role="region"
       aria-label="This week"
       className={`${shell} border-primary`}
     >
@@ -222,6 +224,6 @@ export function SeasonThread({
         href={`/seasons/${seasonId}/weeks/${openWeek.id}/bid`}
         hasBid={false}
       />
-    </section>
+    </Card>
   );
 }

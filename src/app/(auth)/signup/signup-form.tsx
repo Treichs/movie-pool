@@ -1,11 +1,10 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
-import Link from "next/link";
-
 import { GoogleMark } from "@/components/google-mark";
 import { PasswordInput } from "@/components/password-input";
 import { SubmitButton } from "@/components/submit-button";
+import { TextLink } from "@/components/text-link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -180,12 +179,7 @@ export function SignUpForm({
               {/* THE DESTINATION SURVIVES THE HOP BACK. Bouncing between the
                   two forms must not lose the invitation that sent you here. */}
               Already have an account?{" "}
-              <Link
-                href={signInHref}
-                className="text-link underline underline-offset-4"
-              >
-                Sign in
-              </Link>
+              <TextLink href={signInHref}>Sign in</TextLink>
             </FieldDescription>
           </Field>
         </FieldGroup>

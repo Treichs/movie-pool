@@ -1,10 +1,10 @@
 "use client";
 
 import { useActionState, useId, useState } from "react";
-import Link from "next/link";
 import { MailIcon } from "lucide-react";
 
 import { SubmitButton } from "@/components/submit-button";
+import { TextLink } from "@/components/text-link";
 import {
   Alert,
   AlertDescription,
@@ -112,12 +112,7 @@ export function ForgotPasswordForm() {
         </form>
 
         <FieldDescription>
-          <Link
-            href="/login"
-            className="text-link underline underline-offset-4"
-          >
-            Back to sign in
-          </Link>
+          <TextLink href="/login">Back to sign in</TextLink>
         </FieldDescription>
       </FieldGroup>
     );
@@ -163,9 +158,7 @@ export function ForgotPasswordForm() {
 
       <FieldDescription>
         Remembered it?{" "}
-        <Link href="/login" className="text-link underline underline-offset-4">
-          Back to sign in
-        </Link>
+        <TextLink href="/login">Back to sign in</TextLink>
       </FieldDescription>
     </FieldGroup>
   );

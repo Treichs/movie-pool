@@ -1,24 +1,14 @@
 import Link from "next/link";
 
 import { DeadlineCountdown } from "@/components/deadline-countdown";
+import { Figure } from "@/components/figure";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ordinal } from "@/lib/format";
 import type { HubRank } from "@/lib/season-hub";
 import type { Week } from "@/lib/commish";
 
 
-
-/** One figure and its label. Tabular, so the four line up on their digits. */
-function Figure({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="type-eyebrow text-eyebrow text-muted-foreground">
-        {label}
-      </span>
-      <span className="type-numeral text-h3">{value}</span>
-    </div>
-  );
-}
 
 /**
  * YOUR STANDING — the viewer's own four numbers, and the deadline beside them.
@@ -41,9 +31,11 @@ export function StandingStrip({
   const deadline = openWeek?.bid_deadline_override ?? openWeek?.bid_deadline;
 
   return (
-    <section
+    <Card
+      variant="flat"
+      role="region"
       aria-label="Your standing"
-      className="flex flex-wrap items-end justify-between gap-6 rounded border bg-card p-5"
+      className="flex-row flex-wrap items-end justify-between gap-6"
     >
       <div className="flex flex-wrap items-end gap-8">
         <div className="flex flex-col gap-0.5">
@@ -86,6 +78,6 @@ export function StandingStrip({
           </Button>
         </div>
       )}
-    </section>
+    </Card>
   );
 }

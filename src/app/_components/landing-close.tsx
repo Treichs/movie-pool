@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { TextLink } from "@/components/text-link";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -26,12 +27,9 @@ export function LandingClose() {
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <Link
-          href="/how-it-works"
-          className="type-ui text-ui text-link underline underline-offset-4"
-        >
+        <TextLink href="/how-it-works" size="ui">
           Read the rules
-        </Link>
+        </TextLink>
         <Button
           render={<Link href="/signup" />}
           nativeButton={false}

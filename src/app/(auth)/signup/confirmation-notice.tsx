@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
-
+import { TextLink } from "@/components/text-link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/components/ui/field";
@@ -81,9 +80,7 @@ export function ConfirmationNotice({
 
       <FieldDescription>
         Confirmed already?{" "}
-        <Link href="/login" className="text-link underline underline-offset-4">
-          Sign in
-        </Link>
+        <TextLink href="/login">Sign in</TextLink>
       </FieldDescription>
     </FieldGroup>
   );

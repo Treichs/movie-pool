@@ -1,3 +1,6 @@
+import { Figure } from "@/components/figure";
+import { Card } from "@/components/ui/card";
+
 /**
  * ONE FILM, WORKED THROUGH — the arithmetic done once, in real numbers,
  * including the tie. Showing it beats stating it: "more owners than tiers" is
@@ -26,23 +29,12 @@ const BIDS = [
   { amount: "$1", won: false },
 ];
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="type-eyebrow text-eyebrow text-muted-foreground">
-        {label}
-      </span>
-      <span className="type-numeral text-h2">{value}</span>
-    </div>
-  );
-}
-
 export function WorkedExample() {
   return (
     <section className="flex flex-col gap-5">
       <h2>One film, worked through</h2>
 
-      <div className="flex flex-col gap-5 rounded border bg-card p-6">
+      <Card variant="flat" className="gap-5">
         <div className="flex flex-col gap-0.5">
           <h3 className="type-h3 text-h3">Backrooms</h3>
           <p className="type-ui text-ui text-muted-foreground">
@@ -81,12 +73,12 @@ export function WorkedExample() {
         <hr className="border-border" />
 
         <div className="flex flex-wrap items-end gap-5">
-          <Stat label="Opening ($M)" value="81.40" />
+          <Figure label="Opening ($M)" value="81.40" size="lg" />
           <span aria-hidden className="type-numeral pb-1 text-h3 text-muted-foreground">
             &times;
           </span>
           <span className="sr-only">multiplied by</span>
-          <Stat label="Tomatometer 89%" value="0.89" />
+          <Figure label="Tomatometer 89%" value="0.89" size="lg" />
           <span aria-hidden className="type-numeral pb-1 text-h3 text-muted-foreground">
             =
           </span>
@@ -104,7 +96,7 @@ export function WorkedExample() {
           72.45 — the $6 bidders just got it cheaper, which is what
           points-per-dollar measures.
         </p>
-      </div>
+      </Card>
     </section>
   );
 }

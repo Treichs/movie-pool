@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { TextLink } from "@/components/text-link";
+import { Card } from "@/components/ui/card";
 
 /**
  * THE RIGHT COLUMN — two small panels the board draws, and both are for the
@@ -15,31 +16,29 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded border bg-card p-4">
+    <Card variant="flat" size="sm" className="gap-3">
       <h2 className="type-eyebrow text-eyebrow text-muted-foreground">
         {title}
       </h2>
       {children}
-    </div>
+    </Card>
   );
 }
-
-const LINK = "type-ui text-ui text-link underline underline-offset-4";
 
 export function SidePanels({ email }: { email: string }) {
   return (
     <div className="flex flex-col gap-4">
       <Panel title="Getting started">
         <div className="flex flex-col gap-2.5">
-          <Link href="/how-it-works" className={LINK}>
+          <TextLink href="/how-it-works" size="ui">
             How the pool works
-          </Link>
-          <Link href="/how-it-works#faq" className={LINK}>
+          </TextLink>
+          <TextLink href="/how-it-works#faq" size="ui">
             The rules worth knowing
-          </Link>
-          <Link href="/leagues/new" className={LINK}>
+          </TextLink>
+          <TextLink href="/leagues/new" size="ui">
             Starting your own league
-          </Link>
+          </TextLink>
         </div>
       </Panel>
 
@@ -47,9 +46,9 @@ export function SidePanels({ email }: { email: string }) {
         <p className="type-body text-ui text-muted-foreground">
           Signed in as <span className="text-foreground">{email}</span>
         </p>
-        <Link href="/account" className={LINK}>
+        <TextLink href="/account" size="ui">
           Account settings
-        </Link>
+        </TextLink>
       </Panel>
     </div>
   );

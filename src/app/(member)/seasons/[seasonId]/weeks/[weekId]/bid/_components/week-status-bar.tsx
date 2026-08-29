@@ -1,6 +1,7 @@
 import type { WeekBidBoard } from "@/lib/week-bid";
 
 import { DeadlineCountdown } from "@/components/deadline-countdown";
+import { Card } from "@/components/ui/card";
 
 /**
  * THE CLOCK AND THE MONEY, and nothing else.
@@ -14,7 +15,7 @@ export function WeekStatusBar({ board }: { board: WeekBidBoard }) {
   const { week, remaining, bankroll } = board;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-6 rounded-lg border bg-card p-5">
+    <Card variant="flat" className="flex-row flex-wrap items-center justify-between gap-6">
       {week.bidDeadline && (
         <div className="flex flex-col gap-1">
           <span className="type-eyebrow text-eyebrow text-muted-foreground">Bids due</span>
@@ -37,7 +38,7 @@ export function WeekStatusBar({ board }: { board: WeekBidBoard }) {
           {bankroll === null ? "Still free" : `Of $${bankroll}`}
         </span>
       </div>
-    </div>
+    </Card>
   );
 }
 
