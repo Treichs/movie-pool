@@ -76,3 +76,91 @@ export async function declineInvite(
   revalidateMembershipSurfaces();
   return ok(undefined, "Invitation declined.");
 }
+
+/** Everything the four-step wizard collects, in one object because it is
+ *  submitted once at the end rather than a step at a time. */
+export type NewLeague = {
+  name: string;
+  bankroll: number;
+  winningTiers: number;
+  minBid: number;
+  /** 1 = Monday … 4 = Thursday. `create_season` refuses anything else. */
+  bidsDueDow: number;
+  /** "HH:MM", in the commissioner's own zone, which travels with it. */
+  bidsDueTime: string;
+  bidsDueTz: string;
+  /** The first Friday films open on. */
+  firstOpeningDate: string;
+  seasonLength: number;
+  inviteEmails: string[];
+};
+
+/**
+ * STARTING A LEAGUE — three RPCs, in an order that cannot be transactional.
+ *
+ * `create_league`, then `create_season`, then one `create_league_invite` per
+ * address. Postgres cannot roll the three back together from here, so the
+ * order is chosen so that each failure leaves something a person can finish
+ * rather than something they have to unpick:
+ *
+ *   - league fails    → nothing exists, the form is still filled in
+ *   - season fails    → the league exists with no season, which is a state the
+ *                       app already renders honestly ("No season started yet")
+ *                       and `/leagues/[id]/seasons/new` is built to complete
+ *   - an invite fails → the league and season are real and playable, and the
+ *                       addresses that did not send come back named so the
+ *                       commissioner can retry them from league settings
+ *
+ * WHICH IS WHY THE RESULT CARRIES `failedInvites` RATHER THAN THROWING. A
+ * mistyped address must not read as "your league was not created".
+ *
+ * ── WHAT IT DOES NOT ACCEPT: WHETHER LIMITED RELEASES COUNT ───────────────
+ * The board draws a toggle for it and the rulebook retired the setting — wide
+ * release is the commissioner's per-film judgement when they build the slate,
+ * not a rule the app enforces. `create_season` has no parameter for it either,
+ * so a toggle here would have been a control that changed nothing. Confirmed
+ * with the developer on 2026-08-29.
+ */
+export async function createLeague(
+  input: NewLeague
+): Promise<ActionResult<{ leagueId: string; failedInvites: string[] }>> {
+  const supabase = await createClient();
+
+  const { data: leagueId, error: leagueError } = await supabase.rpc(
+    "create_league",
+    { p_name: input.name }
+  );
+  if (leagueError) return fail(leagueError.message, "name");
+
+  const { error: seasonError } = await supabase.rpc("create_season", {
+    p_league_id: leagueId as string,
+    p_first_opening_date: input.firstOpeningDate,
+    p_fake_bankroll: input.bankroll,
+    p_top_n_distinct: input.winningTiers,
+    p_min_bid: input.minBid,
+    p_bids_due_dow: input.bidsDueDow,
+    p_bids_due_time: input.bidsDueTime,
+    p_bids_due_tz: input.bidsDueTz,
+    p_default_season_length: input.seasonLength,
+  });
+  if (seasonError) {
+    // The league IS real, so the revalidation has to happen before returning —
+    // otherwise the commissioner goes back to a list that does not show it.
+    revalidateMembershipSurfaces();
+    return fail(
+      `The league was created, but its first season was not: ${seasonError.message}. Open the league and start the season from there.`
+    );
+  }
+
+  const failedInvites: string[] = [];
+  for (const email of input.inviteEmails) {
+    const { error } = await supabase.rpc("create_league_invite", {
+      p_league_id: leagueId as string,
+      p_email: email,
+    });
+    if (error) failedInvites.push(email);
+  }
+
+  revalidateMembershipSurfaces();
+  return ok({ leagueId: leagueId as string, failedInvites });
+}

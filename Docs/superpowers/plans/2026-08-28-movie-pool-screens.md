@@ -188,7 +188,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **5** | How it works — **DONE** | `/how-it-works` | `2.1` |
 | **6** | Home — **DONE** | `/leagues` | `4.1` |
 | **7** | Accept an invite — **DONE** | `/invites/[token]` | `4.9` |
-| **8** | Create a league | `/leagues/new` | `4.8` |
+| **8** | Create a league — **DONE** | `/leagues/new` | `4.8` |
 | **9** | League home | `/leagues/[leagueId]` | `4.2` |
 | **10** | Start a season | `/leagues/[leagueId]/seasons/new` | `5.2` |
 | **11** | Season home | `/seasons/[seasonId]` | `3.1` |
@@ -448,47 +448,50 @@ Every season field is null together when a league is between seasons, and the pa
 
 ---
 
-### Task 8: `/leagues/new`
+### Task 8: `/leagues/new` — DONE
 
 **Board:** `4.8  /leagues/new` — the board draws step 2.
 
-**Files:**
-- Create: `src/app/(member)/leagues/new/page.tsx`, `_components/create-league-wizard.tsx`, `error.tsx`
-- Modify: `src/lib/actions/league.ts` — add `createLeague`
+**Files:** [src/app/(member)/leagues/new/](<../../../src/app/(member)/leagues/new/>) — `page.tsx`, `error.tsx`, `_components/create-league-wizard.tsx`. Plus `createLeague` in [src/lib/actions/league.ts](../../../src/lib/actions/league.ts).
 
-**Interfaces:**
-- Produces: `createLeague(prev, formData) -> Promise<ActionResult>`.
+**Four steps, one submit.** Saving step by step would leave half-built leagues behind every time somebody closed the tab on step three, and there is no draft-league state for them to land in. The write runs three RPCs in an order chosen so each failure leaves something finishable rather than something to unpick: league → season → invites. **A failed invite must never read as "your league was not created"**, so the result carries `failedInvites` instead of throwing.
 
-- [ ] **Step 1: Open the board**
+**THE LIMITED-RELEASES TOGGLE IS NOT BUILT, per the developer's instruction of 2026-08-29 and for two independent reasons.** The rulebook retired the setting — wide release is the commissioner's per-film judgement when they build the slate, not a rule the app enforces — and **`create_season` has no parameter for it**, so the control the board draws could never have changed anything. `include_limited_releases` keeps its column default of `false` and nothing in the app writes it.
 
-Four steps in a left rail: **Name it · House rules · Invite people · First season.**
+**One more control the board draws that nothing can save:** "Results captured — when the weekend gets frozen into points". No parameter exists, and the rulebook describes capture time as fixed rather than per-league. Left out rather than rendered as a control that silently does nothing. In its place the step collects the timing value the RPC does require — `bids_due_dow`, validated to Monday–Thursday — plus the time, whose zone travels with it from the browser.
 
-- [ ] **Step 2: Build the house-rules step against the rulebook**
+**Two primitives were nearly rebuilt by hand, which is the documented failure mode.** The first draft wrote a native `<select>` and used a single-line `Input` for the invite list, with comments rationalising both. `ui/select.tsx` and `ui/textarea.tsx` are **both installed**. The rule exists because this is easy to get wrong from memory: *list the folder before composing anything.*
 
-Every value is marked **[Configurable]** and must reach the rules engine, never a hard-coded literal: season bankroll (**$100** default), winning tiers (**3** default), include limited releases (**off** default), results capture time (**Monday morning** default).
+---
 
-**The winning-tiers copy must explain the tie**, because "3" alone is what makes people expect three owners: *"Ties are always honoured, so a film can have more owners than tiers."*
+**A SECOND MIGRATION WAS NEEDED, AND IT WAS A REAL TRAP RATHER THAN THIS SCREEN'S PROBLEM.**
+[`20260829020000_create_season_keeps_its_own_defaults.sql`](../../../supabase/migrations/20260829020000_create_season_keeps_its_own_defaults.sql).
 
-- [ ] **Step 3: Add `error.tsx`**
+Every settings parameter on `create_season` is `default null`, which reads as "omit it and the column default applies". It did not: the frozen branch named all twelve columns in its INSERT, so an omitted parameter was inserted **as null** — and `buy_in`, `payout_structure`, `bids_due_time`, `bids_due_tz` and `default_season_length` are all NOT NULL with good defaults sitting unused on the table.
 
-A wizard's boundary should say **which step's data survived**, if any.
+Passing `p_fake_bankroll` is what flips that branch on, so **any caller that sets a bankroll had to set all five others or the insert failed.** Found by driving this wizard, which sets bankroll, tiers, minimum bid and the deadline — a sensible set of house rules — and got `null value in column "buy_in" of relation "season_settings" violates not-null constraint`. **Task 10 would have hit it next.**
 
-- [ ] **Step 4: Run the gate**
+The fix inserts the row with its defaults and then overwrites only what was supplied, `coalesce(p_x, x)` reading the value the table just defaulted to. **The defaults stay in one place — the column definitions — rather than being copied into the function, or worse into TypeScript, where they would drift the first time one changed.** Nothing else about the function moved.
 
-```bash
-npm run verify
-```
+**The partial-failure path proved itself before the fix landed:** the league was created, the season was not, and the screen said exactly that plus what to do — "Open the league and start the season from there." That is the failure mode the action was designed around, demonstrated by accident.
 
-- [ ] **Step 5: Drive it end to end**
+---
 
-**Create a real league and confirm it exists with you as commissioner.** Then delete it.
+**The drive, at 1440×900, as `dev-outsider`.** Console clean, one `<main>`, one `<h1>`, every control named. All four steps walked, and the league created and read back from the database:
 
-- [ ] **Step 6: Commit**
+| | |
+|---|---|
+| role | **commissioner** |
+| bankroll · tiers · min bid | 100 · 3 · 1 — from the form |
+| **buy_in** | **35 — the column default, untouched.** The migration's whole point |
+| bids due | Thursday 20:00, `America/New_York` — the browser's own zone |
+| season length · weeks seeded | 20 · **20** |
+| `include_limited_releases` | `false`, never written by the app |
+| invites created | 1 |
 
-```bash
-git add -A
-git commit -m "feat(league): the creation wizard is rebuilt on configurable rules"
-```
+The league, its season, its twenty weeks and its invitation were then deleted and `dev-outsider` re-verified at zero leagues.
+
+**Not driven:** the `failedInvites` path with a genuinely rejected address, and a second season in the same league (`create_season` refuses one while another is under way — that is Task 10's territory).
 
 ---
 
