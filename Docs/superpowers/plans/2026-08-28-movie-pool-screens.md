@@ -190,7 +190,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **7** | Accept an invite — **DONE** | `/invites/[token]` | `4.9` |
 | **8** | Create a league — **DONE** | `/leagues/new` | `4.8` |
 | **9** | League home — **DONE** | `/leagues/[leagueId]` | `4.2` |
-| **10** | Start a season | `/leagues/[leagueId]/seasons/new` | `5.2` |
+| **10** | Start a season — **DONE** | `/leagues/[leagueId]/seasons/new` | `5.2` |
 | **11** | Season home | `/seasons/[seasonId]` | `3.1` |
 | **12** | The week board | `/seasons/[seasonId]/weeks/[weekId]` | `3.2` |
 | **13** | Film — catalog | `/films/[tmdbId]` | `2.2` |
@@ -460,6 +460,8 @@ Every season field is null together when a league is between seasons, and the pa
 
 **One more control the board draws that nothing can save:** "Results captured — when the weekend gets frozen into points". No parameter exists, and the rulebook describes capture time as fixed rather than per-league. Left out rather than rendered as a control that silently does nothing. In its place the step collects the timing value the RPC does require — `bids_due_dow`, validated to Monday–Thursday — plus the time, whose zone travels with it from the browser.
 
+**AMENDED 2026-08-29 (Task 10):** the hand-rolled step rail is gone. It was a static `<ol>` — steps not focusable, not clickable, no way back but the Back button — and is now [`@reui/stepper`](../../../src/components/reui/stepper.tsx), the one stepper in the configured registries that runs on Base UI rather than radix. The house-rules and first-season steps are now the shared `HouseRulesFields` and `SeasonDatesFields`, and the season length is derived from two dates rather than typed. See Task 10 for the sweep and for the three lint defects the vendored component arrived with.
+
 **Two primitives were nearly rebuilt by hand, which is the documented failure mode.** The first draft wrote a native `<select>` and used a single-line `Input` for the invite list, with comments rationalising both. `ui/select.tsx` and `ui/textarea.tsx` are **both installed**. The rule exists because this is easy to get wrong from memory: *list the folder before composing anything.*
 
 ---
@@ -542,47 +544,64 @@ The league, its season, its twenty weeks and its invitation were then deleted an
 
 ---
 
-### Task 10: `/leagues/[leagueId]/seasons/new`
+### Task 10: `/leagues/[leagueId]/seasons/new` — DONE
 
 **Board:** `5.2  /leagues/[id]/seasons/new`
 
-**Files:**
-- Create: `src/app/(member)/leagues/[leagueId]/seasons/new/page.tsx`, `_components/*.tsx`, `actions.ts`, `error.tsx`
-- Port: `src/lib/season-settings.ts`, `src/lib/season-schedule.ts` — **already present.**
+**Files:** [src/app/(member)/leagues/[leagueId]/seasons/new/](<../../../src/app/(member)/leagues/>) — `page.tsx`, `actions.ts`, `error.tsx`, `_components/new-season-form.tsx`.
 
-**Interfaces:**
-- Produces: `createSeason(prev, formData) -> Promise<ActionResult>`.
+**ONE PAGE, NOT A WIZARD, AND THE BOARD IS RIGHT.** The research question was whether a stepper could serve this screen and `/leagues/new` both. It cannot, because **board 5.2 is not a wizard** — it is a single form with two titled sections. `/leagues/new` is four steps because it collects four unrelated things from somebody new; this asks a returning commissioner for two dates and five numbers they have chosen before, and a Next button between them and the thing they came to do is cost without benefit.
 
-- [ ] **Step 1: Open the board**
+**WHAT IS SHARED IS THE FIELDSETS, NOT THE CHROME.** Two new components in `src/components/`:
 
-Two dates, a derived week count, and the inherited rules. **All league members auto-join** (ADR-016) — the board says so, because nobody should wonder whether they need to invite people again.
+- **`house-rules-fields.tsx`** — bankroll, tiers, minimum bid, and when bids close. This is the fieldset where drift would hurt most: the hints carry rulebook facts, and *"ties are always honoured, so a film can have more owners than tiers"* is the rule people get wrong. Two copies is two chances to explain it differently.
+- **`season-dates-fields.tsx`** — the two Fridays, the derived week count, and `weeksBetween`.
 
-- [ ] **Step 2: Derive the week count; do not ask for it**
+Both routes now ask the same questions with the same words.
 
-One week per Friday between the two dates, numbered `01`…`NN` — **two digits**, per the canvas decision. Show the derived count so the commissioner can sanity-check the dates before committing.
+**THE WEEK COUNT IS DERIVED, NEVER ASKED — and my first draft got this wrong.** The fieldset originally asked for a length, reasoning that `create_season` takes `p_default_season_length`. Board 5.2 and the plan's step 2 both say otherwise and they are right: a commissioner knows when the season ends, not how many Fridays that is. The two dates are the inputs, `weeksBetween` derives the count, the screen shows it back — *"One week per Friday — 6 weeks, numbered 01 to 06"* — and reversed dates refuse rather than submit.
 
-- [ ] **Step 3: Inherit the rules, and allow the override**
+**The rules are inherited, and the screen says so.** `getNextSeasonDefaults` (ADR-078) was already written and unused; this is the screen it was written for. It opens the form on the previous season's settings, or the rulebook's for a league's first, and the copy says changing one here changes it for this season only.
 
-Defaults come from the league. **Changing one here changes it for this season only** — say that on screen; the board does.
+---
 
-- [ ] **Step 4: Add `error.tsx`**
+### The registry sweep for a stepper
 
-- [ ] **Step 5: Run the gate**
+**Only one fits this stack.** `@reui/stepper` — Base UI, one file, no overwrites, not licence-gated. Installed to `src/components/reui/stepper.tsx` and **Task 8's hand-rolled rail was replaced with it.**
 
-```bash
-npm run verify
-```
+| | Depends on | Overwrites | Verdict |
+|---|---|---|---|
+| `@reui/stepper` | `@base-ui/react`, already installed | none | **installed** |
+| `@shadcnblocks/stepper-*` (24 variants) | **`radix-ui`** | **`ui/button.tsx`** | rejected |
+| `@shadcn` | no stepper exists | — | — |
+| `@animate-ui` | mostly `primitives-radix-*`, no stepper | — | — |
 
-- [ ] **Step 6: Drive it end to end**
+The `@shadcnblocks` family is the tempting one — it includes *"form wizard with per-step field validation"* — but it is the same trap as `@shadcn/progress` in Task 9: **radix in a codebase whose only primitive package is `@base-ui/react`**, and it wants the button carrying our `ink` variant.
 
-**Create a real season in a throwaway league**, confirm the weeks exist with the right numbers and dates, and confirm every member joined. Then delete the season.
+**What it bought, in behaviour Task 8 did not have:** the rail was a static `<ol>` — steps not focusable, not clickable, no way back but the Back button. **Driven:** four tabs, step 2 disabled until the league is named and enabled after, `ArrowDown` moves focus to "House rules", `Enter` activates it, and clicking step 1 returns to it.
 
-- [ ] **Step 7: Commit**
+**THE VENDORED COMPONENT FAILED THIS PROJECT'S LINT ON ARRIVAL, and was fixed in place** — which is what `src/components/reui/` is for. Three errors and three warnings, all real:
 
-```bash
-git add -A
-git commit -m "feat(season): the season wizard is rebuilt, and week numbers are two digits"
-```
+- It read `btnRef.current` from two dependency arrays. `react-hooks/refs` rejects it, and rightly: a ref read during render is not reactive, so the memo computing a trigger's index could hold a stale value after the trigger list changed. Now a **callback ref** registers the node and holds it in state.
+- The context memo omitted five of its own dependencies.
+- And the four focus helpers it listed were **plain function expressions rebuilt every render**, so that memo could never hold — a memo whose dependencies change every render costs a comparison and saves nothing. They are `useCallback`s now.
+
+---
+
+**The drive, at 1440×900 and 390×844.** Console clean, one `<main>`, one `<h1>`, every control named. **A real season was created and read back from the database, then deleted:**
+
+| | |
+|---|---|
+| weeks seeded | **6**, numbered 1–6 |
+| opening dates | 2026-09-04 → 2026-10-09 — six consecutive Fridays |
+| members auto-joined | **5** — the whole league roster (ADR-016) |
+| settings inherited | bankroll 100 · tiers 3 · min bid 1 · **buy_in 35** · Thursday |
+| reversed dates | submit disabled, "The last weekend has to fall on or after the first." |
+| a player opening the URL | redirected to `/leagues` |
+
+The season, its six weeks and its five memberships were deleted afterwards and Dev Closing Credits re-verified at one season, none active.
+
+**Not driven:** `create_season`'s refusal when a league already has a season under way. Reaching it means creating two, and the first one is what the drive deletes.
 
 ---
 
