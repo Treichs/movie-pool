@@ -14,6 +14,7 @@ import {
   recordEmail,
   resultsWindowStart,
 } from "@/lib/notifications";
+import type { NotifyKind } from "@/lib/notifications";
 import {
   deadlineNearEmail,
   mondayScoresEmail,
@@ -95,7 +96,9 @@ export async function GET(request: Request) {
     suppressed: 0,
   };
 
-  type Kind = "slate_up" | "deadline_reminder" | "bids_revealed" | "results_up";
+  // One definition, in `notifications.ts` — these strings are also the
+  // `email_log` kind and the `profiles.notify_*` column suffix.
+  type Kind = NotifyKind;
   type Job = {
     kind: Kind;
     weekId: string;
@@ -119,7 +122,7 @@ export async function GET(request: Request) {
   // ---- 1. Slate up ----------------------------------------------------------
   for (const week of await getOpenWeeks(admin, windowStart)) {
     const [members, sent, titles] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId),
+      getSeasonRecipients(admin, week.seasonId, "slate_up"),
       getAlreadyEmailed(admin, week.id, "slate_up"),
       getWeekFilmTitles(admin, week.id),
     ]);
@@ -153,7 +156,7 @@ export async function GET(request: Request) {
   const windowEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   for (const week of await getWeeksWithDeadlineWithin(admin, now, windowEnd)) {
     const [members, hasBid, sent] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId),
+      getSeasonRecipients(admin, week.seasonId, "deadline_reminder"),
       getMembersWhoBid(admin, week.id),
       getAlreadyEmailed(admin, week.id, "deadline_reminder"),
     ]);
@@ -181,7 +184,7 @@ export async function GET(request: Request) {
   // ---- 3. The reveal --------------------------------------------------------
   for (const week of await getClosedWeeks(admin, windowStart)) {
     const [members, sent] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId),
+      getSeasonRecipients(admin, week.seasonId, "bids_revealed"),
       getAlreadyEmailed(admin, week.id, "bids_revealed"),
     ]);
     const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}`;
@@ -207,7 +210,7 @@ export async function GET(request: Request) {
   // ---- 4. Monday scores -----------------------------------------------------
   for (const week of await getScoredWeeks(admin, windowStart)) {
     const [members, sent] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId),
+      getSeasonRecipients(admin, week.seasonId, "results_up"),
       getAlreadyEmailed(admin, week.id, "results_up"),
     ]);
     // CH-02: /standings is Season Home's Leaderboard tab. Emails link to the

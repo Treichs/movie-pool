@@ -16,14 +16,19 @@ export function SubmitButton({
   children,
   pendingLabel,
   variant = "ink",
+  disabled,
 }: {
   children: React.ReactNode;
   pendingLabel: string;
   variant?: React.ComponentProps<typeof Button>["variant"];
+  /** An additional reason to be disabled — "nothing has changed yet", say.
+   *  ORed with `pending`, never instead of it: a caller passing `false` here
+   *  must not be able to re-enable a button mid-flight. */
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant={variant} disabled={pending}>
+    <Button type="submit" variant={variant} disabled={pending || disabled}>
       {pending ? pendingLabel : children}
     </Button>
   );

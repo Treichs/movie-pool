@@ -742,6 +742,10 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          notify_bids_revealed: boolean
+          notify_deadline_reminder: boolean
+          notify_results_up: boolean
+          notify_slate_up: boolean
           peep_parts: Json | null
         }
         Insert: {
@@ -752,6 +756,10 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          notify_bids_revealed?: boolean
+          notify_deadline_reminder?: boolean
+          notify_results_up?: boolean
+          notify_slate_up?: boolean
           peep_parts?: Json | null
         }
         Update: {
@@ -762,6 +770,10 @@ export type Database = {
           display_name?: string
           email?: string
           id?: string
+          notify_bids_revealed?: boolean
+          notify_deadline_reminder?: boolean
+          notify_results_up?: boolean
+          notify_slate_up?: boolean
           peep_parts?: Json | null
         }
         Relationships: []
@@ -1637,6 +1649,15 @@ export type Database = {
       }
       update_bio: { Args: { p_bio: string }; Returns: undefined }
       update_display_name: { Args: { p_name: string }; Returns: undefined }
+      update_email_preferences: {
+        Args: {
+          p_bids_revealed: boolean
+          p_deadline_reminder: boolean
+          p_results_up: boolean
+          p_slate_up: boolean
+        }
+        Returns: undefined
+      }
       update_film: {
         Args: {
           p_eligible: boolean
@@ -1866,4 +1887,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 1d1a66fe0ec56cf112a460d689ad23161d4b9baf8813c4c5801cd2851f6ff283
+// @migrations-sha256 75e0648c9a69a21287560900e47a30f1bcbed1b531d1c95bfac57e2772ffabda
