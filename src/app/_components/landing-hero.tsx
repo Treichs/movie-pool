@@ -1,38 +1,12 @@
 import Link from "next/link";
 
-import { Perforation } from "@/components/perforation";
+import { PerforationEdge } from "@/components/perforation-edge";
+import { ScoreFormula } from "@/components/score-formula";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 /** How many perforations the hero's edges carry. Fewer than the auth shell's
  *  nine because this pane is shorter and the rhythm is spaced, not counted. */
 const PERFORATIONS = 6;
-
-/** One perforated edge of the film cell. Absolutely positioned so the hero's
- *  own content can sit on the page measure without allowing for them.
- *
- *  HIDDEN BELOW `xl`, and that is the one responsive decision a static board
- *  cannot draw. The columns occupy 28–54px from each edge; the content measure
- *  is `max-w-measure-page px-8`, so below roughly 1280px the text would reach
- *  them and paint over the edge rather than beside it. The auth shell makes the
- *  same call for the same reason — there by hiding the whole ink pane. */
-function PerforationEdge({ edge }: { edge: "left" | "right" }) {
-  return (
-    <div
-      // DECORATIVE, and not a list. Six identical shapes announced to a screen
-      // reader would be six pieces of noise ahead of the promise.
-      aria-hidden
-      className={cn(
-        "absolute inset-y-0 hidden flex-col justify-around py-3 xl:flex",
-        edge === "left" ? "left-7" : "right-7"
-      )}
-    >
-      {Array.from({ length: PERFORATIONS }, (_, i) => (
-        <Perforation key={i} />
-      ))}
-    </div>
-  );
-}
 
 /**
  * THE TOP OF THE LANDING PAGE — one promise, one action, and the rule that
@@ -63,8 +37,8 @@ export function LandingHero() {
   return (
     <>
       <section className="relative overflow-hidden bg-nav pt-24 pb-22 text-nav-foreground">
-        <PerforationEdge edge="left" />
-        <PerforationEdge edge="right" />
+        <PerforationEdge edge="left" count={PERFORATIONS} />
+        <PerforationEdge edge="right" count={PERFORATIONS} />
 
         <div className="relative mx-auto flex max-w-measure-page flex-col items-start gap-7 px-8">
           <span className="type-eyebrow text-eyebrow text-nav-muted-foreground">
@@ -106,25 +80,14 @@ export function LandingHero() {
       {/* THE WHOLE GAME IN ONE LINE, on paper so it stands apart from the
           pitch above it. It is stated, not explained — `/how-it-works` is
           where the worked example lives, and duplicating it here would create
-          two places to maintain the rules. */}
+          two places to maintain the rules. The line itself now IS shared with
+          that page, which is why it is a component: the rule is what this app
+          is about, and two copies of it are two places to get it wrong. */}
       <section className="border-b">
-        <p className="type-numeral mx-auto flex max-w-measure-page flex-wrap items-center justify-center gap-4.5 px-8 py-10 text-h2">
-          <span>Opening box office</span>
-          {/* The glyphs are hidden and the words are spoken. A screen reader's
-              default punctuation level skips `×` and `=` entirely, which would
-              read the formula as three unconnected nouns. */}
-          <span aria-hidden className="text-primary">
-            &times;
-          </span>
-          <span className="sr-only">multiplied by</span>
-          {/* A registered mark, and not ours to have auto-translate mangle. */}
-          <span translate="no">Tomatometer</span>
-          <span aria-hidden className="text-primary">
-            =
-          </span>
-          <span className="sr-only">equals</span>
-          <span>Your score</span>
-        </p>
+        <ScoreFormula
+          ground="paper"
+          className="mx-auto max-w-measure-page justify-center px-8 py-10"
+        />
       </section>
     </>
   );

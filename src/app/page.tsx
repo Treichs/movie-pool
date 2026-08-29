@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { PublicHeader } from "@/components/public-header";
 import { resolveLandingPath, safeNextPath } from "@/lib/landing";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,7 +8,6 @@ import { LandingBeats } from "./_components/landing-beats";
 import { LandingClose } from "./_components/landing-close";
 import { LandingHero } from "./_components/landing-hero";
 import { LandingHighlights } from "./_components/landing-highlights";
-import { LandingNav } from "./_components/landing-nav";
 
 /**
  * `/` — THE LANDING PAGE (ADR-435, IA map §7.1).
@@ -31,7 +31,7 @@ import { LandingNav } from "./_components/landing-nav";
  * measure, and the `<main>` — which has to come from here, because neither the
  * root layout nor `(member)/layout.tsx` renders one.
  *
- * `<LandingNav />` sits OUTSIDE `<main>`: it is a banner landmark, and putting
+ * `<PublicHeader />` sits OUTSIDE `<main>`: it is a banner landmark, and putting
  * it inside would leave the page with a header nested in its content.
  *
  * ── NO COMPOSER, AND THAT IS THE POINT ────────────────────────────────────
@@ -56,7 +56,7 @@ export default async function LandingPage({
 
   return (
     <>
-      <LandingNav />
+      <PublicHeader />
       <main>
         <LandingHero />
         <div className="mx-auto flex max-w-measure-page flex-col gap-14 px-8 pt-14 pb-18">

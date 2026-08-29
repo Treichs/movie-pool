@@ -3,8 +3,25 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 /**
- * THE SIGNED-OUT HEADER. Sits OUTSIDE `<main>` — it is a banner, not content,
- * and `page.tsx` owns the one `<main>` this route renders.
+ * THE SIGNED-OUT HEADER, shared by every public page. Sits OUTSIDE `<main>` —
+ * it is a banner, not content, and each page owns the one `<main>` it renders.
+ *
+ * It was `landing-nav` in the landing route's own `_components/` until
+ * `/how-it-works` needed the identical bar (board 2.1). Rule 1: a component
+ * moves here the first time a SECOND route needs it, and is renamed for what it
+ * is rather than for where it was born.
+ *
+ * The "How it works" link is a self-link on that page, deliberately: a header
+ * that loses an item depending on where you are is a header people stop
+ * trusting to be in the same place.
+ *
+ * ── ONE BOOLEAN, BECAUSE A PUBLIC PAGE HAS TWO KINDS OF VISITOR ───────────
+ * `/how-it-works` is public and members follow it from their own league. Two
+ * things are wrong for them: being sold an account they already have, and
+ * being shown a sign-in link when they are signed in. So the right-hand slot
+ * becomes a single way back into the app. A stranger is never shown `/leagues`,
+ * which they cannot open. The page below the header is identical either way —
+ * this is chrome, not a gate.
  *
  * ── THE THREE DESTINATIONS ARE THE WHOLE PITCH, IN ORDER OF COMMITMENT ────
  * Read about it, come back to an account you have, start one you don't. The
@@ -19,7 +36,7 @@ import { Button } from "@/components/ui/button";
  * whose label is `--primary-foreground` — paper, at 5.04:1 — and whose own
  * edge against the band is 3.79:1.
  */
-export function LandingNav() {
+export function PublicHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <header className="flex h-14 items-center justify-between bg-nav px-4 text-nav-foreground md:px-8">
       {/* DECORATIVE, with the full name beside it in the accessibility tree.
@@ -38,23 +55,36 @@ export function LandingNav() {
         >
           How it works
         </Link>
-        <Link href="/login" className="type-ui text-ui hover:underline">
-          Sign in
-        </Link>
         {/* A LINK WEARING THE BUTTON'S CLOTHES. `render` swaps the element,
             and `nativeButton={false}` is what tells Base UI that is deliberate
             — without it the button warns at runtime that its native semantics
             were removed. It navigates, so it must stay an `<a>`: a real
             `<button>` here would lose middle-click, open-in-new-tab and the
-            status-bar preview. Every landing CTA is written this way. */}
-        <Button
-          render={<Link href="/signup" />}
-          nativeButton={false}
-          size="sm"
-          className="type-ui text-ui"
-        >
-          Create account
-        </Button>
+            status-bar preview. Every public CTA is written this way. */}
+        {signedIn ? (
+          <Button
+            render={<Link href="/leagues" />}
+            nativeButton={false}
+            size="sm"
+            className="type-ui text-ui"
+          >
+            Your leagues
+          </Button>
+        ) : (
+          <>
+            <Link href="/login" className="type-ui text-ui hover:underline">
+              Sign in
+            </Link>
+            <Button
+              render={<Link href="/signup" />}
+              nativeButton={false}
+              size="sm"
+              className="type-ui text-ui"
+            >
+              Create account
+            </Button>
+          </>
+        )}
       </nav>
     </header>
   );

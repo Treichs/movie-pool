@@ -185,7 +185,7 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 | **2** | Sign up — **DONE** | `/signup` | `1.2` |
 | **3** | Forgot password — **DONE** | `/forgot-password` | `1.3` / `1.3b` |
 | **4** | Reset password — **DONE** | `/reset-password` | `1.4` |
-| **5** | How it works | `/how-it-works` | `2.1` |
+| **5** | How it works — **DONE** | `/how-it-works` | `2.1` |
 | **6** | Home | `/leagues` | `4.1` |
 | **7** | Accept an invite | `/invites/[token]` | `4.9` |
 | **8** | Create a league | `/leagues/new` | `4.8` |
@@ -323,53 +323,45 @@ Public routes (`/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, 
 
 ---
 
-### Task 5: `/how-it-works`
+### Task 5: `/how-it-works` — DONE
 
 **Board:** `2.1  /how-it-works`
 
-**Public route — no gate, no composer.** `/leagues` links to `#faq`, so **that anchor is load-bearing.**
+**Public route, no gate, no composer.** Seven files: [src/app/how-it-works/](../../../src/app/how-it-works/) — `page.tsx`, `error.tsx`, and five bands in `_components/` (`how-it-works-hero`, `week-beats`, `rules-worth-knowing`, `worked-example`, `how-it-works-close`).
 
-**Files:**
-- Create: `src/app/how-it-works/page.tsx`, `_components/*.tsx`, `error.tsx`
+**Three components moved to `src/components/`, each because this was the second route to need it** — rule 1, applied rather than anticipated:
 
-- [ ] **Step 1: Open the board, then read the rulebook**
+- `landing-nav` → **`public-header`**, renamed for what it is rather than where it was born. The board draws the identical signed-out bar.
+- `PerforationEdge`, out of `landing-hero`. It carries the `xl:` reasoning — the columns sit 28–54px in, so below ~1280px the text would paint over them — which must not be re-derived per band.
+- `ScoreFormula`, out of `landing-hero`. The subtle part is that `×` and `=` are `aria-hidden` with spoken words beside them, because a screen reader's default punctuation level skips both and would read the rule as three unconnected nouns. It takes `ground="paper" | "ink"` and picks the accent itself; neither red is legible on both grounds.
 
-[Docs/movie_pool_official_rules.md](../../movie_pool_official_rules.md). **This page is the rulebook's public face and must not contradict it. If the board and the rulebook disagree, the rulebook wins and the board is wrong.**
+**THREE CORRECTIONS WHERE THE BOARD AND THE RULEBOOK DISAGREE.** The plan's own instruction is that the rulebook wins.
 
-- [ ] **Step 2: Build the four parts**
+1. **There is no limited-release setting.** The board says "Some leagues opt limited releases in." The rulebook is explicit — "there is **no eligibility setting**" — wide release is the commissioner's per-film judgement, and the screen-count threshold that once existed was retired. What survives is the refund path, which is what the rule now describes. **This also contradicts Task 8's step 2**, which still lists "include limited releases (off default)" as a house rule to build — see below.
+2. **The tier count is a default, not a rule.** The board states "the top three distinct amounts" twice, flat. It is `season_settings.top_n_distinct`, 3 by default, fixed per season, **[Configurable]**. Both mentions now name three as the default.
+3. **The $0 bid is legal and never wins.** The board says only "$1 minimum", which is true of non-zero bids and silent about the one people are surprised by — it exists so a player who has spent their bankroll can still take part in a week. Folded into beat 02 rather than added as a sixth rule.
 
-Hero, the five beats, "the rules worth knowing", and the worked example. **The worked example does the arithmetic in real numbers including the tie that produces four owners from three tiers** — that is the rule people get wrong, and showing it beats stating it.
+**The worked example uses the rulebook's own numbers, not the board's.** Board 2.1 works through *Wicked: For Good* at $68.2M and 72%. Those figures are invented, and attaching invented box office to a real film on a public page states something untrue about a real release. The rulebook already carries an example built for this — **Backrooms**, bids of $11/$8/$6/$6/$6/$6, opening $81.4M at 89% → 72.45 — so the page uses it. It cannot contradict the rulebook because it *is* the rulebook, and its tie is more emphatic than the board's: **six owners from three tiers.**
 
-- [ ] **Step 3: Do not hard-code the tier count in prose**
+**One presentational correction:** the board paints the beat numerals `#EB4B37` on a paper panel, which is 3.42:1. That is the ink-side accent; on paper the same accent is `--primary` at 5.04:1.
 
-The page is public and has no season in scope, so it may say "three" **only** where it is explicitly describing the default. Word it as the default, not as the rule.
+**The `#faq` anchor exists and was measured.** `/leagues` will link to `/how-it-works#faq` in Task 6; the rules section carries the id, and following the anchor scrolls to **641px**. If that section is ever renamed or split, the anchor moves with it.
 
-- [ ] **Step 4: Keep the `#faq` anchor**
+**One thing the board could not draw: a member reading a public page.** Step 7 requires following `#faq` *from `/leagues` as a member*, so members do arrive here — and selling them an account they already have is wrong twice over. The page makes one `getUser` call, for chrome only, and both the header slot and the closing CTA become a way back into the app. **It decides nothing about the content**; the page below is identical either way. Fixing only the header would have looked deliberate in one place and forgotten in the other.
 
-```bash
-git grep -n "how-it-works#faq"
-```
+**The drive, at 1440×900.** Console clean, exactly one `<main>`, one `<h1>`, every control named.
 
-Whatever id that resolves to must exist on this page.
+| | Signed out | Signed in |
+|---|---|---|
+| Header right slot | Sign in · Create account | Your leagues |
+| `/signup` links on the page | 2 | 0 |
+| `/leagues` links on the page | **0** | 2 |
 
-- [ ] **Step 5: Add `error.tsx`**
+**`/login`'s form reset was fixed in the same pass** (the last screen carrying it): a wrong password now keeps the address and clears only the password. Verified — alert "Invalid login credentials", email retained, password empty.
 
-- [ ] **Step 6: Run the gate**
+**Not driven:** nothing on this page fetches or writes, so there is no role it renders differently for beyond the two above.
 
-```bash
-npm run verify
-```
-
-- [ ] **Step 7: Drive it signed out, then signed in**
-
-Public means a session with **no cookie** — confirm it renders and does not link `/leagues`. Then follow `/how-it-works#faq` from `/leagues` as a member and confirm it scrolls.
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add -A
-git commit -m "feat(public): how-it-works is rebuilt, and the worked example shows the tie"
-```
+**RAISED FOR TASK 8:** its step 2 tells the builder to make "include limited releases" a configurable house rule. The rulebook retired that setting. **The two cannot both ship** — that task's copy needs re-deriving from the rulebook before it is built.
 
 ---
 

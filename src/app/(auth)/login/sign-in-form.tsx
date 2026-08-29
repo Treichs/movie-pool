@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useId, useState } from "react";
 import Link from "next/link";
 
 import { GoogleMark } from "@/components/google-mark";
@@ -66,6 +66,18 @@ export function SignInForm({
 }) {
   const emailId = useId();
   const passwordId = useId();
+  // THE EMAIL FIELD IS CONTROLLED, and the reason is a React 19 behaviour that
+  // reads backwards: "when a form Action SUCCEEDS, React will automatically
+  // reset the form for uncontrolled components". An action that RETURNS a
+  // rejection has succeeded — only a thrown error is a failure — so every wrong
+  // password wiped the address as well. Controlling the field is the remedy the
+  // React team points at; the alternative is going back to `onSubmit` with
+  // `preventDefault` and an explicit transition, which gives up Actions.
+  //
+  // THE PASSWORD STAYS UNCONTROLLED and therefore clears, which is right: it is
+  // the field you want to retype after getting it wrong, and a password manager
+  // refills it. `/signup` and `/reset-password` draw the same line.
+  const [email, setEmail] = useState("");
   const [state, formAction] = useActionState<AuthFormState, FormData>(
     signIn,
     INITIAL
@@ -118,6 +130,8 @@ export function SignInForm({
               name="email"
               type="email"
               autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </Field>
