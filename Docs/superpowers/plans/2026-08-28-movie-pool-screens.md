@@ -47,6 +47,26 @@ npm run verify   →  typecheck · lint · a11y:contrast · types:fresh · build
 
 **Never run `npm run build` while `npm run dev` is running** — it corrupts the dev server's chunks and every route 500s. Drive on a second port: `npx next dev -p 3100`.
 
+### Named libraries — standing instruction, 2026-08-29
+
+**Every screen from build order 13 onward checks the registries before writing UI, and adopts a dependency where one fits rather than hand-rolling.** Three are named and settled; do not re-litigate them per screen.
+
+| Concern | Use | State |
+|---|---|---|
+| **Charts** | **Recharts** | Already in, via `@shadcn/chart`. `bump-chart` is the reference. |
+| **Data tables** | **`@tanstack/react-table`** | Adopted at build order 13. **v9**, not v8 — see below. |
+| **Dates** | **`date-fns`**, and one date-picker everywhere | `date-fns` installed. The picker is **still owed** — see below. |
+
+**TanStack is v9 and the internet is v8.** v9 renamed `useReactTable` to `useTable` and moved row models behind an explicit `tableFeatures()` call. Every v8 snippet — including shadcn's own data-table documentation page — fails to compile against it. `useLegacyTable` exists as a shim and is deliberately unused: adopting a library through its compatibility layer means writing the migration twice. **[players/[profileId]/_components/seasons-table.tsx](<../../../src/app/(member)/players/[profileId]/_components/seasons-table.tsx>) is the reference implementation** — copy its shape.
+
+**`@reui/data-grid` is also TanStack-based and was considered and rejected**, so nobody has to evaluate it twice: ten files plus `dnd-kit` and virtualisation. Reach for it only if a screen genuinely wants column drag-and-drop or a virtualised thousand rows. The headless library over the vendored `ui/table` keeps every table looking like every other one.
+
+**A sortable column that runs backwards needs two fixes, not one.** `invertSorting` handles a "smaller is better" column such as a finishing place, but it flips the rows and **not** what `getIsSorted()` reports — so `aria-sort` and the arrow will both announce the opposite of what is on screen unless they read from a derived effective direction. The seasons table carries that helper.
+
+**`src/lib/format.ts` stays on `Intl`, deliberately.** Its date formatters parse a date-only column at **UTC noon** — `new Date("2024-01-15")` is midnight UTC, which a browser west of Greenwich renders as the previous day, and in January as the previous *month*. Rewriting them on `date-fns` would reintroduce exactly that for no gain. **date-fns earns its place at the picker**, which is what `@shadcn/calendar` depends on.
+
+**⚠ STILL OWED: one date picker.** `src/components/season-dates-fields.tsx` uses two native `<input type="date">`, and it is shared by `/leagues/new` and `/leagues/[id]/seasons/new` — both already built. Installing `@shadcn/calendar` (`react-day-picker` + `date-fns`) and building one shared `DatePicker` is a small retrofit against two screens, not a new-screen task. **Do it before any screen that needs a date input.**
+
 ### The seven conditions — in force for every screen task
 
 1. `page.tsx` renders from a `src/lib` composer, with the authz gate preceding the fetch.
