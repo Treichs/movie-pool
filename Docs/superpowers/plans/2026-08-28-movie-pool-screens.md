@@ -777,11 +777,14 @@ The season, its six weeks and its five memberships were deleted afterwards and D
 - **The board fades an unowned row to 72%.** `--muted-foreground` at 72% over card white lands near 2.7:1, under the 4.5 this app holds every string to. The intent is inverted instead — the OWNED row takes an ink border, only the poster of an unowned row fades, and no text loses contrast.
 - **The dek's tense follows the date.** "Opened Fri, Sep 11" on a pending week is a future date stated in the past; a skipped week reads "Weekend of". The empty section heading is "The slate", not "The reveal".
 
-**⚠ STATES NOT DRIVEN, and they are fixture gaps rather than code gaps:**
+**✅ ALL THREE STATES NOW DRIVEN (`e1adbcc`).** They were unreachable at first — no fixture anywhere produced a tie, a removal or a skipped week — so **"Dev Edge Cases"** was added to `seed-dev.mts` to produce all three through the real RPCs. Its films carry real TMDB ids (written with the admin client, since `add_film` takes only a title and an imdb id), so posters and the league film page are live.
 
-1. **`skipped`** — no week anywhere in the database has that status. The empty state and the "Weekend of" tense were reviewed, not seen.
-2. **The tie note** — "a tie at $9 gives four owners" needs two winning bids at the same amount, and no fixture film has one. Every other reveal sentence was seen with real data.
-3. **A removed film** — `films.status` is `active` on every row in the database, so the removed section and the `remove_film` correction have never rendered.
+Driving it found two defects in the screen:
+
+- **A removed film listed its refunded bidders under "Owners".** `remove_film` refunds the money and leaves `is_winning` where the close set it, so the reveal named people as holding something the commissioner had taken away. The label is now "Refunded", and the tie note is suppressed on a removed film — it would have described an outcome that was undone.
+- **The skipped week's empty state echoed itself** — "Nothing opened this weekend" above a sentence starting with the same five words.
+
+**Still not reachable, and it is not a fixture problem:** the **OMDb half of a film page** (Tomatometer, Metacritic, IMDb). Those columns are written at PICK time and a seeded film is added by hand, never picked. `OMDB_API_KEY` is set, so this is not configuration — but `src/lib/omdb.ts` is `import "server-only"` and a script cannot call it, and writing invented Tomatometers into `film_catalog` would be worse than the gap: that table is a shared cache the replica league's pages read too.
 
 **Also worth knowing:** `reveal.ts` produces more than this screen draws — the cut hairline, the "Everyone else — $0" roster line and week-scaled bid bars, which is ADR-096's fuller locked sheet. Board 3.2 draws a compact settled week instead, and the plan's step 4 agrees with the board, so that is what was built. **The richer sheet has no screen among the 25.**
 
@@ -854,7 +857,7 @@ git commit -m "feat(week): the week board is rebuilt, and the reveal leads with 
 **⚠ RAISED, NOT BUILT — three, none of them this task's to decide:**
 
 1. **"Studio" is on the board and not in the data.** No production company on `film_catalog` and none read by `fetchMovieDetail`. A TMDB field plus a column plus a migration.
-2. **The ratings stack has never been seen with real values.** No row in the dev database has an OMDb rating — they are captured at pick time and dev has never picked with OMDb configured — so the layout was driven with the three numbers temporarily hardcoded and then reverted. Worth a fixture.
+2. **The ratings stack has never been seen with real values.** No row in the dev database has an OMDb rating, so the layout was driven with the three numbers temporarily hardcoded and then reverted. **This is NOT a missing key** — `OMDB_API_KEY` is set. It is that OMDb values are written at PICK time and every seeded film is added by hand, and `src/lib/omdb.ts` is `import "server-only"` so a seed script cannot fetch them. Faking them in `film_catalog` is refused: that table is a shared cache the replica league reads.
 3. **`/films` is not a page, and §7.5 rule 5 says every truncation must land on one.** The 25-route map has no films index, so chopping the id gives a 404. An IA decision, not a route to invent here.
 
 **Public to members, and it is *not* league-scoped.** ADR-408: the catalog carries the film, never the play.
