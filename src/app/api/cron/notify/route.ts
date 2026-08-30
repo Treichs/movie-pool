@@ -11,6 +11,7 @@ import {
   getSeasonRecipients,
   getWeekFilmTitles,
   getWeeksWithDeadlineWithin,
+  notifyIdempotencyKey,
   recordEmail,
   resultsWindowStart,
 } from "@/lib/notifications";
@@ -68,8 +69,14 @@ import {
 // secret check, the service-role client, the outbound call and the loop.
 
 export async function GET(request: Request) {
+  // `!cronSecret` FIRST, which is Vercel's own documented shape and not
+  // defensive noise: without it an unset variable makes the expected header the
+  // literal string "Bearer undefined", and the route is then open to anyone who
+  // guesses the obvious. A missing secret must fail closed, not fail open.
+  const cronSecret = process.env.CRON_SECRET;
   if (
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
+    !cronSecret ||
+    request.headers.get("authorization") !== `Bearer ${cronSecret}`
   ) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -274,11 +281,14 @@ export async function GET(request: Request) {
   };
 
   for (const job of jobs) {
+    // The key makes the two schedulers safe to overlap: whichever run reaches
+    // Resend second gets the first one's response back instead of sending.
     const result = await sendEmail(
       job.email,
       job.subject,
       job.html,
-      "automatic"
+      "automatic",
+      notifyIdempotencyKey(job.kind, job.weekId, job.profileId)
     );
     await recordEmail(admin, job.weekId, job.profileId, job.kind, result);
     if (result.ok) summary[tally[job.kind]]++;

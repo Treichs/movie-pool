@@ -29,8 +29,12 @@ import { fetchOmdb, omdbConfigured } from "@/lib/omdb";
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
+  // `!cronSecret` first — Vercel's documented shape. Without it an unset
+  // variable makes the expected header the literal "Bearer undefined".
+  const cronSecret = process.env.CRON_SECRET;
   if (
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
+    !cronSecret ||
+    request.headers.get("authorization") !== `Bearer ${cronSecret}`
   ) {
     return new Response("Unauthorized", { status: 401 });
   }

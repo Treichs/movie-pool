@@ -253,6 +253,27 @@ function sentOrFailed(result: SendResult): "sent" | "failed" {
 }
 
 /**
+ * The Resend idempotency key for one notification.
+ *
+ * IT IS THE UNIQUE INDEX, SPELLED OUT. `email_log_week_id_profile_id_kind_key`
+ * is what stops a duplicate ledger row; this is what stops the duplicate email
+ * that would otherwise already have been sent by the time the index fires. The
+ * two must mean the same thing, so this function lives beside `recordEmail`
+ * rather than in the route — changing one without the other is the mistake it
+ * exists to make visible.
+ *
+ * `<kind>/<week>:<profile>` is Resend's documented `<event-type>/<entity-id>`
+ * shape, and lands around 90 of the 256 characters allowed.
+ */
+export function notifyIdempotencyKey(
+  kind: NotifyKind,
+  weekId: string,
+  profileId: string
+): string {
+  return `${kind}/${weekId}:${profileId}`;
+}
+
+/**
  * Record an attempt. The RPC upserts, so a retry overwrites a previous failure.
  * Direct table access went away with ADR-416 gate 1 rule 3 (20260819010000).
  */
