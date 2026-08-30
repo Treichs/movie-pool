@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Card } from "@/components/ui/card";
-import { initialsFrom, relativeDay } from "@/lib/format";
+import { relativeDay } from "@/lib/format";
 import type { LeagueAnnouncement } from "@/lib/league";
 
 /**
@@ -50,11 +50,11 @@ export function AnnouncementRow({
       )}
 
       <div className="flex items-center gap-2">
-        <Avatar className="size-5.5 rounded">
-          <AvatarFallback className="type-micro rounded bg-muted text-micro">
-            {initialsFrom(announcement.authorName ?? "?")}
-          </AvatarFallback>
-        </Avatar>
+        <PlayerAvatar
+          id={announcement.authorId}
+          name={announcement.authorName ?? "?"}
+          className="size-5.5"
+        />
         <span className="type-body text-micro text-muted-foreground">
           {announcement.authorName ?? "A commissioner"} ·{" "}
           {relativeDay(announcement.at)}

@@ -4,7 +4,7 @@ import { useActionState, useId, useState } from "react";
 
 import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import {
   Field,
   FieldDescription,
@@ -36,11 +36,11 @@ import { updateProfile } from "../actions";
  * same fix.
  */
 export function ProfileSection({
-  initials,
+  profileId,
   displayName,
   bio,
 }: {
-  initials: string;
+  profileId: string;
   displayName: string;
   bio: string | null;
 }) {
@@ -72,11 +72,11 @@ export function ProfileSection({
         )}
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          <Avatar className="size-20 shrink-0">
-            <AvatarFallback className="type-h3 bg-foreground text-h3 text-background">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <PlayerAvatar
+            id={profileId}
+            name={displayName}
+            className="size-20"
+          />
 
           <FieldGroup className="grow">
             <Field data-invalid={state && !state.ok && state.field === "display_name" ? true : undefined}>

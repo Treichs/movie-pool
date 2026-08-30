@@ -1,11 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { initialsFrom } from "@/lib/format";
 import type { RecordEntry } from "@/lib/league-records";
 import { posterUrl } from "@/lib/tmdb-urls";
 import { cn } from "@/lib/utils";
@@ -99,11 +98,14 @@ export function RecordCard({
       </div>
 
       <div className="flex items-center gap-2">
-        <Avatar className="size-6 rounded">
-          <AvatarFallback className="type-micro rounded bg-muted text-micro">
-            {initialsFrom(entry.holder)}
-          </AvatarFallback>
-        </Avatar>
+        {/* A record holder is not always a linked account, so the seed
+            falls back to the name — a colour, rather than every unlinked
+            holder sharing one. */}
+        <PlayerAvatar
+          id={entry.holderProfileId ?? entry.holder}
+          name={entry.holder}
+          className="size-6"
+        />
         {entry.holderProfileId ? (
           <Link
             href={`/players/${entry.holderProfileId}`}

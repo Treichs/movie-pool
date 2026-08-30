@@ -73,7 +73,7 @@ export default async function AccountPage() {
           a label and its field two feet apart. */}
       <div className="flex max-w-180 flex-col gap-10">
         <ProfileSection
-          initials={account.initials}
+          profileId={account.profileId}
           displayName={account.displayName}
           bio={account.bio}
         />

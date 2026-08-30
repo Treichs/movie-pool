@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "lucide-react";
 
+import { LeagueMark } from "@/components/league-mark";
 import { Badge } from "@/components/ui/badge";
 import { useNow } from "@/hooks/use-now";
 import {
@@ -16,19 +17,6 @@ import {
 } from "@/components/ui/item";
 import { timeUntil } from "@/lib/format";
 import type { HomeLeague } from "@/lib/home";
-
-/** The mark a league carries, matching the switcher's: its chosen glyph, or its
- *  first letter. One shape, two places, and they must not diverge. */
-function LeagueMark({ league }: { league: HomeLeague }) {
-  return (
-    <span
-      aria-hidden
-      className="type-h3 flex size-11 items-center justify-center rounded-lg bg-foreground text-h3 text-background"
-    >
-      {league.avatarGlyph ?? league.name.charAt(0).toUpperCase()}
-    </span>
-  );
-}
 
 /** What the league is doing, in the fewest words that are still true. */
 function state(league: HomeLeague): string {
@@ -87,7 +75,7 @@ export function LeagueRows({ leagues }: { leagues: HomeLeague[] }) {
           className="hover:bg-muted"
         >
           <ItemMedia>
-            <LeagueMark league={league} />
+            <LeagueMark id={league.id} name={league.name} className="size-11" />
           </ItemMedia>
           <ItemContent>
             <ItemTitle className="type-h3 text-h3">{league.name}</ItemTitle>

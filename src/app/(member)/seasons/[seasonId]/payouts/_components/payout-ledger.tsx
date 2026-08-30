@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { initialsFrom, ordinal } from "@/lib/format";
+import { ordinal } from "@/lib/format";
 import { formatPoints, type PayoutRow } from "@/lib/payouts";
 
 /**
@@ -71,13 +71,12 @@ export function PayoutLedger({ ledger }: { ledger: PayoutRow[] }) {
                 </TableCell>
                 <TableCell>
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <Avatar className="size-6 rounded">
-                      <AvatarFallback
-                        className={`type-micro rounded text-micro ${row.isMe ? "bg-foreground text-background" : "bg-muted"}`}
-                      >
-                        {initialsFrom(row.name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      id={row.profileId}
+                      name={row.name}
+                      isMe={row.isMe}
+                      className="size-6"
+                    />
                     <Link
                       href={`/players/${row.profileId}`}
                       className={`truncate text-ui hover:underline ${row.isMe ? "type-ui font-semibold" : "type-ui"}`}

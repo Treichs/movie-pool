@@ -1,6 +1,4 @@
 import type { SupabaseClient } from "@/lib/supabase";
-import { isGlyphKey, type AvatarChoice } from "@/lib/avatar-palette";
-import { parsePeepParts, type PeepParts } from "@/lib/peep-atoms";
 import {
   buildPlayerDirectory,
   EMPTY_DIRECTORY,
@@ -17,14 +15,6 @@ export type PlayerProfile = {
   profileId: string;
   displayName: string;
   bio: string | null;
-  /** ADR-050 chosen avatar; null means it is still derived from the name. */
-  avatar: AvatarChoice | null;
-  /** The dress-up composition — the profile page's full figure and every
-   *  avatar circle. Parsed against the atom manifests, so a stale slug reads as
-   *  "no composition" and derivation takes over rather than the page breaking.
-   *  Null simply means derived: since the 24 templates were retired
-   *  (2026-08-09) there is no third state. */
-  peepParts: PeepParts | null;
   memberSince: string;
   isMe: boolean;
   seasonsPlayed: number;
@@ -53,9 +43,6 @@ export async function getPlayerProfile(
       profile_id: string;
       display_name: string;
       bio: string | null;
-      avatar_pair: number | null;
-      avatar_glyph: string | null;
-      peep_parts: unknown;
       member_since: string;
       is_me: boolean;
       seasons_played: number;
@@ -73,13 +60,6 @@ export async function getPlayerProfile(
     profileId: row.profile_id,
     displayName: row.display_name,
     bio: row.bio,
-    avatar:
-      row.avatar_pair !== null &&
-      row.avatar_glyph !== null &&
-      isGlyphKey(row.avatar_glyph)
-        ? { pair: row.avatar_pair, glyph: row.avatar_glyph }
-        : null,
-    peepParts: parsePeepParts(row.peep_parts),
     memberSince: row.member_since,
     isMe: row.is_me,
     seasonsPlayed: Number(row.seasons_played),

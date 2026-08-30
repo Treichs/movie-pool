@@ -5,6 +5,7 @@ import { useState } from "react";
 import { MenuIcon, PlusIcon } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { LeagueMark } from "@/components/league-mark";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { NavLeague } from "@/lib/nav";
 
@@ -73,12 +74,7 @@ export function MobileDrawer({
                 l.id === focused?.id ? "bg-accent" : "hover:bg-muted"
               }`}
             >
-              <span
-                aria-hidden
-                className="type-micro text-micro flex size-6 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-              >
-                {l.avatarGlyph ?? l.name.charAt(0).toUpperCase()}
-              </span>
+              <LeagueMark id={l.id} name={l.name} className="size-6" />
               <span className="truncate">{l.name}</span>
             </Link>
           ))}

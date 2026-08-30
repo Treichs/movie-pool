@@ -10,23 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LeagueMark } from "@/components/league-mark";
 import type { NavLeague } from "@/lib/nav";
-
-/** The mark a league carries in the nav: its chosen glyph, or its first letter. */
-function LeagueMark({ league, size }: { league: NavLeague; size: "sm" | "md" }) {
-  return (
-    <span
-      aria-hidden
-      className={
-        size === "sm"
-          ? "type-micro text-micro flex size-5.5 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-          : "type-micro text-micro flex size-6 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-      }
-    >
-      {league.avatarGlyph ?? league.name.charAt(0).toUpperCase()}
-    </span>
-  );
-}
 
 /** What a league is doing right now, in six words or fewer. */
 function leagueState(league: NavLeague): string {
@@ -75,7 +60,7 @@ export function LeagueSwitcher({
         className="type-ui text-ui flex h-8 max-w-66 items-center gap-2 rounded-4xl border border-edge bg-card px-2.5 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
         aria-label={`League — ${focused.name}`}
       >
-        <LeagueMark league={focused} size="sm" />
+        <LeagueMark id={focused.id} name={focused.name} className="size-5.5" />
         <span className="truncate">{focused.name}</span>
         <ChevronsUpDownIcon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       </DropdownMenuTrigger>
@@ -90,7 +75,7 @@ export function LeagueSwitcher({
             render={<Link href={`/leagues/${league.id}`} />}
             className={league.id === focused.id ? "bg-accent" : undefined}
           >
-            <LeagueMark league={league} size="md" />
+            <LeagueMark id={league.id} name={league.name} className="size-6" />
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="type-ui truncate text-ui">{league.name}</span>
               <span className="type-micro text-micro text-muted-foreground">

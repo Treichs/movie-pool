@@ -1,72 +1,86 @@
-import type { SupabaseClient } from "@/lib/supabase";
-// Only the PURE palette module — R2 keeps the data layer out of UI components,
-// which is the reason the palette and its types were split out of
-// composed/player-avatar in the first place.
-import { isGlyphKey, type AvatarChoice, type AvatarOverrides } from "@/lib/avatar-palette";
-import { parsePeepParts, type PeepParts } from "@/lib/peep-atoms";
+/**
+ * DERIVED AVATAR IDENTITY — a colour, and nothing stored.
+ *
+ * ── WHY NOTHING IS STORED ──────────────────────────────────────────────
+ * The standard shape for this is a resolution chain: an uploaded picture, then
+ * an identity provider's photo, then something derived so nobody is ever a
+ * blank circle. This app has only the last rung, which means a person's colour
+ * is a FUNCTION of who they are rather than a row anybody has to write. No
+ * column, no backfill, no picker, and no signup step that can fail.
+ *
+ * ── HASHED ON THE ID, NOT THE NAME ─────────────────────────────────────
+ * A display name is a label: it changes, and two accounts may share one. An id
+ * never does either. The retired peep derivation hashed the name deliberately
+ * so a rename re-rolled colour and face together — an elegant idea that makes
+ * a person's colour move underneath them, which is the thing people notice and
+ * dislike. The same repo had already been bitten by keying identity on a name
+ * (ADR-082, where two members sharing a name shared a face), and this is that
+ * lesson applied to the derived side.
+ *
+ * ── EVERY FILL TAKES WHITE INK ─────────────────────────────────────────
+ * These ten were curated for GLYPHS, where WCAG asks 3:1. Initials are TEXT and
+ * the bar is 4.5:1, which teal, cyan and orange all failed. Rather than carry a
+ * per-colour light/dark ink decision, amber and green were darkened as well so
+ * the whole set clears 4.5:1 against white — 4.60 at the tightest (pink), 5.70
+ * at the loosest (violet). There is now no ink decision to get wrong.
+ *
+ * ── INLINE STYLE, DELIBERATELY ─────────────────────────────────────────
+ * `--color-*: initial` in globals.css deletes Tailwind's stock palette, so
+ * there is no `bg-blue-600` to reach these with and never will be. They are
+ * DATA, not design tokens: they answer "which of ten", not "what colour is a
+ * surface". An inline `background` is also outside the blast radius of any
+ * future token rename.
+ */
 
-/** Profile id -> dress-up composition, for everyone who has built one. */
-export type PeepPartsOverrides = Record<string, PeepParts>;
+/**
+ * The ten fills — spread by HUE, not just picked.
+ *
+ * The set these replace had two 9° pairs in it, violet/purple and amber/orange,
+ * which is not ten colours: it is eight, twice. Four fixture leagues rendered
+ * and three read as the same purple. It also left a 116° hole between orange
+ * and green, so nothing in the app was ever yellow. These are ~17° apart at the
+ * tightest, and every one clears 4.5:1 against white — 4.60 at the tightest
+ * (pink), 6.98 at the loosest (purple).
+ *
+ * Order is not load-bearing: a colour is derived fresh on every render and
+ * never stored, so reordering costs nothing but a re-roll.
+ */
+export const AVATAR_FILLS = [
+  "#dc2626", // red      0°  4.83
+  "#c2410c", // orange  17°  5.18
+  "#a16207", // yellow  35°  4.92
+  "#4d7c0f", // lime    86°  4.99
+  "#15803d", // green  142°  5.02
+  "#0f766e", // teal   175°  5.47
+  "#0369a1", // sky    201°  5.93
+  "#4f46e5", // indigo 243°  6.29
+  "#7e22ce", // purple 272°  6.98
+  "#db2777", // pink   333°  4.60
+] as const;
 
-// ADR-050 read path: every chosen avatar the signed-in user can see, as a plain
-// PROFILE ID -> choice map for the provider in the member layout.
-//
-// A SECURITY DEFINER RPC rather than a `profiles` select, because the set is
-// "people I share a league with" — a join RLS does not express on profiles.
-// The function returns ONLY rows carrying a choice, so this map is usually
-// small or empty and a profile absent from it renders its derived avatar.
-//
-// KEYED BY ID SINCE ADR-082. It was keyed by display_name, which meant two
-// members sharing a name shared a face — including the one who never chose it.
-// The name is still returned, and lib/player-directory turns it back into a
-// key for the call sites that carry no id, but only while it is unambiguous.
-
-export async function getAvatarOverrides(
-  supabase: SupabaseClient
-): Promise<{ avatars: AvatarOverrides; peepParts: PeepPartsOverrides }> {
-  const { data, error } = await supabase.rpc("get_avatar_overrides");
-  // A failure here must never break the frame. Every avatar simply falls back
-  // to derivation, which is what the whole app rendered before choices existed.
-  if (error || !data) return { avatars: {}, peepParts: {} };
-
-  const avatars: AvatarOverrides = {};
-  const peepParts: PeepPartsOverrides = {};
-  for (const row of data as {
-    profile_id: string;
-    avatar_pair: number | null;
-    avatar_glyph: string | null;
-    peep_parts: unknown;
-  }[]) {
-    // Both halves or neither — update_avatar enforces it, and a half-set row
-    // would render a chosen colour with a derived glyph, which reads as a bug.
-    if (
-      row.avatar_pair !== null &&
-      row.avatar_glyph !== null &&
-      isGlyphKey(row.avatar_glyph)
-    ) {
-      avatars[row.profile_id] = { pair: row.avatar_pair, glyph: row.avatar_glyph };
-    }
-    // The dress-up composition rides the same RPC (2026-08-08). parsePeepParts
-    // allowlists every slug against the atom manifests, so a bad row makes a
-    // player DERIVED, never broken — the render path's standing rule.
-    const parts = parsePeepParts(row.peep_parts);
-    if (parts) peepParts[row.profile_id] = parts;
+/** FNV-1a. Not cryptographic and does not need to be — it needs to spread
+ *  evenly and to give the same answer on the server and in the browser, or an
+ *  avatar changes colour when the page hydrates. */
+function hash(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
   }
-  return { avatars, peepParts };
+  return h >>> 0;
 }
 
-/** The caller's own choice, for the settings picker's initial state. */
-export async function getMyAvatarChoice(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<AvatarChoice | null> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("avatar_pair, avatar_glyph")
-    .eq("id", userId)
-    .maybeSingle();
-  const row = data as { avatar_pair: number | null; avatar_glyph: string | null } | null;
-  if (!row || row.avatar_pair === null || row.avatar_glyph === null) return null;
-  if (!isGlyphKey(row.avatar_glyph)) return null;
-  return { pair: row.avatar_pair, glyph: row.avatar_glyph };
+/**
+ * The fill for a stable id — a profile id for a person, a league id for a
+ * league. Falls back to the first colour on an empty id rather than throwing:
+ * a missing id is a data problem, not a reason for a page to fail to render.
+ *
+ * TEN COLOURS IS FEWER THAN IT FEELS. Eight people in one league collide with
+ * 98% probability, ten with 99.96%. Colour is variety, not identification —
+ * the initials and the shape are what tell two players apart, which is also
+ * why colour is never the only carrier of a distinction on screen.
+ */
+export function avatarFill(id: string): string {
+  if (!id) return AVATAR_FILLS[0];
+  return AVATAR_FILLS[hash(id) % AVATAR_FILLS.length];
 }

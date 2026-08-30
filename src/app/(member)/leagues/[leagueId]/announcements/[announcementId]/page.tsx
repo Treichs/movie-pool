@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { TextLink } from "@/components/text-link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { requireUser } from "@/lib/auth";
-import { formatDateFull, initialsFrom } from "@/lib/format";
+import { formatDateFull } from "@/lib/format";
 import { getLeagueAnnouncementPage } from "@/lib/league";
 
 import { AnnouncementBody } from "./_components/announcement-body";
@@ -101,11 +101,11 @@ export default async function AnnouncementPage({
         <div className="flex flex-col gap-3">
           <h1>{announcement.title}</h1>
           <div className="flex items-center gap-2.5">
-            <Avatar className="size-7.5 rounded">
-              <AvatarFallback className="type-micro rounded bg-muted text-micro">
-                {initialsFrom(author)}
-              </AvatarFallback>
-            </Avatar>
+            <PlayerAvatar
+              id={announcement.authorId}
+              name={author}
+              className="size-7.5"
+            />
             <div className="flex flex-col">
               <span className="type-ui text-ui font-semibold">{author}</span>
               <span className="type-body text-micro text-muted-foreground">
