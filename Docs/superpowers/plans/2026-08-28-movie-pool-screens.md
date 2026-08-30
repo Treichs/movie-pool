@@ -1190,6 +1190,19 @@ git commit -m "feat(league): reading an announcement is rebuilt"
 
 **Board:** `4.6  /announcements/new`
 
+**BUILT 2026-08-30 (`98e0829`), and it grew a second route.**
+
+**EDIT IS BUILT** (asked for 2026-08-30). It needed `update_league_announcement` — a migration, since the table shipped with only post and delete, so fixing a typo meant deleting and reposting. Validation mirrors `post_league_announcement` verbatim so an edit cannot produce a row the insert path could not; `created_at` is untouched; the audit row carries the previous title and body. Any commissioner, matching delete (ADR-060).
+
+**⚠ THE ROUTE COUNT IS NOW 26, NOT 25.** `…/[announcementId]/edit` is the only shape §7.5 allows — path segment not query string, nesting no deeper than `/bid` and `/new`, and every truncation lands on a real page. Nothing is public yet so there is nothing to redirect, but **[Docs/ia-screen-map.md](../../ia-screen-map.md) still says 25 in three places and CLAUDE.md says "25 pages plus 6 route handlers".** Both need updating.
+
+**NO EMAIL SWITCH** (decided 2026-08-30). Step 2's switch and "it becomes the email subject" both assume a feature that does not exist: **nothing emails an announcement.** The switch is absent rather than inert, and the dek says where a post actually goes. **Step 5's "confirm the email actually sent" is therefore unreachable and was not attempted.**
+
+**Two defects driving it found:**
+
+- **Controlled fields are load-bearing here.** React resets an uncontrolled field when an action "succeeds", and a returned validation error IS a success to the runtime — so one over-long title would silently empty an 8,000-character body.
+- **A browser submits a textarea with CRLF.** A body typed in the app and one written by the seed were stored differently and compared unequal, which is exactly what the edit form's "nothing has changed yet" test does. Normalised on submit.
+
 **Files:**
 - Create: the route's `page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/app/(member)/leagues/[leagueId]/announcements/actions.ts`
@@ -1197,29 +1210,29 @@ git commit -m "feat(league): reading an announcement is rebuilt"
 **Interfaces:**
 - Produces: `postAnnouncement(prev, formData) -> Promise<ActionResult>`.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 **This screen carries the only shadow in the league surfaces.** Its sticky action bar overlaps its own form, which is exactly the floating case `--shadow-raised` exists for. Every other league surface is flat.
 
-- [ ] **Step 2: Build the form and the action**
+- [x] **Step 2: Build the form and the action**
 
 Title (**it becomes the email subject**), body (plain text — line breaks survive, nothing else is interpreted), and the "email this to all N members" switch. **The member count is resolved, never hard-coded.**
 
-- [ ] **Step 3: Add `error.tsx`**
+- [x] **Step 3: Add `error.tsx`**
 
 Its copy must say **whether the draft was lost**. If the boundary cannot tell, say so plainly rather than reassuring falsely.
 
-- [ ] **Step 4: Run the gate**
+- [x] **Step 4: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 5: Drive the write**
+- [x] **Step 5: Drive the write**
 
 As `dev-commish`, **post a real announcement and confirm the row exists** — and, if the switch was on, that the email actually sent. Then delete the row.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
