@@ -3,6 +3,7 @@ import {
   getLeagueRecordBook,
   type CareerRow,
   type LeagueAggregates,
+  type LeagueRecordBook,
 } from "@/lib/league-records";
 import type { SupabaseClient } from "@/lib/supabase";
 
@@ -396,6 +397,44 @@ export async function getLeagueAnnouncement(
  * nobody has written, so this page cannot show a balance and the prototype's
  * dues strip has nothing to render. Raised rather than stubbed.
  */
+export type LeagueRecordsPage = {
+  league: { id: string; name: string };
+  /** Null when the league has no season yet, or no standing in any of them —
+   *  `getLeagueRecordBook`'s own two null cases, kept apart from "no league",
+   *  which 404s. */
+  book: LeagueRecordBook | null;
+};
+
+/**
+ * `/leagues/[leagueId]/records` — board 4.3.
+ *
+ * THE RECORD BOOK IS NOT REBUILT HERE. `getLeagueRecordBook` already computes
+ * the whole thing and is the composer this screen was always meant to use.
+ * What it does NOT do is fetch the league or its seasons — its `seasons`
+ * parameter exists precisely so a caller passes the list it already has, which
+ * is what `getLeagueHome` does below. This is the same three reads, keeping
+ * the one field the home page drops: `records`.
+ *
+ * THE GATE IS THE FIRST READ, AND IT IS RLS'S. `leagues` gates SELECT on
+ * `is_league_member`, so a league the viewer does not belong to comes back
+ * null and the page 404s — indistinguishable from one that does not exist,
+ * which is the right answer to give a stranger holding an id.
+ */
+export async function getLeagueRecordsPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueRecordsPage | null> {
+  const { supabase, user } = ctx;
+
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const seasons = await getLeagueSeasons(supabase, leagueId);
+  const book = await getLeagueRecordBook(supabase, seasons, user.id);
+
+  return { league: { id: league.id, name: league.name }, book };
+}
+
 export type LeagueHome = {
   league: { id: string; name: string; glyph: string | null };
   isCommissioner: boolean;
