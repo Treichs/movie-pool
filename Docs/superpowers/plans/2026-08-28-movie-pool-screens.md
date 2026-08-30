@@ -1303,6 +1303,17 @@ git commit -m "feat(account): the account page is rebuilt"
 
 **Board:** `4.4  /leagues/[id]/dues`
 
+**BUILT 2026-08-30 (`40c87ac`).** No migration, exactly as the correction above said.
+
+**Two things NOT built, both argued rather than forgotten:**
+
+- **"Record a payment"** at the top of the board. It would pick a member and a season and then call the same RPC against the same `season_member_id` as the row's own control, with two more steps to get there. Step 3 lists the row control and not the button.
+- **TanStack on the settlement table.** The standing instruction covers DATA tables, and the two that use it are sortable because sorting answers a real question there. A settlement sheet has one correct order — finishing place — and every row carries a control; sorting by amount would destroy the only thing its order means.
+
+**Undo IS built, though the board draws only "Mark paid".** `clear_settlement_payment` exists, a one-way control on a page about real money makes a mis-click permanent, and step 6's "then set it back" needs it.
+
+**⚠ DRIVING THIS NEEDED A FINALIZED SETTLEMENT AND NONE EXISTED ANYWHERE.** Dev Closing Credits is deliberately seeded "completed, unsettled" so the commissioner workbench can be driven — and that workbench is **build order 23**, two tasks later. It was generated and finalized through the real RPCs with a throwaway script; `npm run seed:dev` resets it to unsettled, which is the fixture's documented behaviour. **Task 23 is what makes this reachable through the UI**, and after it lands the dues screen can be driven from a clean seed without one.
+
 **Real money, tracked outside the game. The app records who paid whom, never how.**
 
 **NOT BLOCKED, and an earlier note in this plan said it was.** Task 9's DONE record claimed dues had no data model and that this task needed one designed first. That was wrong — see the correction there. `settlement_payments`, its three RPCs and `getLeaguePayments` all exist. **This task needs no migration.**
@@ -1316,33 +1327,33 @@ git commit -m "feat(account): the account page is rebuilt"
 - Produces: `getLeagueDues(ctx, leagueId) -> LeagueDues` in `src/lib/league-dues.ts` — all-time balances and the per-season settlement rows.
 - Produces: `markPaymentPaid(prev, formData) -> Promise<ActionResult>`.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 **A positive balance means the league owes them.** That is the opposite of the intuitive reading, so the board labels it — keep the label.
 
-- [ ] **Step 2: The action goes through an RPC**
+- [x] **Step 2: The action goes through an RPC**
 
 Direct table writes are refused at the database, not merely by convention.
 
-- [ ] **Step 3: Build the page**
+- [x] **Step 3: Build the page**
 
 Balances, the season settlement table with Paid/Owed/Square, and the viewer's own balance panel. **"Mark paid" is commissioner-only.**
 
-- [ ] **Step 4: Add `error.tsx`, and mind its copy**
+- [x] **Step 4: Add `error.tsx`, and mind its copy**
 
 This screen is about money. **Say that no payment state was changed.**
 
-- [ ] **Step 5: Run the gate**
+- [x] **Step 5: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 6: Drive the write**
+- [x] **Step 6: Drive the write**
 
 As `dev-commish`, **mark a payment paid and confirm the row changed in the database.** Then set it back.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
