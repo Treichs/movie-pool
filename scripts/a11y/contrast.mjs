@@ -142,57 +142,23 @@ const FREE_TEXT = ["foreground", "muted-foreground"];
  * already declines to make. `checkUncovered()` below closes the drift this
  * leaves: a colour token used as `text-*` that NO pair covers fails the run.
  */
-const STATE_TOKENS = ["primary", "ring", "destructive", "success", "warning", "highlight", "link"];
+const STATE_TOKENS = ["primary", "nav-primary", "ring", "destructive", "success", "warning", "highlight", "link"];
 
 /**
- * `--primary` IS MEASURED AS UI DESPITE 47 `text-primary` SITES, by standing
- * ruling (2026-08-24: the developer declined a large-type carve-out and
- * reaffirmed tokens.css's own line 35, "vermilion is a BACKGROUND only").
+ * THE `--primary` CARVE-OUT IS GONE, and this note is what is left of it.
  *
- * THIS IS AN EXCEPTION AND IT IS PRINTED ON EVERY RUN — see the CLI block. An
- * exception nobody sees is how the bucket bug survived; this one announces
- * itself and names its own count.
+ * From 2026-08-24 to 2026-08-28 this file forced `--primary` into the UI
+ * bucket — measured at 3:1 rather than 4.5:1 — by standing ruling, because
+ * vermilion `#EB4B37` was 3.42:1 as text on paper and the developer had
+ * declined a large-type exception. Six `text-primary` sites were genuine
+ * small-text AA failures held open by it.
  *
- * IT IS ALSO SELF-INVALIDATING: `deriveStateKinds()` throws if `text-primary`
- * ever falls to zero, because at that point the carve-out is describing a
- * situation that no longer exists and must be deleted rather than left to rot.
- *
- * WHAT THE 47 ACTUALLY ARE, measured with comments blanked. THE NUMBER IS READ
- * OFF THE BUCKETS BLOCK THIS RUN PRINTS, not remembered — it was written here
- * as 51 and then as 49 inside one commit, both stale before the commit landed,
- * in a task whose own item 4 concluded that counts in prose rot. The large
- * majority are ICONS (`<Trophy className="size-5 text-primary">`), which are
- * non-text graphics at WCAG 1.4.11's 3:1 and genuinely belong in the UI
- * bucket, plus a handful of display-size text (landing-hero, landing-close,
- * films/[tmdbId] `text-lg font-bold`) which is large text at 3:1.
- *
- * SIX ARE GENUINE SMALL-TEXT AA FAILURES at 3.42:1 on paper, re-derived
- * site by site on 2026-08-25 (task B1.4 fix round 1) from the RENDER SITE, not
- * from the class name:
- *   announcements-rail.tsx:50,58   `text-sm text-primary`, page ground
- *   league-season-panel.tsx:45     `text-sm font-medium`, page ground
- *   season-table.tsx:140           `text-eyebrow` = 0.75rem = 12px, page ground
- *   your-season-strip.tsx:141      `text-lg font-bold` = 18px bold, just under
- *                                  WCAG's 18.66px large-text threshold
- *   ui/badge.tsx:21                `link: text-primary`, badge text is text-xs
- *
- * THREE THAT WERE ESCALATED WITH THEM ARE NOT FAILURES, and the correction
- * matters more than the addition would: an escalation naming things that are
- * fine is how the real six get dismissed along with them.
- *   nav-drawer.tsx:74,112  NOT a failure. The drawer renders inside
- *                          app-topnav.tsx:160's `<header class="bg-nav/95">`,
- *                          so its ground is `#0C0C0C`, not the page. Vermilion
- *                          there is 5.21:1 light and 5.56:1 dark. Checked at
- *                          the render site; the token names in the file
- *                          (`text-nav-muted-foreground`) only hint at it.
- *   podium.tsx:211         NOT a failure. `aria-hidden`, `pointer-events-none`,
- *                          `opacity-15` decorative numerals behind the podium —
- *                          not text for WCAG 1.4.3 purposes.
- *
- * That is a palette-wide sweep, not a token value, so it is escalated rather
- * than silenced. Fixing those six sites is what removes this carve-out.
- */
-const PRIMARY_IS_BACKGROUND_ONLY = "primary";
+ * The palette pass on 2026-08-28 removed the reason rather than the symptom.
+ * `--primary` is now `#C52F1B` at 5.04:1 on paper, so it is measured as text
+ * like every other token and needs no exception; the ink-side red kept its
+ * old value under `--nav-primary`, where 5.59:1 was always legal. An exception
+ * whose cause is fixed is deleted, not left to rot — which is what its own
+ * staleness check (`assertCarveOutLive`, also gone) existed to force.
 
 /** Reported, never gated — see header. */
 const RAMP = /^(chart-\d+|series-\d+|chart-points|chart-efficiency)$/;
@@ -259,35 +225,13 @@ export function deriveStateKinds(usage) {
       (usage.get(`bg|${name}`) ?? 0) +
       (usage.get(`border|${name}`) ?? 0) +
       (usage.get(`ring|${name}`) ?? 0);
-    if (name === PRIMARY_IS_BACKGROUND_ONLY) {
-      kinds.set(name, "ui");
-      continue;
-    }
     if (asText > 0) kinds.set(name, "text");
     else if (asSurface > 0) kinds.set(name, "ui");
   }
   return kinds;
 }
 
-/**
- * The `--primary` carve-out has to still be describing something real.
- *
- * SEPARATE FROM `deriveStateKinds()` ON PURPOSE, and the first version had it
- * inside. `deriveStateKinds()` is a pure function over a usage map and the unit
- * fixtures feed it three-line trees; throwing in there made every fixture that
- * did not happen to mention `text-primary` fail with a message about a standing
- * ruling, which is a check firing on the wrong thing. The staleness question is
- * about THE REPOSITORY, so it is asked once, by `analyse()`, against the real
- * scan.
- */
-export function assertCarveOutLive(usage) {
-  if ((usage.get(`text|${PRIMARY_IS_BACKGROUND_ONLY}`) ?? 0) > 0) return;
-  throw new Error(
-    `PRIMARY_IS_BACKGROUND_ONLY is stale: no \`text-${PRIMARY_IS_BACKGROUND_ONLY}\` remains ` +
-      "in src/. The standing ruling it encodes describes a situation that no longer exists — " +
-      "delete the constant and let the derivation stand on its own.",
-  );
-}
+
 
 /**
  * A colour token written as `text-<name>` that NO pair-building loop covers.
@@ -456,6 +400,8 @@ const GROUND_WASH_TOKENS = ["primary", "warning", "success", "destructive", "hig
 const NOT_A_GROUND_WASH = {
   background: "a near-opaque restatement of the page ground itself, which is already a base",
   surface: "same — `bg-surface/90` is a sticky bar over its own surface, already a base",
+  card:
+    "same again, and this repo's spelling of it: `bg-card/95` is the bid page's sticky summary bar over its own surface. --card IS one of the base grounds swept below, and 95% of it over --background lands within a rounding error of it, so measuring the composite would restate a pair already covered.",
   nav: "the nav bar's own ground; text there is --nav-foreground, never a state colour",
   "nav-foreground": "the landing hero's inverted panel; it carries its own inverted text",
   scrim: "a modal overlay — the dialog sits ABOVE it on --popover, never on it",
@@ -1138,7 +1084,19 @@ export function buildPairs(tokens, stateKinds = new Map()) {
   // KIND COMES FROM THE CALLER, and an empty map means no state pairs at all.
   // `analyse()` always passes the derived map; the unit fixtures pass nothing,
   // which keeps them a test of the pairing loops rather than of `src/`.
-  for (const [fg, kind] of stateKinds) for (const bg of ["background", "card"]) add(kind, fg, bg);
+  //
+  // A STATE TOKEN NAMED `<surface>-<role>` IS SWEPT AGAINST THAT SURFACE, not
+  // against the page grounds. `--nav-primary` is the case that forced this:
+  // it is the ink-side half of a two-lightness accent, 5.59:1 on `--nav` and
+  // 3.42:1 on `--background` — the second number is real, and measuring it is
+  // measuring a pairing the app is defined never to render. Derived from
+  // SURFACES rather than a name list, so `--sidebar-*` or a future
+  // `--scrim-*` accent scopes itself the same way, and a state token that
+  // owns no surface prefix still sweeps both page grounds as before.
+  for (const [fg, kind] of stateKinds) {
+    const owner = SURFACES.find((s) => fg.startsWith(`${s}-`) && hex.has(s));
+    for (const bg of owner ? [owner] : ["background", "card"]) add(kind, fg, bg);
+  }
   for (const fg of hex.keys()) {
     if (RAMP.test(fg)) for (const bg of ["background", "card"]) add("ramp", fg, bg);
   }
@@ -1188,7 +1146,6 @@ export function analyse(cssPath = CSS_DEFAULT, srcDir = SRC_DEFAULT) {
   // resolver that stopped matching, and the catch above says "the stylesheet
   // could not be read" — the exact class of false accusation the exit contract
   // exists to prevent. Let them be stack traces that name the real thing.
-  assertCarveOutLive(usage);
   assertGroundModelLive(model);
   const kinds = deriveStateKinds(usage);
   const pairs = [
@@ -1309,12 +1266,18 @@ export function analyse(cssPath = CSS_DEFAULT, srcDir = SRC_DEFAULT) {
 // repo's component tree, where ~200 components between them wrote enough
 // `text-*`/`bg-*` utilities that most state tokens were live. This repo is 25
 // registry primitives and a starter page, so `deriveStateKinds()` finds only
-// destructive, primary and ring — 132 pairs, and every one of them passes.
+// destructive, primary and ring, plus the nav family the auth screens
+// restored — 143 pairs, and every one of them passes.
+//
+// 137 -> 143 came from the 2026-08-28 palette pass, and the six are all real
+// coverage: `--nav-primary` arrived as a token and pairs against `--nav`, and
+// `--primary` left the UI bucket for the text bucket, which is a stricter
+// threshold on a pair that was already being drawn.
 //
 // THIS NUMBER IS A RATCHET, NOT A CEILING. It rises as screens land and put
 // more tokens into use. Raise it in the same commit as the screen that raises
 // the count; lowering it is what needs a reason.
-export const MIN_PAIRS = 132;
+export const MIN_PAIRS = 143;
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 if (isMain) {
@@ -1384,10 +1347,7 @@ if (isMain) {
     for (const [name, kind] of [...kinds].sort()) {
       const t = usage.get(`text|${name}`) ?? 0;
       const b = usage.get(`bg|${name}`) ?? 0;
-      const note =
-        name === PRIMARY_IS_BACKGROUND_ONLY
-          ? "  ← forced to UI by standing ruling; see PRIMARY_IS_BACKGROUND_ONLY"
-          : "";
+      const note = "";
       console.log(
         `    ${name.padEnd(12)} ${kind.padEnd(5)} text-${name}:${String(t).padStart(3)}  bg-${name}:${String(b).padStart(3)}${note}`,
       );

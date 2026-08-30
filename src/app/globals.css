@@ -14,11 +14,19 @@
 
 /* ---------------------------------------------------------------------------
    1. THE VALUES — light. Sprocket palette, contrast-validated at WCAG AA.
-   Three of these are not obvious and must not be "tidied":
+   Four of these are not obvious and must not be "tidied":
      - --muted-foreground uses a different neutral per mode. #6B6A68 is 4.92:1
        in light but 3.66:1 in dark; #8E8D8B is the reverse. Do not unify them.
-     - --primary (vermilion) is a BACKGROUND only. 3.42:1 — it fails as text.
+     - --primary and --nav-primary are ONE accent at two lightnesses, because a
+       red readable on paper (luminance <= 0.162) and a red readable on the ink
+       band (>= 0.175) cannot be the same value. #C52F1B is 5.04:1 on paper and
+       carries paper text at the same ratio; #EB4B37 is 5.59:1 on ink and is
+       used NOWHERE ELSE. Neither is a shade of the other to be "picked".
      - --link (cobalt) is lifted in dark to #249BDB; #14567A is 2.64:1 on ink.
+     - --edge is not --border. --border (#DCDBD9, 1.26:1) draws a panel, which
+       is decoration; --edge (#84827E, 3.25:1 at its worst ground) draws a
+       control boundary, which WCAG 1.4.11 requires to reach 3:1. One value
+       serves both modes — it clears 3:1 on every ground in each.
 --------------------------------------------------------------------------- */
 :root {
   --radius: 0.25rem;
@@ -29,16 +37,17 @@
   --card-foreground: #000000;
   --popover: #FFFFFF;
   --popover-foreground: #000000;
-  --primary: #EB4B37;
-  --primary-foreground: #000000;
+  --primary: #C52F1B;
+  --primary-foreground: #F5F4F3;
   --secondary: #EDECEA;
   --secondary-foreground: #000000;
   --muted: #EDECEA;
   --muted-foreground: #6B6A68;
   --accent: #EDECEA;
   --accent-foreground: #000000;
-  --destructive: #932818;
+  --destructive: #7A1D10;
   --border: #DCDBD9;
+  --edge: #84827E;
   --input: #EDECEA;
   --ring: #000000;
 
@@ -50,8 +59,8 @@
 
   --sidebar: #F5F4F3;
   --sidebar-foreground: #000000;
-  --sidebar-primary: #EB4B37;
-  --sidebar-primary-foreground: #000000;
+  --sidebar-primary: #C52F1B;
+  --sidebar-primary-foreground: #F5F4F3;
   --sidebar-accent: #EDECEA;
   --sidebar-accent-foreground: #000000;
   --sidebar-border: #DCDBD9;
@@ -66,6 +75,28 @@
   --warning-foreground: #F5F4F3;
   --scrim: #000000;
   --scrim-foreground: #FFFFFF;
+
+  /* A PERMANENTLY-INK SURFACE, declared at the SAME value in :root and .dark.
+     The nav bar and the auth screens' ink pane are both this: a surface that
+     overrides the page's background must override its foreground with it, so
+     the family is complete rather than borrowing --foreground and inverting
+     with the theme. An inverting ink pane is a photographic negative of the
+     film motif half the time.
+
+     It is also what makes --nav-primary legal: #EB4B37 is 5.59:1 on ink and
+     only 3.42:1 on paper, so the wordmark is accessible on --nav and would
+     fail anywhere else. That is the whole reason the accent splits in two —
+     --primary is the paper-side red and never appears on an ink surface;
+     --nav-primary is the ink-side red and never appears on paper.
+
+     --nav-muted-foreground is NOT --muted-foreground. That one measured 3.89:1
+     here — a real failure — and #8E8D8B is the dark-mode sheet neutral, which
+     serves both modes because --nav is #000000 in both. */
+  --nav: #000000;
+  --nav-primary: #EB4B37;
+  --nav-foreground: #F5F4F3;
+  --nav-muted-foreground: #8E8D8B;
+  --nav-border: #000000;
 
   /* Bump-chart series. Ten hues derived from one surviving anchor (#7AC49F). */
   --series-1: #7AC49F;
@@ -92,7 +123,7 @@
   --card-foreground: #F5F4F3;
   --popover: #1C1B19;
   --popover-foreground: #F5F4F3;
-  --primary: #EB4B37;
+  --primary: #F2604A;
   --primary-foreground: #000000;
   --secondary: #262523;
   --secondary-foreground: #F5F4F3;
@@ -100,8 +131,9 @@
   --muted-foreground: #8E8D8B;
   --accent: #262523;
   --accent-foreground: #F5F4F3;
-  --destructive: #FFA494;
+  --destructive: #FFC2B4;
   --border: #33322F;
+  --edge: #84827E;
   --input: #262523;
   --ring: #F5F4F3;
 
@@ -113,7 +145,7 @@
 
   --sidebar: #0B0A09;
   --sidebar-foreground: #F5F4F3;
-  --sidebar-primary: #EB4B37;
+  --sidebar-primary: #F2604A;
   --sidebar-primary-foreground: #000000;
   --sidebar-accent: #262523;
   --sidebar-accent-foreground: #F5F4F3;
@@ -127,6 +159,15 @@
   --warning-foreground: #000000;
   --scrim: #000000;
   --scrim-foreground: #FFFFFF;
+
+  /* Same ink in both modes — see :root. Only --nav-border lifts, because
+     #000000 against dark's --background (#0B0A09) is almost no separation and
+     the split must never vanish. */
+  --nav: #000000;
+  --nav-primary: #EB4B37;
+  --nav-foreground: #F5F4F3;
+  --nav-muted-foreground: #8E8D8B;
+  --nav-border: #33322F;
 
   --series-1: #2C6347;
   --series-2: #1F4347;
@@ -161,6 +202,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-edge: var(--edge);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
@@ -198,6 +240,28 @@
   --color-series-9: var(--series-9);
   --color-series-10: var(--series-10);
 
+  --color-nav: var(--nav);
+  --color-nav-primary: var(--nav-primary);
+  --color-nav-foreground: var(--nav-foreground);
+  --color-nav-muted-foreground: var(--nav-muted-foreground);
+  --color-nav-border: var(--nav-border);
+
+  /* PAGE AND PROSE MEASURES. The three `ch` values bound a line of text; the
+     page frame is a different question in a different unit — 72rem is the
+     width the route files already use, so a page and its loading state agree.
+     Yields max-w-measure-tight / -default / -wide / -page. */
+  --container-measure-tight: 45ch;
+  --container-measure-default: 65ch;
+  --container-measure-wide: 80ch;
+  --container-measure-page: 72rem;
+
+  /* THE ONE ROUNDED CORNER THAT IS NOT DERIVED FROM --radius, and it must not
+     be: a film perforation is a rounded rectangle, and one that squared itself
+     when the corner language was retuned would be a bug. The geometry is the
+     brand mark's own — 26x34 at rx 7 — so the shape on screen is the shape in
+     the logo. Yields rounded-perf. */
+  --radius-perf: 7px;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -232,6 +296,12 @@
 
   --text-display: 4rem;
   --text-display--line-height: 0.86;
+  /* A SIZE STEP OF `display`, NOT A NEW ROLE. Same axes (--fvs-display), one
+     size up, and it exists for exactly one thing: the landing hero's headline,
+     which is the largest type the app ever sets. It is applied as
+     `text-display lg:text-display-lg` so the promise still fits a phone. */
+  --text-display-lg: 6rem;
+  --text-display-lg--line-height: 0.84;
   --text-h1: 2.75rem;
   --text-h1--line-height: 0.9;
   --text-h2: 1.875rem;
@@ -246,7 +316,7 @@
   --text-ui--line-height: 1.45;
   --text-button: 0.6875rem;
   --text-button--line-height: 1;
-  --text-micro: 0.65625rem;
+  --text-micro: 0.6875rem;
   --text-micro--line-height: 1.4;
   --text-numeral-xl: 4.5rem;
   --text-numeral-xl--line-height: 0.82;

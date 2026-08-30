@@ -5,7 +5,7 @@
 // season- and league-agnostic; a member between seasons still gets the full
 // list, just without the "-> Week 5" column and the on-the-slate badges. That
 // is why /releases is a top-level route rather than living under
-// /season/[id]: nesting it would imply it IS season data and would force a
+// /seasons/[id]: nesting it would imply it IS season data and would force a
 // season context a between-seasons league does not have.
 
 import type { SupabaseClient } from "@/lib/supabase";

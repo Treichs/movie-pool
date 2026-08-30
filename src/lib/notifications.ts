@@ -39,6 +39,20 @@ export type Recipient = {
   display_name: string;
 };
 
+/**
+ * The four automatic emails, and the single source of their names.
+ *
+ * These strings are three things at once: the `kind` written to `email_log`,
+ * the suffix of the `profiles.notify_*` column that gates each one, and the
+ * discriminator the cron sweeps switch on. Keeping one definition is what lets
+ * the recipient query derive its filter instead of carrying a second mapping.
+ */
+export type NotifyKind =
+  | "slate_up"
+  | "deadline_reminder"
+  | "bids_revealed"
+  | "results_up";
+
 export type NotifiableWeek = {
   id: string;
   seasonId: string;
@@ -145,15 +159,39 @@ export async function getScoredWeeks(
   return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
 }
 
-/** A season's members, with the profile fields an email needs. */
+/**
+ * A season's members who want THIS kind of email, with the fields one needs.
+ *
+ * ── THE FILTER COLUMN IS BUILT FROM THE KIND ──────────────────────────────
+ * `profiles.notify_<kind>` exists for each of the four kinds, named for them
+ * deliberately (migration `20260829030000`). Deriving the column name here
+ * rather than keeping a kind→column map means a renamed kind fails loudly at
+ * the database instead of quietly mailing everyone.
+ *
+ * **The kind is required.** It was tempting to default it and filter nothing,
+ * which would have left every existing caller compiling and silently ignoring
+ * the preference it was added to honour — the failure mode this whole change
+ * exists to remove.
+ *
+ * ── `!inner` IS LOAD-BEARING, AND THAT WAS PROVEN RATHER THAN ASSUMED ─────
+ * A PostgREST filter on an EMBEDDED resource nulls the embed by default rather
+ * than dropping the parent row. Probed against the real database: without
+ * `!inner` a two-member season returned two rows, one carrying
+ * `profile: null`. The `.filter()` below would have discarded it and the
+ * answer would still have been right — by accident, after fetching what it
+ * then threw away. `!inner` makes the exclusion happen in the database, which
+ * is both correct on purpose and one fewer row over the wire.
+ */
 export async function getSeasonRecipients(
   admin: SupabaseClient,
-  seasonId: string
+  seasonId: string,
+  kind: NotifyKind
 ): Promise<{ seasonMemberId: string; profile: Recipient }[]> {
   const { data } = await admin
     .from("season_members")
-    .select("id, profile:profiles(id, email, display_name)")
-    .eq("season_id", seasonId);
+    .select("id, profile:profiles!inner(id, email, display_name)")
+    .eq("season_id", seasonId)
+    .eq(`profile.notify_${kind}`, true);
   return ((data ?? []) as unknown as {
     id: string;
     profile: Recipient | null;

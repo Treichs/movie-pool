@@ -37,8 +37,8 @@ The commissioner is a **permission, not a place** — uniformly, with no remaini
 | `/commish/[seasonId]` | delete, no redirect | Redirect stub since ADR-095 stage 2. Still compiles and bundles. |
 | `/commish/[seasonId]/picker` | delete, no redirect | Redirect stub since ADR-095/121 stage 3. |
 | `/commish/[seasonId]/weeks/[weekId]` | delete, no redirect | Redirect stub since ADR-095. |
-| `/league/[leagueId]/commish` | delete, no redirect | Redirect stub since ADR-095 stage 3. |
-| `/league` | **fold into `/home`** | It was `/home`'s empty state wearing a URL. Both were signposts, both rendered pending invites. |
+| `/leagues/[leagueId]/commish` | delete, no redirect | Redirect stub since ADR-095 stage 3. |
+| `/leagues` | **fold into `/leagues`** | It was `/leagues`'s empty state wearing a URL. Both were signposts, both rendered pending invites. |
 
 The four stubs' own comments propose deleting them *"once the link sweep confirms nothing points here."* The app is not live, so that sweep finds zero by construction. This is the cheapest it will ever be.
 
@@ -46,13 +46,13 @@ The four stubs' own comments propose deleting them *"once the link sweep confirm
 
 | Route | Verdict | Why |
 |---|---|---|
-| `/commish/[seasonId]/payouts` | **merge into `/season/[seasonId]/payouts`**, role-gated | See §2 — this reverses ADR-095's one preserved exception. |
+| `/commish/[seasonId]/payouts` | **merge into `/seasons/[seasonId]/payouts`**, role-gated | See §2 — this reverses ADR-095's one preserved exception. |
 
 ### Split (1)
 
 | Route | Verdict | Why |
 |---|---|---|
-| `/films/[tmdbId]?league=<id>` | **two routes**: `/films/[tmdbId]` and `/league/[leagueId]/films/[tmdbId]` | See §3 — the carrier changes, the ADR-408 principle does not. |
+| `/films/[tmdbId]?league=<id>` | **two routes**: `/films/[tmdbId]` and `/leagues/[leagueId]/films/[tmdbId]` | See §3 — the carrier changes, the ADR-408 principle does not. |
 
 ### Added (3)
 
@@ -60,13 +60,13 @@ The four stubs' own comments propose deleting them *"once the link sweep confirm
 |---|---|---|
 | `/` | **repurposed** as a landing page | See §7.1 — sign-in moves to `/login`, reversing ADR-121. |
 | `/login` | **added** (restores what ADR-121 deleted) | See §7.1. Not a duplicate of `/` any more, because `/` is a different page. |
-| `/league/[leagueId]/settings` | **added** | See §7.2 — configuration centralizes, operations distribute. |
+| `/leagues/[leagueId]/settings` | **added** | See §7.2 — configuration centralizes, operations distribute. |
 
 ### Kept (21)
 
 Everything else, unchanged in address:
 
-`/how-it-works` · `/signup` · `/forgot-password` · `/reset-password` · `/home` · `/account` · `/league/new` · `/league/[leagueId]` · `/league/[leagueId]/dues` · `/league/[leagueId]/records` · `/league/[leagueId]/announcements` · `/league/[leagueId]/announcements/new` · `/league/[leagueId]/announcements/[announcementId]` · `/league/[leagueId]/season/new` · `/season/[seasonId]` · `/season/[seasonId]/payouts` · `/season/[seasonId]/weeks/[weekId]` · `/season/[seasonId]/weeks/[weekId]/bid` · `/players/[profileId]` · `/join/[token]` · `/films/[tmdbId]`
+`/how-it-works` · `/signup` · `/forgot-password` · `/reset-password` · `/leagues` · `/account` · `/leagues/new` · `/leagues/[leagueId]` · `/leagues/[leagueId]/dues` · `/leagues/[leagueId]/records` · `/leagues/[leagueId]/announcements` · `/leagues/[leagueId]/announcements/new` · `/leagues/[leagueId]/announcements/[announcementId]` · `/leagues/[leagueId]/seasons/new` · `/seasons/[seasonId]` · `/seasons/[seasonId]/payouts` · `/seasons/[seasonId]/weeks/[weekId]` · `/seasons/[seasonId]/weeks/[weekId]/bid` · `/players/[profileId]` · `/invites/[token]` · `/films/[tmdbId]`
 
 ### Route handlers (6) — added 2026-08-26
 
@@ -85,7 +85,9 @@ The three `/api/cron/*` handlers are **Vercel cron targets**, so `vercel.json`'s
 
 **Why they were missed.** This document was produced from a screen inventory, and a route handler is not a screen. The omission is worth naming rather than quietly fixing: the same blind spot would drop them again the next time the route set is re-derived from the design canvas.
 
-**25 page routes** (plus the six route handlers above): the 21 kept above, plus the one new address the split adds (`/league/[leagueId]/films/[tmdbId]` — `/films/[tmdbId]` itself is already one of the 21), plus the 3 added routes (`/`, `/login`, `/league/[leagueId]/settings`). The merge contributes no new address: `/commish/[seasonId]/payouts` folds into `/season/[seasonId]/payouts`, which was already among the 21 kept.
+**25 page routes** (plus the six route handlers above): the 21 kept above, plus the one new address the split adds (`/leagues/[leagueId]/films/[tmdbId]` — `/films/[tmdbId]` itself is already one of the 21), plus the 3 added routes (`/`, `/login`, `/leagues/[leagueId]/settings`). The merge contributes no new address: `/commish/[seasonId]/payouts` folds into `/seasons/[seasonId]/payouts`, which was already among the 21 kept.
+
+**AMENDED 2026-08-30 — the count is 26.** `/leagues/[leagueId]/announcements/[announcementId]/edit` was added when editing an announcement was decided on: the table had shipped with only post and delete, so fixing a typo meant deleting and reposting, which loses the post's place in the list and its date. The address is a verb leaf for §7.5's own reasons — the carrier is a path segment rather than a query string, the nesting is no deeper than `/bid` and `/new`, and both truncations land on a real page (chop `/edit` for the post, chop the post for the list). §7.5's closing rule says no further IA change without a redirect; nothing is public yet, so there was nothing to redirect.
 
 ---
 
@@ -107,7 +109,7 @@ Keeping one exception to a pattern the app otherwise applies consistently costs 
 
 Checked after the decision, on 2026-08-21. **All three major fantasy platforms separate commissioner tools into a dedicated surface:** ESPN ships an "LM Tools" tab; Sleeper routes you to league settings → **Commissioner Control**, and puts even operational powers like *Edit Lineups and Matchups* inside it; Yahoo has its own commissioner section. On its face that is three-for-three against this decision.
 
-**Why it does not transfer.** What those platforms separate is a *large* surface — scoring rules, roster limits, playoff structure, divisional seeding, dozens of settings. A dedicated area earns its place by mass. Movie Pool's equivalent configuration already lives apart: `/league/[leagueId]/season/new` and the league settings dialog. What remained was **one operational page**, and a section containing exactly one item is a worse pattern than either alternative. ADR-095 had already reached that conclusion for three of the four.
+**Why it does not transfer.** What those platforms separate is a *large* surface — scoring rules, roster limits, playoff structure, divisional seeding, dozens of settings. A dedicated area earns its place by mass. Movie Pool's equivalent configuration already lives apart: `/leagues/[leagueId]/seasons/new` and the league settings dialog. What remained was **one operational page**, and a section containing exactly one item is a worse pattern than either alternative. ADR-095 had already reached that conclusion for three of the four.
 
 **The destructive-action objection also fails on inspection**, and this is the part worth recording. The literature's answer for irreversible actions is a *ladder of friction* delivered at the control — confirmation naming what will be lost, visual weight matched to consequence, disabled state when preconditions fail — not a separate address. The existing workbench already implements exactly that, well:
 
@@ -126,7 +128,7 @@ ADR-408 ruled that the film page shows **one scope** — the context league's ow
 | | Today | v2 |
 |---|---|---|
 | Catalog view | `/films/[tmdbId]` | `/films/[tmdbId]` |
-| League's own record | `/films/[tmdbId]?league=<id>` | `/league/[leagueId]/films/[tmdbId]` |
+| League's own record | `/films/[tmdbId]?league=<id>` | `/leagues/[leagueId]/films/[tmdbId]` |
 
 **What this buys:** the league-scoped view becomes bookmarkable and shareable as its own address, and breadcrumbs can name which league you are looking from.
 
@@ -144,18 +146,18 @@ Verified against `src/lib/email-templates.ts`'s callers. All seven email-linked 
 
 | Route | Linked from |
 |---|---|
-| `/season/[seasonId]/weeks/[weekId]` | slate-up + reveal emails (`api/cron/notify/route.ts:103`, `:160`) |
-| `/season/[seasonId]/weeks/[weekId]/bid` | deadline-near reminder (`:133`) |
-| `/season/[seasonId]?tab=leaderboard` | Monday-scores email (`:189`) |
-| `/season/[seasonId]/payouts` | season-settled statement (`commish/actions.ts:867`) |
-| `/join/[token]` | league invite (`commish/actions.ts:1217`) |
+| `/seasons/[seasonId]/weeks/[weekId]` | slate-up + reveal emails (`api/cron/notify/route.ts:103`, `:160`) |
+| `/seasons/[seasonId]/weeks/[weekId]/bid` | deadline-near reminder (`:133`) |
+| `/seasons/[seasonId]?tab=leaderboard` | Monday-scores email (`:189`) |
+| `/seasons/[seasonId]/payouts` | season-settled statement (`commish/actions.ts:867`) |
+| `/invites/[token]` | league invite (`commish/actions.ts:1217`) |
 | `/auth/confirm` | signup confirmation + password reset (`lib/landing.ts:115-117`) |
 | `/forgot-password` | "your password was reset" notification (`(auth)/actions.ts:270`) |
 
 The two disappearing destinations are reached from **code**, not from mail, so their callers are updated rather than redirected. Verified by grep on 2026-08-21 — these are the only two references, and there are no others:
 
-- `/league` — `src/lib/landing.ts:169` (`resolveLandingPath`, the zero-leagues case) and `src/components/blocks/chrome/app-topnav.tsx:105`. Point both at `/home`.
-- `/commish/[seasonId]/payouts` — the commissioner bar. Point it at `/season/[seasonId]/payouts`.
+- `/leagues` — `src/lib/landing.ts:169` (`resolveLandingPath`, the zero-leagues case) and `src/components/blocks/chrome/app-topnav.tsx:105`. Point both at `/leagues`.
+- `/commish/[seasonId]/payouts` — the commissioner bar. Point it at `/seasons/[seasonId]/payouts`.
 
 **Is "zero redirects" a smell — a sign the map was not ambitious enough?** No, and the reason is worth stating so nobody re-opens it. The three standard arguments for a redirect are search engines, external inbound links, and user bookmarks. This app is auth-gated (no crawler ever sees a route), has no external inbound links except the seven emails audited above (all of which survive), and is not live (no bookmark exists). Every condition that makes a redirect necessary is absent. The map is ambitious — it removes five routes and re-shapes two — and it still owes nothing, because pre-launch is the one window where URL changes are free.
 
@@ -165,9 +167,9 @@ The two disappearing destinations are reached from **code**, not from mail, so t
 
 ## 5. Other findings, recorded so Phase 6 does not rediscover them
 
-1. **There is a third redirect mechanism the config does not show.** `/season/[seasonId]/weeks/[weekId]` performs an in-page state-based `redirect()` to `/bid` when a week is still biddable (ADR-108). Reading `next.config.ts` alone will not reveal it.
+1. **There is a third redirect mechanism the config does not show.** `/seasons/[seasonId]/weeks/[weekId]` performs an in-page state-based `redirect()` to `/bid` when a week is still biddable (ADR-108). Reading `next.config.ts` alone will not reveal it.
 2. **`/` is a two-audience Mode at the root** — sign-in when signed out, `resolveLandingPath` redirect when signed in. `/login` was deleted as a duplicate of it (ADR-121). The page-type vocabulary's Mode examples do not anticipate this happening at the root; it works, and it is worth naming.
-3. **The season is the front door**, not `/home`. `page_type_map.md` (2026-08-03) says Home; `user-flow-and-domain-map.md` (2026-08-11, ADR-094) says the season; the live code follows the later one. **`page_type_map.md` gets corrected, not the code.**
+3. **The season is the front door**, not `/leagues`. `page_type_map.md` (2026-08-03) says Home; `user-flow-and-domain-map.md` (2026-08-11, ADR-094) says the season; the live code follows the later one. **`page_type_map.md` gets corrected, not the code.**
 4. **Announcements keeps its three routes** and is explicitly not folded the way CH-02 folded three season routes into tabs. The distinction: CH-02 folded three *views of the same data* into one page's tabs. Announcements is a small CRUD surface, and an individual announcement is a thing you link someone to.
 5. **Two design documents describe the commissioner-portal question as open** when ADR-095 closed it five days earlier, and this document closes the remainder. Both docs need a correction pass — the same defect class this project keeps finding elsewhere: a document asserting a state that no longer holds.
 
@@ -175,13 +177,13 @@ The two disappearing destinations are reached from **code**, not from mail, so t
 
 ## 6. What Phase 6 inherits
 
-- **25 screens** across 25 addresses, in the build order given by the rebuild spec §10.1: landing and auth → read-only → season core → league → commissioner surfaces. 24 are rebuilt by Plan 2; the bid page was built by Plan 1 Task 18.
+- **26 screens** across 26 addresses (25 as first mapped, plus `…/announcements/[announcementId]/edit` — see §4's amendment), in the build order given by the rebuild spec §10.1: landing and auth → read-only → season core → league → commissioner surfaces. 24 are rebuilt by Plan 2; the bid page was built by Plan 1 Task 18.
 - **Zero redirect obligations**, which is unusual and worth not squandering: any *further* IA change made during Phase 6 will owe one, because by then the screens will have been built against these addresses.
 - **Both owed designs are settled** and drawn on the canvas: the merged role-gated payouts page (boards 5.1a/5.1b) and the league-scoped film page's not-found path (§7.4, board 2.3).
 
 ---
 
-## 7. Three routes changed after this map was approved (2026-08-23)
+## 7. Routes changed after this map was approved (2026-08-23)
 
 Decided on the Phase 6 design canvas, after the developer reviewed the addresses rather than the layouts. **The map is 25, not 23.**
 
@@ -211,9 +213,9 @@ This **reverses ADR-121**, and legitimately. ADR-121 deleted `/login` because it
 
 **The detector moves with the route, and the trap is symmetric.** ADR-121's amendment changed `route-smoke.mts` *away* from `startsWith("/login")` to an exact match on `/` plus `/?`, because a naive `startsWith("/")` matches every redirect the suite makes and reports the whole app as broken. Reversing the route reverses that: `startsWith("/login")` is right again, and an exact match would now be the defect — the proxy's bounce carries `?next=`, so `redirectTarget === "/login"` would miss every real fall-through and report clean forever. Both directions are written into the file's own comment so the next move does not have to re-derive it.
 
-`/how-it-works` survives, and the split is deliberate: the landing **sells**, how-it-works **explains**. `/home` links to `/how-it-works#faq`, so that anchor is load-bearing.
+`/how-it-works` survives, and the split is deliberate: the landing **sells**, how-it-works **explains**. `/leagues` links to `/how-it-works#faq`, so that anchor is load-bearing.
 
-### 7.2 `/league/[leagueId]/settings` becomes a real route
+### 7.2 `/leagues/[leagueId]/settings` becomes a real route
 
 This is the **second commissioner-only page**, which is exactly the condition §2 named as reopening "commissioner is a permission, not a place". Reopened deliberately; the answer holds, on a test worth keeping:
 
@@ -228,11 +230,11 @@ The six commissioner powers split 4/2:
 | Power | Kind | Home |
 |---|---|---|
 | Overdue-week queue | operational | strip on Season Home — **not a route** |
-| Payouts draft / finalize | operational | `/season/[id]/payouts`, role-gated |
+| Payouts draft / finalize | operational | `/seasons/[id]/payouts`, role-gated |
 | Building a week's slate | operational | the week page |
-| Starting a season | configuration, one-shot | `/league/[id]/season/new` |
-| League identity + house rules | **configuration** | **`/league/[id]/settings`** |
-| Member roles + invites | **configuration** | **`/league/[id]/settings`** |
+| Starting a season | configuration, one-shot | `/leagues/[id]/seasons/new` |
+| League identity + house rules | **configuration** | **`/leagues/[id]/settings`** |
+| Member roles + invites | **configuration** | **`/leagues/[id]/settings`** |
 
 A dialog is for a decision finished in ten seconds — not for renaming a league, changing the bankroll and promoting a co-commissioner.
 
@@ -255,3 +257,17 @@ The route survives because a film page you can send to someone outside your leag
 ### 7.4 The foreign-league path, decided
 
 §3 left this owed. **Decided: redirect to the catalog view with a notice, not a 404.** The film exists and is readable; only the league record is out of reach, and a 404 would claim otherwise.
+
+### 7.5 Every address takes one shape (2026-08-28)
+
+**Four renames, no redirects, because nothing is public yet.** `/home` → `/leagues` · `/league/*` → `/leagues/*` · `/season/*` → `/seasons/*` · `/join/[token]` → `/invites/[token]`. The count is still 25 and the nesting shape is unchanged: seasons stay top-level, weeks stay under seasons, `/bid` keeps its own address.
+
+Five rules, and they are why:
+
+1. **Collections are plural, items are the id inside them.** AIP-122: collection identifiers *must* be plural. Half this map already was; the other half was not.
+2. **Nest only what a parent exclusively owns, and stop at two levels.** A season is exclusively a league's, but `/leagues/x/seasons/y/weeks/z/bid` is four levels of mostly-uuid; the documented escape is a top-level address for the deep resource, which is what `/seasons/[seasonId]` is.
+3. **The league belongs in the path.** Clerk advises against tenant slugs in URLs *unless* links get shared, members belong to several tenants, and the tenant changes what the page means. This app is all three.
+4. **`/` sells; the signed-in front door is a real address.** It is the league list, so it is `/leagues` — naming it `/home` gave the app two homes and invented a word the map does not otherwise use.
+5. **URLs are typed and truncated by people.** Every truncation must land on a real page: chop `/bid` for the week board, the week for the season, the season for your leagues. Lowercase, hyphenated, permanent from launch (NN/g, *URL as UI*).
+
+**This closes the window §7 opened.** From here the map's own rule stands: no further IA change without a redirect.

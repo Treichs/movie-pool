@@ -17,7 +17,18 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+        // --link, NOT --primary. The theme carries a dedicated link token
+        // (cobalt, lifted in dark) and the registry default pointed at the
+        // vermilion background token, which is a different colour with a
+        // different job. Inline links in prose use `TextLink`, not a Button —
+        // this variant is for a link that sits where a button would.
+        link: "text-link underline underline-offset-4",
+        // WEIGHT WITHOUT COLOUR. The heaviest control on a surface, deliberately
+        // not vermilion: --primary is a background token capped at one meaning
+        // ("live and yours"), and a screen that spends it on a Save button has
+        // nothing left to say it with. Ink is how this system says "primary
+        // action" where the accent is already committed elsewhere.
+        ink: "bg-foreground text-background hover:bg-foreground/85",
       },
       size: {
         default:

@@ -27,6 +27,26 @@ function deadlineFormat(timeZone: string): Intl.DateTimeFormat {
   return format;
 }
 
+// A small count in words — "three winning tiers", "four films". Prose reads
+// its small numbers as words and its large ones as digits; the boards do the
+// same, and ten is where they turn over. Zero is "no", which is the word that
+// belongs in the sentences this serves ("no films", "no winning tiers").
+const NUMBER_WORDS = [
+  "no", "one", "two", "three", "four", "five",
+  "six", "seven", "eight", "nine", "ten",
+];
+
+export function numberWord(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
+// First letter up. `numberWord` returns lowercase because most of its uses are
+// mid-sentence ("three winning tiers"); the two page deks that OPEN on a count
+// need it capitalised, and neither should carry its own copy of one line.
+export function sentenceCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // "1st", "2nd", "3rd", "11th" … used for ranks.
 export function ordinal(n: number): string {
   const mod100 = n % 100;
@@ -58,6 +78,20 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
 // Greenwich renders as the day before.
 export function formatDate(dateOnly: string): string {
   return DATE_FORMAT.format(new Date(`${dateOnly}T12:00:00Z`));
+}
+
+const DATE_FULL_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+// The same date WITH its year ("Nov 21, 2025"), for a fact about a film rather
+// than about this season. `formatDate` drops the year because a week is always
+// the one in front of you; a release date is not, and "Nov 21" is a question.
+export function formatDateFull(dateOnly: string): string {
+  return DATE_FULL_FORMAT.format(new Date(`${dateOnly}T12:00:00Z`));
 }
 
 // A month and a year ("January 2024") from a date-only column — for spans long
@@ -111,4 +145,22 @@ export function relativeDay(iso: string): string {
   if (days < 14) return "last week";
   if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
   return `${Math.floor(days / 30)} months ago`;
+}
+
+/**
+ * Up to two initials from a display name.
+ *
+ * Derived inline in three places before this existed — the shell's account
+ * menu, the account page's own avatar, and the player profile card — which is
+ * exactly one more than the rule allows. `.slice(0, 2)` on the joined letters
+ * rather than on the words, so "Jean-Luc" gives "J" and not "JL": the split is
+ * on spaces, and a hyphenated first name is one word.
+ */
+export function initialsFrom(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }

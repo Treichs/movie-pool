@@ -10,6 +10,11 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        // INK, the same variant name and the same reason `button.tsx` carries
+        // one: this app has a filled mark that is NOT the accent. A page spends
+        // its red on the one thing asking to be acted on, so a standing label —
+        // "Commissioner" — takes ink instead of competing with it. 19.12:1.
+        ink: "bg-foreground text-background [a]:hover:bg-foreground/85",
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:

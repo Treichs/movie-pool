@@ -742,6 +742,10 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          notify_bids_revealed: boolean
+          notify_deadline_reminder: boolean
+          notify_results_up: boolean
+          notify_slate_up: boolean
           peep_parts: Json | null
         }
         Insert: {
@@ -752,6 +756,10 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          notify_bids_revealed?: boolean
+          notify_deadline_reminder?: boolean
+          notify_results_up?: boolean
+          notify_slate_up?: boolean
           peep_parts?: Json | null
         }
         Update: {
@@ -762,6 +770,10 @@ export type Database = {
           display_name?: string
           email?: string
           id?: string
+          notify_bids_revealed?: boolean
+          notify_deadline_reminder?: boolean
+          notify_results_up?: boolean
+          notify_slate_up?: boolean
           peep_parts?: Json | null
         }
         Relationships: []
@@ -1489,9 +1501,13 @@ export type Database = {
         Args: { p_token: string }
         Returns: {
           already_member: boolean
+          bankroll: number
           expired: boolean
+          joins_current_season: boolean
           league_name: string
+          member_count: number
           targeted_at: string
+          winning_tiers: number
         }[]
       }
       place_bid: {
@@ -1633,6 +1649,15 @@ export type Database = {
       }
       update_bio: { Args: { p_bio: string }; Returns: undefined }
       update_display_name: { Args: { p_name: string }; Returns: undefined }
+      update_email_preferences: {
+        Args: {
+          p_bids_revealed: boolean
+          p_deadline_reminder: boolean
+          p_results_up: boolean
+          p_slate_up: boolean
+        }
+        Returns: undefined
+      }
       update_film: {
         Args: {
           p_eligible: boolean
@@ -1644,6 +1669,10 @@ export type Database = {
       }
       update_film_release_date: {
         Args: { p_film_id: string; p_release_date: string }
+        Returns: undefined
+      }
+      update_league_announcement: {
+        Args: { p_body: string; p_id: string; p_title?: string }
         Returns: undefined
       }
       update_league_identity: {
@@ -1862,4 +1891,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 1ebdf41757828d492f86356070bba14771cbfc99349c0dd01b288ba2bce54640
+// @migrations-sha256 2a4ef610d6365e3bfbf3f8ae2b7154ec386183e5ca9b1f8cc6f86a938b699e7f

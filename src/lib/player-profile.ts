@@ -110,9 +110,20 @@ export type PlayerSeason = {
  * Season-by-season results behind the profile card (2026-08-08). Same
  * SECURITY DEFINER visibility rule as get_player_profile — only seasons in
  * leagues the VIEWER also belongs to — enforced in the RPC itself, so this
- * reader stays a straight mapping. Empty on error for the same reason the
- * profile returns null: the page treats "no such player" and "nothing shared"
- * identically on purpose.
+ * reader stays a straight mapping.
+ *
+ * ── ONLY THE VISIBILITY REFUSAL IS SWALLOWED. THIS USED TO SWALLOW EVERYTHING
+ * and it cost a real bug: `get_player_seasons` referenced `seasons.name`, a
+ * column that has never existed (the name lives on `v_seasons`), so the
+ * function threw on every call from the day it was written — and this reader
+ * turned that into an empty array. A function that could not succeed rendered
+ * as a player who had simply never played, and nothing anywhere said
+ * otherwise. It surfaced only when `/players/[profileId]` put "Seasons played
+ * 3" beside an empty table.
+ *
+ * So "no such player" — the RPC's own deliberate refusal, which must read the
+ * same as "we share nothing" — still returns empty. Everything else throws and
+ * lands in the segment's `error.tsx`, where a broken read belongs.
  */
 export async function getPlayerSeasons(
   supabase: SupabaseClient,
@@ -121,7 +132,11 @@ export async function getPlayerSeasons(
   const { data, error } = await supabase.rpc("get_player_seasons", {
     p_profile_id: profileId,
   });
-  if (error || !data) return [];
+  if (error) {
+    if (error.message.includes("no such player")) return [];
+    throw new Error(`get_player_seasons: ${error.message}`);
+  }
+  if (!data) return [];
 
   return (
     data as {
@@ -148,6 +163,48 @@ export async function getPlayerSeasons(
     place: Number(row.place),
     playerCount: Number(row.player_count),
   }));
+}
+
+export type PlayerProfilePage = {
+  profile: PlayerProfile;
+  seasons: PlayerSeason[];
+  /** True when the rows span more than one league, which is the only time a
+   *  league column carries information. A profile is cross-league by design —
+   *  `get_player_seasons` returns every season in a league the VIEWER also
+   *  belongs to — so on a shared single league the column would repeat one
+   *  value down the table. */
+  spansLeagues: boolean;
+};
+
+/**
+ * THE WHOLE SCREEN IN ONE CALL.
+ *
+ * Both halves already existed and both are RLS-equivalent: each is a
+ * `SECURITY DEFINER` RPC applying the same visibility rule — you see a player
+ * only through a league you share. This wrapper exists so the page makes one
+ * call rather than two, and so "the profile is null" is decided once.
+ *
+ * ── A MISSING PROFILE AND A STRANGER ARE THE SAME ANSWER, DELIBERATELY ────
+ * `getPlayerProfile` returns null both for a player who does not exist and for
+ * one the viewer shares no league with. That is not laziness: telling them
+ * apart would confirm an account exists to somebody who cannot see it, which
+ * is the roster leak this app's gates exist to prevent.
+ */
+export async function getPlayerProfilePage(
+  supabase: SupabaseClient,
+  profileId: string
+): Promise<PlayerProfilePage | null> {
+  const [profile, seasons] = await Promise.all([
+    getPlayerProfile(supabase, profileId),
+    getPlayerSeasons(supabase, profileId),
+  ]);
+  if (!profile) return null;
+
+  return {
+    profile,
+    seasons,
+    spansLeagues: new Set(seasons.map((s) => s.leagueName)).size > 1,
+  };
 }
 
 /**

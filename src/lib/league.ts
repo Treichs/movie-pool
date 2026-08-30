@@ -1,5 +1,11 @@
-import type { SupabaseClient } from "@/lib/supabase";
 import type { WeekStatus } from "@/lib/commish";
+import {
+  getLeagueRecordBook,
+  type CareerRow,
+  type LeagueAggregates,
+  type LeagueRecordBook,
+} from "@/lib/league-records";
+import type { SupabaseClient } from "@/lib/supabase";
 
 // League data helpers (phase 11 / ADR-016). RLS scopes every read to
 // leagues the caller belongs to.
@@ -370,4 +376,247 @@ export async function getLeagueAnnouncement(
     .maybeSingle();
   if (error || !data) return null;
   return toAnnouncement(data as unknown as AnnouncementRow);
+}
+
+export type LeagueAnnouncementsPage = {
+  league: { id: string; name: string };
+  /** Whether the VIEWER commissions this league — the "Write one" control's
+   *  only gate. Read here rather than derived from the career table, which
+   *  costs the whole record book to answer one boolean. */
+  isCommissioner: boolean;
+  announcements: LeagueAnnouncement[];
+};
+
+/**
+ * `/leagues/[leagueId]/announcements` — board 4.5.
+ *
+ * ── IT IS NOT `src/lib/announcements.ts` ────────────────────────────────
+ * The plan asks for a new module and a new `getAnnouncements`. Both already
+ * live here: `getLeagueAnnouncements` reads the list and
+ * `getLeagueAnnouncement` reads one, and a second module re-wrapping them
+ * would split one small domain across two files for no gain. This is the
+ * page's own composer — the league for the trail, the role for one button,
+ * and the list — and it calls the reader rather than repeating it.
+ *
+ * ── THERE IS NO READ STATE, SO THE BOARD'S UNREAD MARK IS NOT BUILT ─────
+ * Board 4.5 gives an unread post an ink left edge and a vermilion dot.
+ * `league_announcements` has no `read_at` and there is no reads table —
+ * `shell-alerts.ts` reached the same conclusion on 2026-08-28 and wrote it
+ * down: "Announcements join this list the day someone adds a `read_at` — that
+ * is a migration and a decision, not a line of UI." So every post renders the
+ * same, and the gap is raised rather than faked with a proxy that would be
+ * wrong on every second render.
+ */
+export async function getLeagueAnnouncementsPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueAnnouncementsPage | null> {
+  const { supabase, user } = ctx;
+
+  // THE GATE IS THIS READ AND IT IS RLS'S — `leagues` gates SELECT on
+  // `is_league_member`, so a stranger's league comes back null and 404s.
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const [{ data: membership }, announcements] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("role")
+      .eq("league_id", leagueId)
+      .eq("profile_id", user.id)
+      .maybeSingle(),
+    getLeagueAnnouncements(supabase, leagueId),
+  ]);
+
+  return {
+    league: { id: league.id, name: league.name },
+    isCommissioner:
+      (membership as { role: string } | null)?.role === "commissioner",
+    announcements,
+  };
+}
+
+export type LeagueAnnouncementPage = {
+  league: { id: string; name: string };
+  announcement: LeagueAnnouncement;
+  /** Whether the VIEWER commissions this league — the Delete control's gate,
+   *  and it is ANY commissioner, matching `delete_league_announcement`'s own
+   *  check rather than a narrower "only the author" rule this page would then
+   *  be alone in believing. */
+  isCommissioner: boolean;
+  /** Whether the AUTHOR still commissions it. Only a commissioner can post, so
+   *  this is true on the day; it goes false when someone hands the role on, and
+   *  labelling a former commissioner as one would be the page asserting a fact
+   *  about today that stopped being true. */
+  authorIsCommissioner: boolean;
+};
+
+/**
+ * `/leagues/[leagueId]/announcements/[announcementId]` — board 4.7.
+ *
+ * `getLeagueAnnouncement` already reads the row and already scopes it by
+ * league, so a member cannot reach another league's post by guessing an id.
+ * This adds the two role answers the page needs and nothing else.
+ */
+export async function getLeagueAnnouncementPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string,
+  announcementId: string
+): Promise<LeagueAnnouncementPage | null> {
+  const { supabase, user } = ctx;
+
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const announcement = await getLeagueAnnouncement(
+    supabase,
+    leagueId,
+    announcementId
+  );
+  if (!announcement) return null;
+
+  // Both roles in one read — the author and the viewer are usually two rows of
+  // the same small table, and asking twice would be two round trips for one
+  // question about one league.
+  const { data: roles } = await supabase
+    .from("league_members")
+    .select("profile_id, role")
+    .eq("league_id", leagueId)
+    .in("profile_id", [user.id, announcement.authorId]);
+  const roleOf = new Map(
+    ((roles ?? []) as { profile_id: string; role: string }[]).map((r) => [
+      r.profile_id,
+      r.role,
+    ])
+  );
+
+  return {
+    league: { id: league.id, name: league.name },
+    announcement,
+    isCommissioner: roleOf.get(user.id) === "commissioner",
+    authorIsCommissioner: roleOf.get(announcement.authorId) === "commissioner",
+  };
+}
+
+export type LeagueRecordsPage = {
+  league: { id: string; name: string };
+  /** Null when the league has no season yet, or no standing in any of them —
+   *  `getLeagueRecordBook`'s own two null cases, kept apart from "no league",
+   *  which 404s. */
+  book: LeagueRecordBook | null;
+};
+
+/**
+ * `/leagues/[leagueId]/records` — board 4.3.
+ *
+ * THE RECORD BOOK IS NOT REBUILT HERE. `getLeagueRecordBook` already computes
+ * the whole thing and is the composer this screen was always meant to use.
+ * What it does NOT do is fetch the league or its seasons — its `seasons`
+ * parameter exists precisely so a caller passes the list it already has, which
+ * is what `getLeagueHome` does below. This is the same three reads, keeping
+ * the one field the home page drops: `records`.
+ *
+ * THE GATE IS THE FIRST READ, AND IT IS RLS'S. `leagues` gates SELECT on
+ * `is_league_member`, so a league the viewer does not belong to comes back
+ * null and the page 404s — indistinguishable from one that does not exist,
+ * which is the right answer to give a stranger holding an id.
+ */
+export async function getLeagueRecordsPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueRecordsPage | null> {
+  const { supabase, user } = ctx;
+
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const seasons = await getLeagueSeasons(supabase, leagueId);
+  const book = await getLeagueRecordBook(supabase, seasons, user.id);
+
+  return { league: { id: league.id, name: league.name }, book };
+}
+
+// ---------------------------------------------------------------------------
+// LEAGUE HOME (board 4.2) — the composer for `/leagues/[leagueId]`.
+// ---------------------------------------------------------------------------
+
+/**
+ * THE CAREER TABLE IS THE ROSTER, and that is not a shortcut.
+ * `CareerRow` already carries `name`, `isMe`, `isCommissioner`, `seasons` and
+ * `points` — every column board 4.2's members list draws — and
+ * `league-records.ts` says so itself: "the career table can stand in for the
+ * roster (ADR-083)". Calling `getLeagueRoster` as well would be a second query
+ * answering a question this one has already answered.
+ *
+ * DUES IS ABSENT FROM THIS COMPOSER, AND THAT IS ALL IT IS.
+ *
+ * CORRECTED 2026-08-29: this note used to say dues was absent from the
+ * DATABASE, "checked across all 116 migrations". That was wrong, and it was
+ * wrong because the check grepped for the word "dues", which the schema never
+ * uses. The money is modelled as `settlement_payments`
+ * (20260805030000_settlement_payments.sql) — who paid whom, against a
+ * settlement — with its own RLS and RPCs, and `getLeaguePayments` already
+ * reads it. Board 4.2's dues panel and Task 21's screen have something to
+ * render; this composer simply does not fetch it yet.
+ */
+export type LeagueHome = {
+  league: { id: string; name: string; glyph: string | null };
+  isCommissioner: boolean;
+  runningSince: string | null;
+  /** Every season, newest first — the archive AND the record book's input. */
+  seasons: LeagueSeason[];
+  current: LeagueCurrentSeason;
+  /** The earliest week still taking bids, which is what the thread counts to. */
+  openWeek: LeagueWeek | null;
+  career: CareerRow[];
+  aggregates: LeagueAggregates | null;
+  announcements: LeagueAnnouncement[];
+};
+
+export async function getLeagueHome(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueHome | null> {
+  const { supabase, user } = ctx;
+
+  // THE GATE IS THE FIRST READ AND IT IS RLS'S. `leagues` gates SELECT on
+  // `is_league_member`, so a league the viewer does not belong to comes back
+  // null and the page 404s — indistinguishable from one that does not exist,
+  // which is the correct answer to give a stranger holding an id.
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const [seasons, runningSince, current, announcements] = await Promise.all([
+    getLeagueSeasons(supabase, leagueId),
+    getLeagueRunningSince(supabase, leagueId),
+    getLeagueCurrentSeason(supabase, leagueId, user.id),
+    getLeagueAnnouncements(supabase, leagueId, 2),
+  ]);
+
+  // The record book takes the seasons this page already fetched rather than
+  // fetching its own — its parameter exists for exactly that.
+  const book = await getLeagueRecordBook(supabase, seasons, user.id);
+
+  const career = book?.career ?? [];
+  const me = career.find((row) => row.isMe);
+
+  // Two weeks can be open at once (2026-08-03), and the earliest is the one
+  // with a deadline actually approaching — the same rule `getNavLeagues` uses
+  // for the shell's countdown, so the two never disagree.
+  const openWeek =
+    current.weeks
+      .filter((w) => w.status === "open")
+      .sort((a, b) => a.number - b.number)[0] ?? null;
+
+  return {
+    league: { id: league.id, name: league.name, glyph: league.avatar_glyph },
+    isCommissioner: me?.isCommissioner ?? false,
+    runningSince,
+    seasons,
+    current,
+    openWeek,
+    career,
+    aggregates: book?.aggregates ?? null,
+    announcements,
+  };
 }

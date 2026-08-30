@@ -5,7 +5,7 @@
  *
  * ONLY ONE OF THE TWO IS ACTUALLY GONE YET, and saying "replacing" without
  * saying which would be this comment claiming work the code has not done.
- * `BidFormState` is deleted: its file (`src/app/(member)/season/actions.ts`)
+ * `BidFormState` is deleted: its file (`src/app/(member)/seasons/actions.ts`)
  * moved to `src/orchestration/actions/bid.ts` in the same commit and both bid
  * actions now return this. `CommishFormState` survives in
  * `src/app/(member)/commish/actions.ts`, where THIRTY-FOUR actions and the

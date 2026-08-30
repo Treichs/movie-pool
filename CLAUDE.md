@@ -26,19 +26,21 @@ shadcn/ui on Base UI · Supabase (Postgres + Auth + RLS) · Vercel.
 
 ```
 npm run dev        localhost:3000
-npm run verify     typecheck · lint · build
-                   (a11y:contrast and types:fresh join it once the data
-                    layer lands — see Docs/rebuild-phase-6.md Task 0.1)
+npm run verify     typecheck · lint · a11y:contrast · types:fresh · build
+npm run seed:dev   the persistent dev fixtures — idempotent, safe to re-run
 npm run types:gen  regenerate the schema type after a migration
 ```
 
 ## The two rules that replace an architecture
 
-**1. Components have two tiers.**
+**1. Components have two tiers** (registry code, and everything else)**.**
 
 - `src/components/ui/` — shadcn and registry code. **Edited in place** when the
   app needs a different shape. There is one `button`, one `card`, one `table`;
   differences are variants on that file, never a second file.
+- `src/components/reui/` — where `@reui` items install themselves. Left where
+  the CLI puts them so their update path keeps working; treated exactly like
+  `ui/`, edited in place, never forked.
 - Everything else starts in the route's `_components/` and moves to
   `src/components/` **the first time a second route needs it** — never in
   anticipation. The cost of getting it wrong is one file move.
@@ -68,8 +70,17 @@ The shadcn MCP server is configured — ask it rather than running the search by
 hand. Configured namespaces: `@shadcn`, `@shadcnblocks`, `@reui`,
 `@animate-ui`, `@8bitcn`.
 
-**Never pass `-y` to `add`** — it skips the prompt standing between a block
-install and a primitive you have modified. Always `--dry-run` first.
+**`--dry-run` first, every time. `-o/--overwrite` is the flag that can lose
+work** — it is the only one that skips the "already exists" prompt. That prompt
+defaults to **No**, so a bare `add` cannot silently replace a file you adapted;
+in a non-interactive context a conflict is skipped outright rather than written.
+`-y` gates the new-style/new-theme confirmation and does not touch file
+overwrites, so it is not the dangerous flag it was once described as.
+
+Read `~ overwrite` in a dry run as **"this file differs from the registry
+copy"**, not "this file is about to be taken": identical files are classified
+`skip` silently, so the flagged paths are exactly the ones already customised
+here. Any of them is a stop-and-read — `--diff <path>` before deciding.
 
 Reach for the registry whenever you are about to write a styled `div`, a button
 inside a field, a callout, an empty state, a loading placeholder or a
@@ -86,8 +97,12 @@ utility. To recolour the app, edit the values — never the components.
 - **`--radius` drives every corner.** No component hardcodes one.
 - **`--color-*: initial`** deletes Tailwind's stock palette, so `bg-blue-500`
   emits no CSS at all. Raw palette classes are impossible, not forbidden.
-- **`--primary` (vermilion `#EB4B37`) is a background only** — 3.42:1, it fails
-  as text. One per surface.
+- **The accent is two tokens, one per ground.** `--primary` (`#C52F1B`) is the
+  paper-side red at 5.04:1 — legal as a ground and as text, one per surface;
+  `--nav-primary` (`#EB4B37`) is the ink-side red at 5.59:1 and appears
+  **nowhere but an ink surface**. No red is legible on both.
+- **`--edge` (`#84827E`) draws control boundaries**, `--border` (`#DCDBD9`)
+  draws panels. A field needs 3:1; a panel edge is decoration.
 - **Dark is wired but not switched on.** Keep both blocks in sync anyway;
   registry components read them and `a11y:contrast` sweeps both.
 - Three values are counterintuitive and must not be "unified" —
@@ -112,12 +127,20 @@ red build rather than a wrong number.
 
 ## Building a screen
 
-The route set is settled: **25 pages plus 6 route handlers**, in
-[Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every screen has a drawn board
+The route set is settled: **26 pages plus 6 route handlers**, in
+[Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every address takes one shape
+(§7.5): **plural collections, singular items, never more than two levels deep,
+and every truncation lands on a real page** — chop `/bid` and you get the week,
+chop the week and you get the season, chop the season and you get `/leagues`.
+A season is addressed at `/seasons/[seasonId]`, not under its league, because
+the full chain would be four levels of mostly-uuid. Every screen has a drawn board
 on the design canvas, and one task in
-[Docs/rebuild-phase-6.md](Docs/rebuild-phase-6.md). **Open the board before
-writing the screen** — the board is the approved layout, the task is the
-approved mechanics.
+[Docs/superpowers/plans/2026-08-28-movie-pool-screens.md](Docs/superpowers/plans/2026-08-28-movie-pool-screens.md).
+**Open the board before writing the screen** — the board is the approved
+layout, the task is the approved mechanics.
+
+The drive that closes a screen is the **`ui-review` skill**, not a harness you
+invent.
 
 A screen is done when:
 
