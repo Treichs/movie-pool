@@ -999,31 +999,31 @@ git commit -m "feat(films): the league record gets its own address, and a foreig
 - Produces: `getPlayerProfilePage(ctx, profileId) -> PlayerProfilePage | null` in `src/lib/player-profile.ts` — identity, the six career stats, and the season-by-season rows in one read, so the page calls one composer rather than two.
 - Produces: `updateBio(prev, formData) -> Promise<ActionResult>`.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 **The six stats are a ladder, not a row.** The old page's own comment records why: a row gave each label about ninety pixels and every one truncated — "SEASONS W…", "CAREER PO…". Do not re-flatten it.
 
-- [ ] **Step 2: The six stats**
+- [x] **Step 2: The six stats**
 
 Seasons won, best finish, career points, films owned, total spent, seasons played. Plus the per-season rows.
 
-- [ ] **Step 3: Build the page**
+- [x] **Step 3: Build the page**
 
 Identity card with the perforation edge, the six stats, and the season table. **The bio form is editable only on your own profile** — that is a real permission, not a display rule, and it is enforced server-side.
 
-- [ ] **Step 4: Add `error.tsx`**
+- [x] **Step 4: Add `error.tsx`**
 
-- [ ] **Step 5: Run the gate**
+- [x] **Step 5: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 6: Drive it as two people**
+- [x] **Step 6: Drive it as two people**
 
 Your own profile — **complete a bio edit and confirm it persisted in the database** — and someone else's, read-only. Report which you could not reach.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -1241,7 +1241,7 @@ git commit -m "feat(league): the announcement composer is rebuilt"
 
 ---
 
-### Task 20: `/account` — **BUILD ORDER 12, THE NEXT ONE**
+### Task 20: `/account` — **BUILD ORDER 12**
 
 **Board:** `4.10  /account`
 
@@ -1260,7 +1260,7 @@ git grep -n '"/account"' -- src/app src/components   # expect 4 sites
 - Produces: `getAccount(ctx) -> Account` — profile, sign-in identities, email preferences.
 - Produces: `updateProfile`, `updateEmailPreferences` — both returning `ActionResult`.
 
-- [ ] **Step 1: Open the board, and check the registry first**
+- [x] **Step 1: Open the board, and check the registry first**
 
 ```bash
 npx shadcn@latest search @shadcn -q "settings"
@@ -1268,29 +1268,29 @@ npx shadcn@latest search @shadcn -q "settings"
 
 The registry ships settings blocks. Read them before designing sections from scratch.
 
-- [ ] **Step 2: Build the four sections**
+- [x] **Step 2: Build the four sections**
 
 Profile (display name, bio), Sign-in (email, password, linked Google), Email (four toggles), and sign-out.
 
 **The display-name warning is real and must survive:** changing it re-labels the whole history at once — the standings, every past season, every record held. `src/lib/league-records.ts:145` is why.
 
-- [ ] **Step 3: Name the four email preferences from the real cron**
+- [x] **Step 3: Name the four email preferences from the real cron**
 
 They are the four notify types in [src/app/api/cron/notify/route.ts](../../../src/app/api/cron/notify/route.ts): **slate up, deadline near, reveal, Monday scores.** Do not invent a fifth.
 
-- [ ] **Step 4: Add `error.tsx`**
+- [x] **Step 4: Add `error.tsx`**
 
-- [ ] **Step 5: Run the gate**
+- [x] **Step 5: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 6: Drive the writes**
+- [x] **Step 6: Drive the writes**
 
 **Change the display name and confirm it persisted**; toggle a preference and confirm the same. Set both back.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -1366,6 +1366,17 @@ git commit -m "feat(league): dues is rebuilt, with the balance sign explained"
 
 **Board:** `4.11  /leagues/[id]/settings  (NEW)`
 
+**BUILT 2026-08-30 (`8b8477a`).** All four sections, and the never-zero rule finally said out loud — the sentence follows the count, so a sole commissioner is told they must hand over rather than step down.
+
+**THE GUARANTEE WAS PROVEN, NOT ASSUMED.** The menu hides "Step down" for a sole commissioner as a courtesy; the check is the database's. Called with a real JWT: `demote_league_commissioner` and `remove_league_member` both answered *"a league must always have at least one commissioner — promote someone else first"*.
+
+**Two things not built, both said:**
+
+- **The avatar picker.** `update_league_identity` takes a pair and a glyph and the palette exists, but the picker is a component this rebuild has never made — `/account` made the same call for a player's own avatar.
+- **The left rail.** The board draws four nav items beside sections it also calls "all four stacked".
+
+**The route count is corrected to 26** in `ia-screen-map.md` (with an amendment explaining the edit route) and `CLAUDE.md`.
+
 **Why it exists.** IA map §7.2 — **configuration centralizes, operations distribute.** Four things live here: identity, house rules, member roles, invites. **Nothing operational.** Closing a week, capturing results, generating payouts and starting a season all stay next to the object they act on.
 
 **Files:**
@@ -1378,15 +1389,15 @@ git commit -m "feat(league): dues is rebuilt, with the balance sign explained"
 - Produces: `getLeagueSettingsPage(ctx, leagueId) -> LeagueSettingsPage | null` — **`null` when the caller is not a commissioner.** **Do not name it `LeagueSettings`:** `src/lib/commish.ts` already exports that type for the database row (`league_id`, `fake_bankroll`, `top_n_distinct`, `min_bid`, `bids_due_dow`, `payout_structure`, …), and a second meaning of the same name in the same import graph is a bug waiting to be typed.
 - Produces: `promoteLeagueCommissioner`, `demoteLeagueCommissioner`, `handoffLeagueCommissioner`, `removeLeagueMember`, `updateLeagueIdentity`, `updateHouseRules`, `createInvite`, `revokeInvite` — all returning `ActionResult`, all calling their **existing** RPCs.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 A left rail of four sections; the board draws all four stacked.
 
-- [ ] **Step 2: Gate the route, not just the controls**
+- [x] **Step 2: Gate the route, not just the controls**
 
 A player who types this URL gets `notFound()`. Follow `requireSeasonMember`'s reasoning: **`notFound()` and never a redirect**, because sending someone to `/leagues` tells them the page is real and just not theirs.
 
-- [ ] **Step 3: Wire the role actions to the existing RPCs — write no new ones**
+- [x] **Step 3: Wire the role actions to the existing RPCs — write no new ones**
 
 ADR-060's two guarantees are enforced in the database and **must not be re-implemented in the UI**:
 
@@ -1395,25 +1406,25 @@ ADR-060's two guarantees are enforced in the database and **must not be re-imple
 
 `handoff_league_commissioner` is the one-shot exit for a **sole** commissioner and rejects a handoff to someone who already holds the role. `set_league_member_role` delegates to the promote/demote pair, so each guard has exactly one implementation.
 
-- [ ] **Step 4: Say the never-zero rule on screen**
+- [x] **Step 4: Say the never-zero rule on screen**
 
 The board draws it: *"A league always has at least one commissioner."* It is enforced in the RPCs and stated in no UI anywhere. **A settings page is the first place it has somewhere to be explained.**
 
-- [ ] **Step 5: Add `error.tsx`**
+- [x] **Step 5: Add `error.tsx`**
 
-- [ ] **Step 6: Run the gate**
+- [x] **Step 6: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 7: Drive it, and try to break the guarantee**
+- [x] **Step 7: Drive it, and try to break the guarantee**
 
 As `dev-commish`: rename the league (**confirm it persisted**), promote a member, then **try to demote the last commissioner and confirm it is refused.** That refusal is the one behaviour on this page nobody can see from the code. Put every change back.
 
 As `dev-player`: confirm the URL **404s**.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -1426,6 +1437,19 @@ git commit -m "feat(league): settings becomes a route, and the never-zero rule f
 
 **Boards:** `5.1a /seasons/[id]/payouts — player` **and** `5.1b — commissioner`. **Two boards, one route.**
 
+**BUILT 2026-08-30 (`1a2fa49`). THE LAST SCREEN.**
+
+**THE MERGE HOLDS — here is step 7's judgement.** Driven side by side, the commissioner's view reads as the **player's page with an addition**: their own result opens it in the same accent-spined panel, the status is one line above it, and the controls are a bounded block at the foot. It is not a workbench with a summary bolted on, so there was nothing to raise and the old two-page version stays retired.
+
+**Two defects driving it found:**
+
+- **A control that could only fail.** After Finalize the block kept rendering and offered to generate a new draft, which `generate_settlement` refuses outright. A published season now shows one sentence and no controls.
+- **A tie for first named one champion.** Places are dense ranks, so two players on identical points are both 1st and split the money. It now reads "Champions · A & B · Tied · $57 each".
+
+**⚠ NOT SENT:** `payoutsFinalEmail` exists in `email-templates.ts` and **has no caller**. Finalizing publishes to the page and emails nobody — the same shape as the announcement email. Step 4's address is unchanged and correct; there is simply nothing sending a link to it yet.
+
+**This unblocks Task 21's fixture.** Dues needed a finalized settlement and had to be given one by a throwaway script; the whole Generate → Finalize flow is now drivable through the UI on "Dev Closing Credits", which `seed:dev` resets to unsettled every run.
+
 **The merge, and the condition it must satisfy** (IA map §2): the player's view opens with **their own result**; the commissioner's controls are **additive and secondary** — *not* the player page with a toolbar bolted on top, and *not* the workbench with the player's summary demoted.
 
 **Files:**
@@ -1437,7 +1461,7 @@ git commit -m "feat(league): settings becomes a route, and the never-zero rule f
 - Produces: `getPayouts(ctx, seasonId) -> Payouts` in `src/lib/payouts.ts` — the viewer's own result, the awards, the ledger, and — commissioner only — the draft state and blockers.
 - Produces: `generateDraft`, `regenerateDraft`, `finalizeSettlement` — all returning `ActionResult`.
 
-- [ ] **Step 1: Open both boards, and read how the merge resolves**
+- [x] **Step 1: Open both boards, and read how the merge resolves**
 
 The commissioner's affordances split **by kind**, and that split is the whole answer:
 
@@ -1446,11 +1470,11 @@ The commissioner's affordances split **by kind**, and that split is the whole an
 
 The commissioner's own result opens their page **identically to the player's**, because a commissioner is a player too.
 
-- [ ] **Step 2: Build the awards and ledger as shared components**
+- [x] **Step 2: Build the awards and ledger as shared components**
 
 Both roles render them. They start in this segment's `_components/`; they move to `src/components/` only if a second route needs them.
 
-- [ ] **Step 3: Preserve the friction ladder exactly**
+- [x] **Step 3: Preserve the friction ladder exactly**
 
 **Weight matches consequence.** Finalize is irreversible and publishes to everyone, so it takes the heavy treatment; Regenerate is routine and recedes.
 
@@ -1461,19 +1485,19 @@ confirmMessage="Regenerate the draft payouts from the current standings? The exi
 
 The `finalizeBlocker` disables Finalize until the season is over, **and states its reason on screen.**
 
-- [ ] **Step 4: Keep the email-linked address working**
+- [x] **Step 4: Keep the email-linked address working**
 
 The season-settled statement links `/seasons/[seasonId]/payouts`. The address does not change; confirm the link resolves.
 
-- [ ] **Step 5: Add `error.tsx`**
+- [x] **Step 5: Add `error.tsx`**
 
-- [ ] **Step 6: Run the gate**
+- [x] **Step 6: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 7: Drive it as both roles, and judge the merge**
+- [x] **Step 7: Drive it as both roles, and judge the merge**
 
 As `dev-player` on a settled season: your result opens the page, **no controls anywhere.**
 
@@ -1481,7 +1505,7 @@ As `dev-commish` on "Dev Closing Credits" — the fixture that re-seeds **unsett
 
 **Then make the judgement the IA map asked for.** Does the commissioner's page read as the player's page with an addition, or as a workbench with the player's summary demoted? **If the latter, stop and raise it** — the old two-page version is in the reference repo and the merge is reversible.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -1492,7 +1516,7 @@ git commit -m "feat(payouts): the two payout pages become one, role-gated"
 
 ## Closing this plan
 
-- [ ] **Step 1: Every route in the map has a page**
+- [x] **Step 1: Every route in the map has a page**
 
 ```bash
 find src/app -name "page.tsx" | sort
@@ -1500,7 +1524,7 @@ find src/app -name "page.tsx" | sort
 
 Expected: **25**, matching IA map §1, plus the six route handlers.
 
-- [ ] **Step 2: Every segment has a boundary**
+- [x] **Step 2: Every segment has a boundary**
 
 **Strip route groups before comparing**, or this check lies. A `(list)` or `(overview)` group holds the `page.tsx` while its `error.tsx` sits in the parent — correct, and a naive `dirname` comparison reports it as a missing boundary. Two such groups exist already.
 
@@ -1512,7 +1536,7 @@ diff <(find src/app -name "page.tsx"  | xargs -n1 dirname | strip) \
 
 Expected: no output. A directory on the left only is a segment that will blow its error up to the whole app.
 
-- [ ] **Step 3: Every reading screen has a loading state, and only one fires**
+- [x] **Step 3: Every reading screen has a loading state, and only one fires**
 
 ```bash
 find src/app -name "loading.tsx" | sort
@@ -1520,7 +1544,7 @@ find src/app -name "loading.tsx" | sort
 
 Then, signed in, for each route: fetch the served HTML and count. **Exactly one `aria-busy="true"` and one `role="status"` per route.** Two means a `loading.tsx` is wrapping a child segment it should not — the route-group trap, which `/leagues` and `/seasons/[seasonId]` both hit before it was found.
 
-- [ ] **Step 4: Every page renders exactly one `<main>`**
+- [x] **Step 4: Every page renders exactly one `<main>`**
 
 ```bash
 git grep -c "<main" -- 'src/app/**/page.tsx'
@@ -1528,7 +1552,7 @@ git grep -c "<main" -- 'src/app/**/page.tsx'
 
 Four member pages rendered none in the old repo and nothing caught it.
 
-- [ ] **Step 5: Every composer has a consumer**
+- [x] **Step 5: Every composer has a consumer**
 
 ```bash
 for f in src/lib/*.ts; do
@@ -1539,13 +1563,13 @@ done
 
 `getOverdueWeeks` sat with zero consumers for weeks precisely because nothing looked.
 
-- [ ] **Step 6: Run the whole gate one last time**
+- [x] **Step 6: Run the whole gate one last time**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 7: Write the phase digest**
+- [x] **Step 7: Write the phase digest**
 
 Record: which screens revealed defects the gates could not see, which states were never driven for want of a fixture, and whether the payouts merge held.
 
