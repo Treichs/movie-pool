@@ -1036,37 +1036,50 @@ git commit -m "feat(players): the profile is rebuilt, and the six stats stay a l
 
 **Board:** `4.3  /leagues/[id]/records`
 
+**✅ BUILT 2026-08-29 (`4882225`).**
+
+**Step 1's "six cards, three marquee" is the BOARD, not the composer, and the composer wins.** `getLeagueRecordBook` produces up to **seven** and marks **four** marquee — the shelf grew a second row on 2026-08-16, after the board was drawn — and every record self-suppresses when its league has no data for it. That is not theoretical: Dev Edge Cases renders six, because no bid there was expensive enough to be a "priciest whiff". The page renders the composer's own list and its own `marquee` flag; a fixed six would have printed an empty card. Two labels also differ from the step's list — it is **"Most films, one season"**, not "most films owned", and there is a seventh, **"Best rookie season"**.
+
+**The signature in Interfaces is wrong too:** it is `getLeagueRecordBook(supabase, seasons, userId)`, not `(ctx, leagueId)`. It does not fetch the league or its seasons, on purpose — `getLeagueHome` passes the list it already has. `getLeagueRecordsPage` in `league.ts` does the same two reads and keeps the `records` field the home page drops.
+
+**Two theme corrections against the board, both from its own rules:**
+
+- The board draws the titles chip in `#EB4B37` — that is `--nav-primary`, the ink-side red, which **appears nowhere but an ink surface**. This page is paper, so the chip takes `--primary`.
+- `--primary` is capped at **one meaning per surface**, and here that meaning is a championship. So the "yours" mark on a record card is ink, not a second red.
+
+**Not built, and said rather than faked:** the board's leading `#` column. It is the career rank in the composer's default order (titles, then points), and a number that silently lies the moment a reader sorts by Pts/$ is worse than no number.
+
 **Files:**
 - Create: `src/app/(member)/leagues/[leagueId]/records/page.tsx`, `_components/*.tsx`, `error.tsx`
 
 **Interfaces:**
 - Consumes: `getLeagueRecordBook(ctx, leagueId) -> LeagueRecordBook` from [src/lib/league-records.ts](../../../src/lib/league-records.ts) — **already written, and it is the composer this screen needs. No new one.** It carries the career table (`CareerRow[]`) and the record entries (`RecordEntry`, each with its `marquee` flag).
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 Six record cards; **three are `marquee`** and take the heavier border. The labels are fixed and are not to be renamed: **Best season**, **Biggest single film**, **Steal of the century**, **Priciest whiff**, **Best single week**, and most films owned.
 
-- [ ] **Step 2: Use the composer that is already there**
+- [x] **Step 2: Use the composer that is already there**
 
 **Import `getLeagueRecordBook`. Do not rewrite it, and do not re-derive its queries.** The career rows collapse renamed accounts into one career — `league-records.ts:145` explains why — and that behaviour survives for free by not touching the file.
 
-- [ ] **Step 3: Build the page**
+- [x] **Step 3: Build the page**
 
 Record cards, then the career table with a titles badge.
 
-- [ ] **Step 4: Add `error.tsx`**
+- [x] **Step 4: Add `error.tsx`**
 
-- [ ] **Step 5: Run the gate**
+- [x] **Step 5: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 6: Drive it**
+- [x] **Step 6: Drive it**
 
 Needs a league with completed seasons — **"Dev Closing Credits"** is the fixture with a fully-scored completed season. **If the records come back empty, say so in the report** rather than calling the screen done.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
