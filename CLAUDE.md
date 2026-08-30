@@ -127,7 +127,7 @@ red build rather than a wrong number.
 
 ## Building a screen
 
-The route set is settled: **25 pages plus 6 route handlers**, in
+The route set is settled: **26 pages plus 6 route handlers**, in
 [Docs/ia-screen-map.md](Docs/ia-screen-map.md). Every address takes one shape
 (§7.5): **plural collections, singular items, never more than two levels deep,
 and every truncation lands on a real page** — chop `/bid` and you get the week,

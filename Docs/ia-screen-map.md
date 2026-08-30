@@ -87,6 +87,8 @@ The three `/api/cron/*` handlers are **Vercel cron targets**, so `vercel.json`'s
 
 **25 page routes** (plus the six route handlers above): the 21 kept above, plus the one new address the split adds (`/leagues/[leagueId]/films/[tmdbId]` — `/films/[tmdbId]` itself is already one of the 21), plus the 3 added routes (`/`, `/login`, `/leagues/[leagueId]/settings`). The merge contributes no new address: `/commish/[seasonId]/payouts` folds into `/seasons/[seasonId]/payouts`, which was already among the 21 kept.
 
+**AMENDED 2026-08-30 — the count is 26.** `/leagues/[leagueId]/announcements/[announcementId]/edit` was added when editing an announcement was decided on: the table had shipped with only post and delete, so fixing a typo meant deleting and reposting, which loses the post's place in the list and its date. The address is a verb leaf for §7.5's own reasons — the carrier is a path segment rather than a query string, the nesting is no deeper than `/bid` and `/new`, and both truncations land on a real page (chop `/edit` for the post, chop the post for the list). §7.5's closing rule says no further IA change without a redirect; nothing is public yet, so there was nothing to redirect.
+
 ---
 
 ## 2. The commissioner tree dissolves completely
@@ -175,7 +177,7 @@ The two disappearing destinations are reached from **code**, not from mail, so t
 
 ## 6. What Phase 6 inherits
 
-- **25 screens** across 25 addresses, in the build order given by the rebuild spec §10.1: landing and auth → read-only → season core → league → commissioner surfaces. 24 are rebuilt by Plan 2; the bid page was built by Plan 1 Task 18.
+- **26 screens** across 26 addresses (25 as first mapped, plus `…/announcements/[announcementId]/edit` — see §4's amendment), in the build order given by the rebuild spec §10.1: landing and auth → read-only → season core → league → commissioner surfaces. 24 are rebuilt by Plan 2; the bid page was built by Plan 1 Task 18.
 - **Zero redirect obligations**, which is unusual and worth not squandering: any *further* IA change made during Phase 6 will owe one, because by then the screens will have been built against these addresses.
 - **Both owed designs are settled** and drawn on the canvas: the merged role-gated payouts page (boards 5.1a/5.1b) and the league-scoped film page's not-found path (§7.4, board 2.3).
 
