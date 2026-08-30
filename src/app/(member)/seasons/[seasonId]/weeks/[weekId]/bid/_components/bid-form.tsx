@@ -35,6 +35,8 @@ export type BidFilm = {
   releaseDate: string | null;
   tomatometer: number | null;
   myBid: number | null;
+  /** Set only for catalog films — the key to this film's league record. */
+  tmdbId: number | null;
 };
 
 /**
@@ -53,12 +55,16 @@ export type BidFilm = {
 export function BidForm({
   seasonId,
   weekId,
+  leagueId,
   films,
   minBid,
   remaining,
 }: {
   seasonId: string;
   weekId: string;
+  /** The league this season belongs to. Null only if the embed returned
+   *  nothing; it is what gives each card a film page to lead to. */
+  leagueId: string | null;
   films: BidFilm[];
   minBid: number;
   /**
@@ -193,6 +199,7 @@ export function BidForm({
                 <FilmBidField
                   key={film.id}
                   film={film}
+                  leagueId={leagueId}
                   minBid={minBid}
                   value={amounts[film.id] ?? null}
                   problem={fieldProblem(film.id)}
@@ -268,12 +275,14 @@ export function BidForm({
 
 function FilmBidField({
   film,
+  leagueId,
   minBid,
   value,
   problem,
   onChange,
 }: {
   film: BidFilm;
+  leagueId: string | null;
   minBid: number;
   value: number | null;
   problem: string | null;
@@ -289,6 +298,16 @@ function FilmBidField({
       <PosterCard
         title={film.title}
         posterPath={film.posterPath}
+        // THE CARD LEADS SOMEWHERE NOW. `/leagues/[leagueId]/films/[tmdbId]`
+        // landed with build order 15; until then this was deliberately unset,
+        // because a card that lifts on hover and leads to a 404 is worse than
+        // one that does not lift. A manually-added film has no tmdb id and so
+        // still has no destination.
+        href={
+          leagueId && film.tmdbId
+            ? `/leagues/${leagueId}/films/${film.tmdbId}`
+            : undefined
+        }
         meta={film.releaseDate ? formatReleaseDate(film.releaseDate) : null}
         tomatometer={film.tomatometer}
         selected={isIn}

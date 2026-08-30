@@ -16,7 +16,18 @@ import { cn } from "@/lib/utils";
  *
  * `size="lg"` is the reading figure on `/how-it-works`, where the number IS the
  * explanation. Everything else is the default.
+ *
+ * `size="hero"` is `--text-numeral-xl`, the one number a screen is ABOUT: the
+ * bid deadline's countdown, and a film's score on board 2.3. The name is
+ * `deadline-countdown.tsx`'s, which reached the same token first and called it
+ * that; two names for one size is how a scale stops being one.
  */
+const NUMERAL_SIZE = {
+  default: "text-h3",
+  lg: "text-h2",
+  hero: "text-numeral-xl",
+} as const;
+
 export function Figure({
   label,
   value,
@@ -25,23 +36,21 @@ export function Figure({
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
-  size?: "default" | "lg";
+  size?: "default" | "lg" | "hero";
   className?: string;
 }) {
   return (
     <div
       className={cn(
         "flex flex-col",
-        size === "lg" ? "gap-1" : "gap-0.5",
+        size === "default" ? "gap-0.5" : "gap-1",
         className,
       )}
     >
       <span className="type-eyebrow text-eyebrow text-muted-foreground">
         {label}
       </span>
-      <span className={cn("type-numeral", size === "lg" ? "text-h2" : "text-h3")}>
-        {value}
-      </span>
+      <span className={cn("type-numeral", NUMERAL_SIZE[size])}>{value}</span>
     </div>
   );
 }

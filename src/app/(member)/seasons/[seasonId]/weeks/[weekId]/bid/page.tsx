@@ -50,6 +50,7 @@ export default async function BidPage({
       <BidForm
         seasonId={seasonId}
         weekId={weekId}
+        leagueId={board.league?.id ?? null}
         minBid={board.minBid}
         // NOT remaining + exposure: `member_remaining_budget` deducts only
         // WINNING bids, so this week's pending bids were never taken out of it.
@@ -64,6 +65,7 @@ export default async function BidPage({
           releaseDate: film.releaseDate,
           tomatometer: film.tomatometer,
           myBid: film.myBid,
+          tmdbId: film.tmdbId,
         }))}
       />
     </main>

@@ -79,6 +79,16 @@ export type FilmPlaying = {
   /** The viewer's own bid on this playing, if any (RLS: always visible). */
   myBid: number | null;
   myWinning: boolean | null;
+  /** When the commissioner entered the box office and Tomatometer. Null until
+   *  they have — which is also when `score` is null. */
+  capturedAt: string | null;
+  /** How many players bid and did NOT win a tier. Zero while the week is open,
+   *  because losing bids are sealed until it closes (ADR-022) — the board's
+   *  "six other players bid and missed" line, and a count is all it may say. */
+  otherBidders: number;
+  /** The cheapest bid that still won — what "missed the tiers" means in money.
+   *  Null before close, and null when nobody owned it. */
+  lowestWinningBid: number | null;
 };
 
 /** The context league's record of a film, or null when RLS shows nothing. */
@@ -204,7 +214,7 @@ export async function getLeagueFilmRecord(
   const { data: films } = await supabase
     .from("films")
     .select(
-      "id, box_office_m, tomatometer, score, status, removed_reason, " +
+      "id, box_office_m, tomatometer, score, status, removed_reason, captured_at, " +
         // NO `name` ON THE EMBEDDED SEASON. ADR-099 dropped `seasons.name` and
         // derives it in `v_seasons`; PostgREST rejects the unknown field, and
         // because the error below is not destructured the whole query returned
@@ -242,6 +252,7 @@ export async function getLeagueFilmRecord(
     score: number | null;
     status: string;
     removed_reason: string | null;
+    captured_at: string | null;
     week: {
       id: string;
       number: number;
@@ -274,6 +285,10 @@ export async function getLeagueFilmRecord(
     .map((f) => {
       const filmBids = bidRows.filter((b) => b.film_id === f.id);
       const mineRow = filmBids.find((b) => b.member?.profile_id === userId);
+      // `is_winning` is only SET at close, so before then every row here is the
+      // viewer's own and both of these read as "nothing to say yet" rather than
+      // as "nobody bid" — which is the sealed-bid rule, not a missing number.
+      const winners = filmBids.filter((b) => b.is_winning);
       return {
         filmId: f.id,
         seasonId: f.week.season.id,
@@ -289,8 +304,13 @@ export async function getLeagueFilmRecord(
         score: f.score,
         filmStatus: f.status,
         removedReason: f.removed_reason,
-        owners: filmBids
-          .filter((b) => b.is_winning && b.member)
+        capturedAt: f.captured_at,
+        otherBidders: filmBids.length - winners.length,
+        lowestWinningBid: winners.length
+          ? Math.min(...winners.map((b) => b.amount))
+          : null,
+        owners: winners
+          .filter((b) => b.member)
           .map((b) => ({
             profileId: b.member!.profile_id,
             name: b.member!.profile?.display_name ?? "Unknown",

@@ -26,10 +26,11 @@ import { cn } from "@/lib/utils";
  * trigger would open the slide-out every time the player went to type", so it
  * kept poster and input as siblings and gave up on the card being one target.
  *
- * `href` IS OPTIONAL AND CURRENTLY UNSET on the bid page. Its destination is
- * `/leagues/[leagueId]/films/[tmdbId]`, a route Band 2 has not built yet, and a
- * card that lifts on hover but leads to a 404 is worse than one that does not
- * lift. Pass it the moment that route lands.
+ * `href` IS OPTIONAL. On the bid page it points at
+ * `/leagues/[leagueId]/films/[tmdbId]`, which landed at build order 15; it was
+ * unset until then, because a card that lifts on hover but leads to a 404 is
+ * worse than one that does not lift. It stays unset for a manually-added film,
+ * which has no TMDB id and so has no page to lead to.
  */
 export function PosterCard({
   title,
