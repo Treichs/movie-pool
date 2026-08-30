@@ -1092,6 +1092,13 @@ git commit -m "feat(league): the record book is rebuilt"
 
 **Board:** `4.5  /leagues/[id]/announcements`
 
+**✅ BUILT 2026-08-29 (`0273ac4`).** Two deviations from this task, both argued:
+
+- **No `src/lib/announcements.ts`.** The reads already live in `league.ts` — `getLeagueAnnouncements` for the list, `getLeagueAnnouncement` for one. A new module re-wrapping them would split one small domain across two files. `getLeagueAnnouncementsPage` sits beside the other page composers.
+- **No unread mark, because there is no read state.** `league_announcements` has no `read_at` and there is no reads table. `shell-alerts.ts` reached this on 2026-08-28 and wrote it down: *"Announcements join this list the day someone adds a `read_at` — that is a migration and a decision, not a line of UI."* **This affects Task 18 too** — the detail page cannot mark anything read either.
+
+**⚠ A DEFECT THIS FOUND IN ALREADY-SHIPPED CODE.** Base UI's `Button` warns in the console whenever it renders something that is not a native `<button>`, and this repo has set `nativeButton={false}` on every button-shaped link since `/reset-password`. The catalog page's single-league link (build order 14) was missing it and had been warning since it landed. **Check it on every `<Button render={<Link …/>}>` from here on** — the console is the only thing that catches it.
+
 **Announcements keeps all three routes** (IA map §5.4). It is a small CRUD surface, and an individual announcement is a thing you link someone to — which is why it was not folded into tabs.
 
 **Files:**
@@ -1101,23 +1108,23 @@ git commit -m "feat(league): the record book is rebuilt"
 **Interfaces:**
 - Produces: `getAnnouncements(ctx, leagueId) -> Announcement[]` — title, author, timestamp, excerpt, read state.
 
-- [ ] **Step 1: Open the board and build the list**
+- [x] **Step 1: Open the board and build the list**
 
 **Unread posts take the ink left edge and a small vermilion dot.** "Write one" is commissioner-only.
 
-- [ ] **Step 2: Add `error.tsx`**
+- [x] **Step 2: Add `error.tsx`**
 
-- [ ] **Step 3: Run the gate**
+- [x] **Step 3: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 4: Drive it as both roles**
+- [x] **Step 4: Drive it as both roles**
 
 Confirm "Write one" is **absent** for a player — not present-and-disabled.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
