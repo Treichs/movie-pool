@@ -1137,6 +1137,18 @@ git commit -m "feat(league): the announcements list is rebuilt"
 
 **Board:** `4.7  /announcements/[id]`
 
+**BUILT 2026-08-30 (`b186ad0`).** Line breaks survive both ways — a blank line becomes a real `<p>`, a single newline inside one stays a break via `whitespace-pre-line`. `pre-line` alone would have made one enormous paragraph that merely looked right.
+
+**Three things board 4.7 draws that do not exist, all raised rather than faked:**
+
+1. **"emailed to nine members"** — **nothing emails an announcement.** `post_league_announcement` writes a row and an audit entry and stops; the notify cron's four kinds do not include one and no template exists.
+2. **Edit** — `post_league_announcement` and `delete_league_announcement` are the only two functions on the table. No update RPC, and no edit route among the 25. **Decide whether Edit is wanted before Task 19's compose form is extended into one.**
+3. **The time of day** — a wall clock on the server needs a timezone, and an announcement is not season-scoped so there is no `bids_due_tz` to borrow. Date only.
+
+**Finding 1 corrected copy already shipped in Task 17.** The list dek, both empty states and the error boundary all told the reader announcements are emailed. The boundary's version was the worst — it reassured them that "every announcement was emailed when it went up, so nothing is only here", which is exactly backwards, since this app IS the only place they live.
+
+**Fixture:** the seeder gained a multi-paragraph announcement, and it **heals** — `seedEdgeCases` skips a league that already exists, so a post added to the fixture afterwards would never have reached anyone's database.
+
 **Files:**
 - Create: the route's `page.tsx`, `_components/*.tsx`, `error.tsx`
 - Modify: `src/lib/announcements.ts` — add the single-record read
@@ -1145,27 +1157,27 @@ git commit -m "feat(league): the announcements list is rebuilt"
 - Consumes: `getAnnouncements` from Task 17.
 - Produces: `getAnnouncement(ctx, leagueId, announcementId) -> Announcement | null`.
 
-- [ ] **Step 1: Build the reading surface**
+- [x] **Step 1: Build the reading surface**
 
 Title, author with role and timestamp, and the body at 16px on a **`measure`**, not the page frame. Edit and Delete are commissioner-only and sit at the foot, quiet.
 
-- [ ] **Step 2: Preserve the line breaks**
+- [x] **Step 2: Preserve the line breaks**
 
 The body is plain text with newlines. It needs `white-space: pre-line` or equivalent, **or every paragraph runs together. This is a real shipped bug class in this repo.**
 
-- [ ] **Step 3: Add `error.tsx`**
+- [x] **Step 3: Add `error.tsx`**
 
-- [ ] **Step 4: Run the gate**
+- [x] **Step 4: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 5: Drive it**
+- [x] **Step 5: Drive it**
 
 Confirm a **multi-paragraph** body renders as paragraphs.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
