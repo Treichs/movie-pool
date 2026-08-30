@@ -21,9 +21,8 @@
  * nullable — nullability is not part of a parameter's declared type, and no
  * catalog column records whether a body tolerates NULL. The generator therefore
  * cannot know, and emits the non-null type. That is a fabrication rather than a
- * fact, and this repo has six call sites that prove it: `update_avatar(null,
- * null)` IS the "back to an avatar picked from your name" path, and
- * `set_week_bid_deadline(week, null)` IS "fall back to the league default".
+ * fact, and this repo has call sites that prove it: `set_week_bid_deadline(week,
+ * null)` IS "fall back to the league default", not a missing argument.
  *
  * Narrowing them to satisfy the generated type would mean either casting at
  * those sites — suppressing every future real error there along with this fake

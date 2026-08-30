@@ -55,11 +55,13 @@ export function PlayerAvatar({
         className
       )}
     >
-      {/* The fill is inline because these ten hexes are DATA, not tokens, and
-          `--color-*: initial` means no utility could ever name them. White ink
-          needs no decision: every fill clears 4.5:1 against it. */}
+      {/* Inline because the series index is computed and Tailwind cannot build
+          `bg-series-${n}` from a runtime number — the same way `bump-chart.tsx`
+          reads these tokens. `text-foreground` needs no per-colour decision:
+          the series are pale on paper and deep on ink, so the app's own ink
+          clears 6:1 on every one of them in both modes. */}
       <AvatarFallback
-        className="type-ui size-full font-semibold text-[42cqw] leading-none text-white"
+        className="type-ui size-full font-semibold text-[42cqw] leading-none text-foreground"
         style={{ backgroundColor: avatarFill(id) }}
       >
         {initialsFrom(name)}

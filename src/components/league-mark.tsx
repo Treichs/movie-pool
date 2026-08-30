@@ -24,6 +24,11 @@ import { cn } from "@/lib/utils";
  * become texture, which still does the job — the mark reads as FILM rather than
  * as a rounded square even when you cannot count them.
  *
+ * They are drawn in `currentColor` at 26%, not in paper. The fill is a
+ * `--series-*` token — pale on paper, deep on ink — so a white hole would
+ * vanish in light mode and a dark one would vanish in dark. A tint of the
+ * mark's own ink reads as a notch on either ground and needs no second rule.
+ *
  * ── THE INITIALS CANNOT REACH THE PERFORATIONS ─────────────────────────
  * Not by arithmetic — structurally. The letters live in their own box inset by
  * the gutter width on both sides, with `overflow-hidden`, so the worst a
@@ -79,7 +84,7 @@ export function LeagueMark({
       aria-hidden
       data-slot="league-mark"
       className={cn(
-        "@container relative inline-flex shrink-0 overflow-hidden rounded",
+        "@container relative inline-flex shrink-0 overflow-hidden rounded text-foreground",
         className
       )}
       style={{ backgroundColor: avatarFill(id) }}
@@ -99,8 +104,8 @@ export function LeagueMark({
               width={PERF_W}
               height={PERF_H}
               rx={PERF_R}
-              fill="#ffffff"
-              fillOpacity={0.88}
+              fill="currentColor"
+              fillOpacity={0.26}
             />
           ));
         })}
@@ -109,7 +114,7 @@ export function LeagueMark({
       {/* The frame between the strips. `overflow-hidden` above plus this inset
           is what makes the no-overlap guarantee structural. */}
       <span
-        className="type-ui relative flex w-full items-center justify-center overflow-hidden font-bold leading-none tracking-tight text-white"
+        className="type-ui relative flex w-full items-center justify-center overflow-hidden font-bold leading-none tracking-tight"
         style={{
           paddingInline: `${GUTTER}%`,
           fontSize: TYPE_STEP[Math.min(initials.length, 3)],

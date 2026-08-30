@@ -72,9 +72,19 @@ export function RecordCard({
         </span>
         {poster && (
           <div className="w-12 shrink-0">
+            {/* THE ANCHOR IS THE POSITIONED BOX, not a bare wrapper.
+                `AspectRatio` is the `relative` one, but a plain `<a>` is
+                `static` — so the `Image fill` below measured itself against the
+                ratio box while the browser warned that its own parent could not
+                contain it. Absolute-inset makes the link fill the ratio and be
+                the containing block at once. */}
             <AspectRatio ratio={2 / 3} className="overflow-hidden rounded bg-muted">
               {filmHref ? (
-                <Link href={filmHref} aria-label={entry.film!.title}>
+                <Link
+                  href={filmHref}
+                  aria-label={entry.film!.title}
+                  className="absolute inset-0"
+                >
                   <Image
                     src={poster}
                     alt=""

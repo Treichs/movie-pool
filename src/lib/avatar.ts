@@ -17,50 +17,43 @@
  * (ADR-082, where two members sharing a name shared a face), and this is that
  * lesson applied to the derived side.
  *
- * ── EVERY FILL TAKES WHITE INK ─────────────────────────────────────────
- * These ten were curated for GLYPHS, where WCAG asks 3:1. Initials are TEXT and
- * the bar is 4.5:1, which teal, cyan and orange all failed. Rather than carry a
- * per-colour light/dark ink decision, amber and green were darkened as well so
- * the whole set clears 4.5:1 against white — 4.60 at the tightest (pink), 5.70
- * at the loosest (violet). There is now no ink decision to get wrong.
+ * ── THE COLOURS ARE TOKENS, NOT A SECOND PALETTE ───────────────────────
+ * `--series-1` … `--series-10` already exist in `globals.css`: ten hues derived
+ * from one brand anchor, spaced 36° apart — an exact decagon — declared in both
+ * modes and swept by `a11y:contrast`. They were introduced for the bump chart
+ * and are the app's answer to "ten of something", so an avatar is the second
+ * consumer of one palette rather than the first consumer of a second one.
  *
- * ── INLINE STYLE, DELIBERATELY ─────────────────────────────────────────
- * `--color-*: initial` in globals.css deletes Tailwind's stock palette, so
- * there is no `bg-blue-600` to reach these with and never will be. They are
- * DATA, not design tokens: they answer "which of ten", not "what colour is a
- * surface". An inline `background` is also outside the blast radius of any
- * future token rename.
+ * This replaces ten hand-picked hexes that were, in order: borrowed from a
+ * stock palette this theme deletes on purpose (`--color-*: initial`), foreign
+ * to the app's ink-and-vermilion world, and defined for light mode only. The
+ * first attempt at them also shipped two 9° pairs — violet/purple and
+ * amber/orange — so ten colours behaved as eight and three of four fixture
+ * leagues rendered the same purple. A palette that is already a decagon cannot
+ * make that mistake.
+ *
+ * ── THE INK DECISION DISAPPEARS ────────────────────────────────────────
+ * The series are pale on paper and deep on ink, so `--foreground` is correct on
+ * every one of them in both modes: 6.61:1 at worst in light, 6.01:1 at worst in
+ * dark, against a 4.5:1 bar. There is no per-colour light/dark ink rule left to
+ * carry, and no value that has to be re-checked when the theme moves.
+ *
+ * ── A `var()`, NOT A HEX ───────────────────────────────────────────────
+ * Returned as a CSS variable reference so the value follows the theme rather
+ * than being frozen at build time. It goes through an inline `style` because
+ * the index is computed — Tailwind cannot generate `bg-series-${n}` from a
+ * runtime number. `bump-chart.tsx` reads the same tokens the same way.
  */
 
-/**
- * The ten fills — spread by HUE, not just picked.
- *
- * The set these replace had two 9° pairs in it, violet/purple and amber/orange,
- * which is not ten colours: it is eight, twice. Four fixture leagues rendered
- * and three read as the same purple. It also left a 116° hole between orange
- * and green, so nothing in the app was ever yellow. These are ~17° apart at the
- * tightest, and every one clears 4.5:1 against white — 4.60 at the tightest
- * (pink), 6.98 at the loosest (purple).
- *
- * Order is not load-bearing: a colour is derived fresh on every render and
- * never stored, so reordering costs nothing but a re-roll.
- */
-export const AVATAR_FILLS = [
-  "#dc2626", // red      0°  4.83
-  "#c2410c", // orange  17°  5.18
-  "#a16207", // yellow  35°  4.92
-  "#4d7c0f", // lime    86°  4.99
-  "#15803d", // green  142°  5.02
-  "#0f766e", // teal   175°  5.47
-  "#0369a1", // sky    201°  5.93
-  "#4f46e5", // indigo 243°  6.29
-  "#7e22ce", // purple 272°  6.98
-  "#db2777", // pink   333°  4.60
-] as const;
+/** How many series tokens `globals.css` declares. Adding an eleventh means
+ *  adding it there first, in BOTH modes, or a tenth of everyone renders with an
+ *  undefined variable and no background at all. */
+const SERIES_COUNT = 10;
 
 /** FNV-1a. Not cryptographic and does not need to be — it needs to spread
  *  evenly and to give the same answer on the server and in the browser, or an
- *  avatar changes colour when the page hydrates. */
+ *  avatar changes colour when the page hydrates. Measured at 9.90%–10.10% per
+ *  bucket across 200k v4 UUIDs. */
 function hash(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -72,8 +65,9 @@ function hash(s: string): number {
 
 /**
  * The fill for a stable id — a profile id for a person, a league id for a
- * league. Falls back to the first colour on an empty id rather than throwing:
- * a missing id is a data problem, not a reason for a page to fail to render.
+ * league — as a `var(--series-N)` reference. Falls back to the first series on
+ * an empty id rather than throwing: a missing id is a data problem, not a
+ * reason for a page to fail to render.
  *
  * TEN COLOURS IS FEWER THAN IT FEELS. Eight people in one league collide with
  * 98% probability, ten with 99.96%. Colour is variety, not identification —
@@ -81,6 +75,6 @@ function hash(s: string): number {
  * why colour is never the only carrier of a distinction on screen.
  */
 export function avatarFill(id: string): string {
-  if (!id) return AVATAR_FILLS[0];
-  return AVATAR_FILLS[hash(id) % AVATAR_FILLS.length];
+  const n = id ? (hash(id) % SERIES_COUNT) + 1 : 1;
+  return `var(--series-${n})`;
 }

@@ -51,14 +51,9 @@ export async function updateLeagueIdentity(
   }
 
   const supabase = await createClient();
-  // Both are null and always will be: a league's mark is derived from its id
-  // and name now, so there is no stored choice. The parameters stay because
-  // the RPC signature is a database contract, not because anything sets them.
   const { error } = await supabase.rpc("update_league_identity", {
     p_league_id: leagueId,
     p_name: name,
-    p_avatar_pair: null,
-    p_avatar_glyph: null,
   });
   if (error) return fail(error.message);
 
