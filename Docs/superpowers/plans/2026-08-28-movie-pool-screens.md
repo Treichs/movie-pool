@@ -828,6 +828,18 @@ git commit -m "feat(week): the week board is rebuilt, and the reveal leads with 
 
 **Board:** `2.2  /films/[tmdbId] — catalog`
 
+**✅ BUILT 2026-08-29 (`f4dc4fa`).** Lives at `src/app/(member)/films/[tmdbId]/` — inside the `(member)` group so it wears the app shell the board draws; the URL is unchanged. Three things came out of it:
+
+- **`type-micro` uppercases.** It is the label style, not the size token, and it was wrong on cast names and on the licence sentence. Small non-label text takes `type-ui`/`type-body` with `text-micro`.
+- **`Alert` hardcodes `role="alert"`.** Standing explanatory copy in a `Card`; the foreign-league notice, which explains a redirect the reader did not ask for, in an `Alert`. Same split applies to every later screen.
+- **A skeleton has to include the panels that always render**, not only the ones carrying data — the catalog notice was missing and the page below it jumped ~90px on settle.
+
+**⚠ RAISED, NOT BUILT — three, none of them this task's to decide:**
+
+1. **"Studio" is on the board and not in the data.** No production company on `film_catalog` and none read by `fetchMovieDetail`. A TMDB field plus a column plus a migration.
+2. **The ratings stack has never been seen with real values.** No row in the dev database has an OMDb rating — they are captured at pick time and dev has never picked with OMDb configured — so the layout was driven with the three numbers temporarily hardcoded and then reverted. Worth a fixture.
+3. **`/films` is not a page, and §7.5 rule 5 says every truncation must land on one.** The 25-route map has no films index, so chopping the id gives a 404. An IA decision, not a route to invent here.
+
 **Public to members, and it is *not* league-scoped.** ADR-408: the catalog carries the film, never the play.
 
 **Files:**
@@ -838,37 +850,37 @@ git commit -m "feat(week): the week board is rebuilt, and the reveal leads with 
 **Interfaces:**
 - Produces: `getFilmCatalogPage(ctx, tmdbId) -> FilmCatalogPage | null` — TMDB metadata, OMDb ratings, cast, trailer key. **It carries no bids, no owners and no scores.** That is ADR-408, and a later task adding them here is the mistake this composer's name exists to prevent.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 Note what it does that a plain detail page does not: where league data *would* be, it says you are looking at the catalog and offers a league to switch to.
 
-- [ ] **Step 2: Write the composer on top of `film-page.ts`**
+- [x] **Step 2: Write the composer on top of `film-page.ts`**
 
 Take what it returns, minus anything league-scoped. **Import it — do not re-derive it.** It already holds the working queries and is a peer of the composer, not a forbidden layer.
 
-- [ ] **Step 3: Build the page**
+- [x] **Step 3: Build the page**
 
 Backdrop with the `--scrim` gradient, poster, title, ratings stack with **Tomatometer leading** (it is half the scoring formula), trailer, cast, facts, and the **TMDB/OMDb attribution — a licence obligation, not a courtesy.**
 
-- [ ] **Step 4: Render the foreign-league notice**
+- [x] **Step 4: Render the foreign-league notice**
 
 Read `?from=league` and render board `2.3`'s foot copy: *"Showing the catalog page. You are not a member of that league, so its bids and scores are not visible to you."* Task 14 redirects here with that parameter; building the reader now means that task has somewhere to land.
 
-- [ ] **Step 5: Add `error.tsx` and `loading.tsx`**
+- [x] **Step 5: Add `error.tsx` and `loading.tsx`**
 
 The loading state matters here: two external APIs are on the critical path.
 
-- [ ] **Step 6: Run the gate**
+- [x] **Step 6: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 7: Drive it**
+- [x] **Step 7: Drive it**
 
 Open a real film. Confirm the poster and backdrop load from TMDB, the Tomatometer shows, and the attribution renders. Then open `?from=league` directly and confirm the notice.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
