@@ -4,7 +4,7 @@ import { Figure } from "@/components/figure";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { formatDate, initialsFrom } from "@/lib/format";
+import { formatDate, initialsFrom, numberWord } from "@/lib/format";
 import type { LeaguePlaying } from "@/lib/film-league-record";
 
 /**
@@ -26,9 +26,6 @@ import type { LeaguePlaying } from "@/lib/film-league-record";
  * winning tiers" on a season set to two would be a lie the page tells with
  * total confidence.
  */
-
-const TIER_WORDS = ["no", "one", "two", "three", "four", "five"];
-const tierWord = (n: number) => TIER_WORDS[n] ?? String(n);
 
 const two = (n: number) =>
   n.toLocaleString("en-US", {
@@ -157,7 +154,7 @@ function OwnersPanel({
     <Card variant="flat" className="gap-3 p-0">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-4">
         <span className="type-eyebrow text-eyebrow text-muted-foreground">
-          Who owned it{owners.length > 0 && ` — ${tierWord(playing.topNDistinct)} winning tiers`}
+          Who owned it{owners.length > 0 && ` — ${numberWord(playing.topNDistinct)} winning tiers`}
         </span>
         {owners.length > 0 && score !== null && (
           <span className="type-body text-micro text-muted-foreground">

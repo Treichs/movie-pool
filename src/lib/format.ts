@@ -27,6 +27,19 @@ function deadlineFormat(timeZone: string): Intl.DateTimeFormat {
   return format;
 }
 
+// A small count in words — "three winning tiers", "four films". Prose reads
+// its small numbers as words and its large ones as digits; the boards do the
+// same, and ten is where they turn over. Zero is "no", which is the word that
+// belongs in the sentences this serves ("no films", "no winning tiers").
+const NUMBER_WORDS = [
+  "no", "one", "two", "three", "four", "five",
+  "six", "seven", "eight", "nine", "ten",
+];
+
+export function numberWord(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
 // "1st", "2nd", "3rd", "11th" … used for ranks.
 export function ordinal(n: number): string {
   const mod100 = n % 100;
