@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { initialsFrom, ordinal } from "@/lib/format";
+import { ordinal } from "@/lib/format";
 import { ok, type ActionResult } from "@/lib/action-result";
 import type { DuesRow } from "@/lib/league-dues";
 
@@ -110,13 +110,12 @@ export function SettlementTable({
               <TableRow key={row.seasonMemberId}>
                 <TableCell>
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <Avatar className="size-6 rounded">
-                      <AvatarFallback
-                        className={`type-micro rounded text-micro ${row.isMe ? "bg-foreground text-background" : "bg-muted"}`}
-                      >
-                        {initialsFrom(row.name)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <PlayerAvatar
+                      id={row.profileId}
+                      name={row.name}
+                      isMe={row.isMe}
+                      className="size-6"
+                    />
                     <Link
                       href={`/players/${row.profileId}`}
                       className={`truncate text-ui hover:underline ${row.isMe ? "type-ui font-semibold" : "type-ui"}`}

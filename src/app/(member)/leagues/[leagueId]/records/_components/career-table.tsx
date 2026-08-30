@@ -15,7 +15,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -26,7 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { initialsFrom } from "@/lib/format";
 import type { CareerRow } from "@/lib/league-records";
 
 /**
@@ -93,13 +92,12 @@ export function CareerTable({ career }: { career: CareerRow[] }) {
             const row = c.row.original;
             return (
               <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar className="size-6 rounded">
-                  <AvatarFallback
-                    className={`type-micro rounded text-micro ${row.isMe ? "bg-foreground text-background" : "bg-muted"}`}
-                  >
-                    {initialsFrom(row.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <PlayerAvatar
+                  id={row.profileId}
+                  name={row.name}
+                  isMe={row.isMe}
+                  className="size-6"
+                />
                 <Link
                   href={`/players/${row.profileId}`}
                   className={`truncate text-ui hover:underline ${row.isMe ? "type-ui font-semibold" : "type-ui"}`}

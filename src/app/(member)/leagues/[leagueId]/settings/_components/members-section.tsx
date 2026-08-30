@@ -5,7 +5,7 @@ import Link from "next/link";
 import { InfoIcon, MoreVerticalIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { initialsFrom, numberWord } from "@/lib/format";
+import { numberWord } from "@/lib/format";
 import type { ActionResult } from "@/lib/action-result";
 import type { LeagueMember } from "@/lib/league";
 
@@ -103,13 +103,12 @@ export function MembersSection({
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <Avatar className="size-8 rounded">
-                    <AvatarFallback
-                      className={`type-micro rounded text-micro ${isMe ? "bg-foreground text-background" : "bg-muted"}`}
-                    >
-                      {initialsFrom(m.profile.display_name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <PlayerAvatar
+                    id={m.profile.id}
+                    name={m.profile.display_name}
+                    isMe={isMe}
+                    className="size-8"
+                  />
                   <div className="flex min-w-0 flex-col">
                     <Link
                       href={`/players/${m.profile.id}`}

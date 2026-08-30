@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@/lib/supabase";
 import type { NotifyKind } from "@/lib/notifications";
-import { initialsFrom } from "@/lib/format";
 
 /**
  * THE ACCOUNT SCREEN'S READ — board 4.10.
@@ -22,7 +21,6 @@ export type AccountPage = {
   displayName: string;
   bio: string | null;
   email: string;
-  initials: string;
   /** Whether the address has been confirmed. Supabase answers this, not us. */
   emailConfirmed: boolean;
   /** Sign-in methods actually attached to this account, in a stable order. */
@@ -101,7 +99,6 @@ export async function getAccountPage(
     displayName: profile.display_name,
     bio: profile.bio,
     email: profile.email,
-    initials: initialsFrom(profile.display_name),
     emailConfirmed: Boolean(user?.email_confirmed_at),
     providers,
     preferences: {

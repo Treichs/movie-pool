@@ -1,11 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { initialsFrom } from "@/lib/format";
 import type { RecordEntry } from "@/lib/league-records";
 import { posterUrl } from "@/lib/tmdb-urls";
 import { cn } from "@/lib/utils";
@@ -73,9 +72,19 @@ export function RecordCard({
         </span>
         {poster && (
           <div className="w-12 shrink-0">
+            {/* THE ANCHOR IS THE POSITIONED BOX, not a bare wrapper.
+                `AspectRatio` is the `relative` one, but a plain `<a>` is
+                `static` — so the `Image fill` below measured itself against the
+                ratio box while the browser warned that its own parent could not
+                contain it. Absolute-inset makes the link fill the ratio and be
+                the containing block at once. */}
             <AspectRatio ratio={2 / 3} className="overflow-hidden rounded bg-muted">
               {filmHref ? (
-                <Link href={filmHref} aria-label={entry.film!.title}>
+                <Link
+                  href={filmHref}
+                  aria-label={entry.film!.title}
+                  className="absolute inset-0"
+                >
                   <Image
                     src={poster}
                     alt=""
@@ -99,11 +108,14 @@ export function RecordCard({
       </div>
 
       <div className="flex items-center gap-2">
-        <Avatar className="size-6 rounded">
-          <AvatarFallback className="type-micro rounded bg-muted text-micro">
-            {initialsFrom(entry.holder)}
-          </AvatarFallback>
-        </Avatar>
+        {/* A record holder is not always a linked account, so the seed
+            falls back to the name — a colour, rather than every unlinked
+            holder sharing one. */}
+        <PlayerAvatar
+          id={entry.holderProfileId ?? entry.holder}
+          name={entry.holder}
+          className="size-6"
+        />
         {entry.holderProfileId ? (
           <Link
             href={`/players/${entry.holderProfileId}`}

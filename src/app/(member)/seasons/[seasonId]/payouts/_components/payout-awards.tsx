@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { initialsFrom } from "@/lib/format";
 import type { PayoutAward } from "@/lib/payouts";
 import { cn } from "@/lib/utils";
 
@@ -43,11 +42,12 @@ export function PayoutAwards({ awards }: { awards: PayoutAward[] }) {
             </div>
 
             <div className="flex items-center gap-2.5">
-              <Avatar className="size-7 rounded">
-                <AvatarFallback className="type-micro rounded bg-muted text-micro">
-                  {initialsFrom(a.holder)}
-                </AvatarFallback>
-              </Avatar>
+              <PlayerAvatar
+                id={a.holderProfileId}
+                name={a.holder}
+                isMe={a.isMe}
+                className="size-7"
+              />
               <Link
                 href={`/players/${a.holderProfileId}`}
                 className="truncate text-h3 hover:underline"

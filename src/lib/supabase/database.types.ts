@@ -700,24 +700,18 @@ export type Database = {
       }
       leagues: {
         Row: {
-          avatar_glyph: string | null
-          avatar_pair: number | null
           created_at: string
           created_by: string | null
           id: string
           name: string
         }
         Insert: {
-          avatar_glyph?: string | null
-          avatar_pair?: number | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
         }
         Update: {
-          avatar_glyph?: string | null
-          avatar_pair?: number | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -735,8 +729,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_glyph: string | null
-          avatar_pair: number | null
           bio: string | null
           created_at: string
           display_name: string
@@ -746,11 +738,8 @@ export type Database = {
           notify_deadline_reminder: boolean
           notify_results_up: boolean
           notify_slate_up: boolean
-          peep_parts: Json | null
         }
         Insert: {
-          avatar_glyph?: string | null
-          avatar_pair?: number | null
           bio?: string | null
           created_at?: string
           display_name: string
@@ -760,11 +749,8 @@ export type Database = {
           notify_deadline_reminder?: boolean
           notify_results_up?: boolean
           notify_slate_up?: boolean
-          peep_parts?: Json | null
         }
         Update: {
-          avatar_glyph?: string | null
-          avatar_pair?: number | null
           bio?: string | null
           created_at?: string
           display_name?: string
@@ -774,7 +760,6 @@ export type Database = {
           notify_deadline_reminder?: boolean
           notify_results_up?: boolean
           notify_slate_up?: boolean
-          peep_parts?: Json | null
         }
         Relationships: []
       }
@@ -1291,12 +1276,7 @@ export type Database = {
         Returns: undefined
       }
       create_league: {
-        Args: {
-          p_avatar_glyph?: string
-          p_avatar_pair?: number
-          p_league_type?: string
-          p_name: string
-        }
+        Args: { p_league_type?: string; p_name: string }
         Returns: string
       }
       create_league_invite: {
@@ -1352,16 +1332,6 @@ export type Database = {
       }
       finalize_week: { Args: { p_week_id: string }; Returns: undefined }
       generate_settlement: { Args: { p_season_id: string }; Returns: string }
-      get_avatar_overrides: {
-        Args: never
-        Returns: {
-          avatar_glyph: string
-          avatar_pair: number
-          display_name: string
-          peep_parts: Json
-          profile_id: string
-        }[]
-      }
       get_league_activity: {
         Args: { p_league_id: string; p_limit?: number }
         Returns: {
@@ -1410,15 +1380,12 @@ export type Database = {
       get_player_profile: {
         Args: { p_profile_id: string }
         Returns: {
-          avatar_glyph: string
-          avatar_pair: number
           best_finish: number
           bio: string
           display_name: string
           films_owned: number
           is_me: boolean
           member_since: string
-          peep_parts: Json
           profile_id: string
           seasons_played: number
           seasons_won: number
@@ -1643,10 +1610,6 @@ export type Database = {
       skip_week: { Args: { p_week_id: string }; Returns: undefined }
       sync_week_deadlines: { Args: { p_season_id: string }; Returns: number }
       unskip_week: { Args: { p_week_id: string }; Returns: undefined }
-      update_avatar: {
-        Args: { p_glyph: string; p_pair: number }
-        Returns: undefined
-      }
       update_bio: { Args: { p_bio: string }; Returns: undefined }
       update_display_name: { Args: { p_name: string }; Returns: undefined }
       update_email_preferences: {
@@ -1676,12 +1639,7 @@ export type Database = {
         Returns: undefined
       }
       update_league_identity: {
-        Args: {
-          p_avatar_glyph?: string
-          p_avatar_pair?: number
-          p_league_id: string
-          p_name: string
-        }
+        Args: { p_league_id: string; p_name: string }
         Returns: undefined
       }
       update_league_settings: {
@@ -1703,7 +1661,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      update_peep_parts: { Args: { p_parts: Json }; Returns: undefined }
       update_season_settings: {
         Args: {
           p_also_set_league_default?: boolean
@@ -1891,4 +1848,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 2a4ef610d6365e3bfbf3f8ae2b7154ec386183e5ca9b1f8cc6f86a938b699e7f
+// @migrations-sha256 7baa2ac771583311f31342a5d3c30e79134ee365598c6b8adc02721a92ef89af

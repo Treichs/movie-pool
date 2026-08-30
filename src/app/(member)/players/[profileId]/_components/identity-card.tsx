@@ -1,10 +1,10 @@
 import { CalendarIcon } from "lucide-react";
 
 import { TextLink } from "@/components/text-link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { formatMonthYear, initialsFrom } from "@/lib/format";
+import { formatMonthYear } from "@/lib/format";
 import type { PlayerProfile } from "@/lib/player-profile";
 
 /**
@@ -31,11 +31,11 @@ export function IdentityCard({ profile }: { profile: PlayerProfile }) {
       <div aria-hidden className="w-2 shrink-0 bg-foreground" />
 
       <div className="flex grow flex-col gap-5 p-6 sm:flex-row sm:items-center sm:gap-6">
-        <Avatar className="size-24 shrink-0 rounded">
-          <AvatarFallback className="type-h1 rounded bg-muted text-h2">
-            {initialsFrom(profile.displayName)}
-          </AvatarFallback>
-        </Avatar>
+        <PlayerAvatar
+          id={profile.profileId}
+          name={profile.displayName}
+          className="size-24"
+        />
 
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">

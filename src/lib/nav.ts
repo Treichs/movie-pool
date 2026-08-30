@@ -32,11 +32,6 @@ export type NavLeague = {
   // Every season id in the league — lets the client resolve "which league am I
   // looking at?" from a /seasons/[id] URL without another query.
   seasonIds: string[];
-  // The league's chosen avatar (2026-08-03), same storage shape as a player's.
-  // Null means none was chosen, and the rail falls back to the first letter —
-  // which is what every league created before this looks like.
-  avatarPair: number | null;
-  avatarGlyph: string | null;
   /** Whether the VIEWER commissions this league — free with the membership row
    *  this query already reads. The mobile drawer's Commissioner entry hangs
    *  off it (2026-08-08 nav pass): without it, a phone had no route into the
@@ -71,8 +66,6 @@ type LeagueMemberRow = {
   league: {
     id: string;
     name: string;
-    avatar_pair: number | null;
-    avatar_glyph: string | null;
     seasons: NavSeason[] | null;
   } | null;
 };
@@ -87,7 +80,7 @@ export async function getNavLeagues(
   // ordering: it ranks by earliest week, which is when the season is actually
   // played.
   const COLUMNS =
-    "id, name, avatar_pair, avatar_glyph, seasons:v_seasons(id, name, status, number)";
+    "id, name, seasons:v_seasons(id, name, status, number)";
 
   const { data, error } = await supabase
     .from("league_members")
@@ -117,10 +110,6 @@ export async function getNavLeagues(
         name: row.league.name,
         currentSeason: pickCurrentSeason(seasons),
         seasonIds: seasons.map((s) => s.id),
-        // `?? null` rather than a bare read: on the fallback path these keys
-        // are absent from the row entirely, not null.
-        avatarPair: row.league.avatar_pair ?? null,
-        avatarGlyph: row.league.avatar_glyph ?? null,
         isCommissioner: row.role === "commissioner",
         openWeek: null as NavOpenWeek | null,
       },

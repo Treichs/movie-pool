@@ -28,15 +28,10 @@ export type LeagueSeason = {
 export async function getLeague(
   supabase: SupabaseClient,
   leagueId: string
-): Promise<{
-  id: string;
-  name: string;
-  avatar_pair: number | null;
-  avatar_glyph: string | null;
-} | null> {
+): Promise<{ id: string; name: string } | null> {
   const { data } = await supabase
     .from("leagues")
-    .select("id, name, avatar_pair, avatar_glyph")
+    .select("id, name")
     .eq("id", leagueId)
     .maybeSingle();
   return data;
@@ -560,7 +555,7 @@ export async function getLeagueRecordsPage(
  * render; this composer simply does not fetch it yet.
  */
 export type LeagueHome = {
-  league: { id: string; name: string; glyph: string | null };
+  league: { id: string; name: string };
   isCommissioner: boolean;
   runningSince: string | null;
   /** Every season, newest first — the archive AND the record book's input. */
@@ -609,7 +604,7 @@ export async function getLeagueHome(
       .sort((a, b) => a.number - b.number)[0] ?? null;
 
   return {
-    league: { id: league.id, name: league.name, glyph: league.avatar_glyph },
+    league: { id: league.id, name: league.name },
     isCommissioner: me?.isCommissioner ?? false,
     runningSince,
     seasons,

@@ -9,13 +9,13 @@
  * `Database` COMES FROM `./types`, NOT `./database.types` — a Task 5 review
  * fix. The raw generated `Database` in `database.types.ts` types every RPC
  * argument as non-null, which is a fabrication (see `types.ts`'s own header):
- * Postgres function arguments are always nullable, and six real call sites —
- * `update_avatar(null, null)` among them — pass `null` on purpose. `types.ts`
+ * Postgres function arguments are always nullable, and real call sites —
+ * `set_week_bid_deadline(week, null)` among them — pass `null` on purpose. `types.ts`
  * re-exports the SAME NAME `Database` widened to `| null` on every argument,
  * specifically so that importing "the obvious name" gets the correct type
  * rather than the naive one. Re-exporting the raw version here instead
  * silently un-shadowed it: this barrel briefly published a `Database` that
- * could not express `update_avatar(null, null)`, while `SupabaseClient` below
+ * could not express an explicit null argument, while `SupabaseClient` below
  * (also from `./types`) stayed bound to the correct, widened one — two
  * incompatible `Database` types under one name in the same directory. Only
  * `Database` moves; `Tables`, `Enums`, `TablesInsert`, `TablesUpdate` and

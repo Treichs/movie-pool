@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 import { Figure } from "@/components/figure";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { formatDate, initialsFrom, numberWord } from "@/lib/format";
+import { formatDate, numberWord } from "@/lib/format";
 import type { LeaguePlaying } from "@/lib/film-league-record";
 
 /**
@@ -112,13 +112,12 @@ function OwnerRow({
         <span className="type-numeral w-5 text-ui text-muted-foreground">
           {rank}
         </span>
-        <Avatar className="size-6 rounded">
-          <AvatarFallback
-            className={`type-micro rounded text-micro ${isMe ? "bg-foreground text-background" : "bg-muted"}`}
-          >
-            {initialsFrom(owner.name)}
-          </AvatarFallback>
-        </Avatar>
+        <PlayerAvatar
+          id={owner.profileId}
+          name={owner.name}
+          isMe={isMe}
+          className="size-6"
+        />
         <Link
           href={`/players/${owner.profileId}`}
           className="type-ui truncate text-ui hover:underline"

@@ -156,11 +156,18 @@ export function relativeDay(iso: string): string {
  * rather than on the words, so "Jean-Luc" gives "J" and not "JL": the split is
  * on spaces, and a hyphenated first name is one word.
  */
-export function initialsFrom(name: string): string {
-  return name
-    .split(" ")
-    .map((part) => part[0])
+export function initialsFrom(name: string, max = 2): string {
+  // Array spread, not `part[0]`: indexing a string returns a UTF-16 code UNIT,
+  // so a name led by an emoji yielded half a surrogate pair and drew a broken
+  // box. Spreading iterates code POINTS.
+  //
+  // `max` is 2 for a person and 3 for a league — a group is usually several
+  // words and the acronym is how people already say it out loud.
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  return words
+    .slice(0, max)
+    .map((part) => [...part][0] ?? "")
     .join("")
-    .slice(0, 2)
     .toUpperCase();
 }

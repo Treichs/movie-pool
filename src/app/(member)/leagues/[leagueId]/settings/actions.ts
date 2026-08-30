@@ -51,14 +51,9 @@ export async function updateLeagueIdentity(
   }
 
   const supabase = await createClient();
-  // The avatar pair and glyph are passed through unchanged — `null` means
-  // "leave it", and this form does not edit them. See the page's note on why
-  // the board's avatar picker is not built.
   const { error } = await supabase.rpc("update_league_identity", {
     p_league_id: leagueId,
     p_name: name,
-    p_avatar_pair: null,
-    p_avatar_glyph: null,
   });
   if (error) return fail(error.message);
 

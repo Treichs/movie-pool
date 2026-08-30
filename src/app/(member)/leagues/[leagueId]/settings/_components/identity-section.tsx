@@ -18,13 +18,16 @@ import { updateLeagueIdentity } from "../actions";
 /**
  * IDENTITY — board 4.11's first section.
  *
- * ── THE AVATAR PICKER IS NOT BUILT, AND IT IS NOT A ONE-LINER ──────────
- * The board draws a 76px league mark with a "Change" link under it.
- * `update_league_identity` takes a pair and a glyph, and the palette exists in
- * `avatar-palette.ts` — but the picker itself is a component this rebuild has
- * never made, and `/account` chose the same way for a player's own avatar.
- * Building one here would be a component invented for a screen rather than a
- * screen using one. Raised, not stubbed with a dead link.
+ * ── THERE IS NO AVATAR PICKER, AND THERE IS NOTHING TO PICK ────────────
+ * The board draws a 76px league mark with a "Change" link under it. A league's
+ * mark is now DERIVED — `components/league-mark.tsx` composes it from the
+ * league's id and name — so there is no stored choice for a picker to edit.
+ * Renaming the league changes its letters, which is this form, and its colour
+ * is keyed on the id so it survives the rename.
+ *
+ * `update_league_identity` still takes `p_avatar_pair` and `p_avatar_glyph`
+ * because the RPC's signature is a database contract; both are passed null,
+ * which is what every league already stores.
  *
  * ── THE FIELD IS CONTROLLED ────────────────────────────────────────────
  * Same reason as every other form in this app: React resets an uncontrolled

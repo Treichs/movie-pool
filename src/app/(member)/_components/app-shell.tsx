@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDownIcon } from "lucide-react";
 
+import { LeagueMark } from "@/components/league-mark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,12 +95,11 @@ export function AppShell({
             looking at, and a member can belong to several. */}
         {focused && (
           <div className="flex h-12 items-center gap-2 border-b bg-background px-4 md:hidden">
-            <span
-              aria-hidden
-              className="type-micro text-micro flex size-5.5 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-            >
-              {focused.avatarGlyph ?? focused.name.charAt(0).toUpperCase()}
-            </span>
+            <LeagueMark
+              id={focused.id}
+              name={focused.name}
+              className="size-5.5"
+            />
             <span className="type-ui truncate text-ui">{focused.name}</span>
           </div>
         )}

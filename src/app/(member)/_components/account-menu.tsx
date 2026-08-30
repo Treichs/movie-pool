@@ -4,8 +4,7 @@ import Link from "next/link";
 import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon, UserIcon } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
-import { initialsFrom } from "@/lib/format";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,19 +30,13 @@ export function AccountMenu({
   email: string;
   profileId: string;
 }) {
-  const initials = initialsFrom(name);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className="flex h-11 items-center gap-2 rounded-4xl py-1 pr-2 pl-1 text-nav-foreground outline-none hover:bg-nav-foreground/10 focus-visible:ring-3 focus-visible:ring-nav-foreground/30"
         aria-label={`Account — ${name}`}
       >
-        <Avatar className="size-8">
-          <AvatarFallback className="type-micro text-micro bg-nav-foreground text-nav">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <PlayerAvatar id={profileId} name={name} className="size-8" />
         <span className="type-ui hidden text-ui md:inline">{name}</span>
         <ChevronsUpDownIcon className="size-4 text-nav-muted-foreground" aria-hidden />
       </DropdownMenuTrigger>

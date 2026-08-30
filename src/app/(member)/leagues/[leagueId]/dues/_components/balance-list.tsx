@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { initialsFrom } from "@/lib/format";
 import type { DuesBalance } from "@/lib/league-dues";
 
 /**
@@ -38,13 +37,12 @@ export function BalanceList({ balances }: { balances: DuesBalance[] }) {
               }`}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar className="size-6.5 rounded">
-                  <AvatarFallback
-                    className={`type-micro rounded text-micro ${b.isMe ? "bg-foreground text-background" : "bg-muted"}`}
-                  >
-                    {initialsFrom(b.name)}
-                  </AvatarFallback>
-                </Avatar>
+                <PlayerAvatar
+                  id={b.profileId}
+                  name={b.name}
+                  isMe={b.isMe}
+                  className="size-6.5"
+                />
                 <Link
                   href={`/players/${b.profileId}`}
                   className={`truncate text-ui hover:underline ${b.isMe ? "type-ui font-semibold" : "type-ui"}`}
