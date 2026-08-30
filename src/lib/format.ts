@@ -60,6 +60,20 @@ export function formatDate(dateOnly: string): string {
   return DATE_FORMAT.format(new Date(`${dateOnly}T12:00:00Z`));
 }
 
+const DATE_FULL_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+// The same date WITH its year ("Nov 21, 2025"), for a fact about a film rather
+// than about this season. `formatDate` drops the year because a week is always
+// the one in front of you; a release date is not, and "Nov 21" is a question.
+export function formatDateFull(dateOnly: string): string {
+  return DATE_FULL_FORMAT.format(new Date(`${dateOnly}T12:00:00Z`));
+}
+
 // A month and a year ("January 2024") from a date-only column — for spans long
 // enough that the day is noise. Same UTC-noon parse as formatDate, and for the
 // same reason: `new Date("2024-01-15")` is midnight UTC, which a browser west

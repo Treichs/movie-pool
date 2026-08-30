@@ -34,6 +34,17 @@ export function backdropUrl(
   return path ? `${IMAGE_BASE}${size}${path}` : null;
 }
 
+/** Poster widths. `w342` is the grid thumbnail; `w500` is the catalog hero,
+ *  which draws at 200 CSS px and so needs the step above it on a 2x screen. */
+export type PosterSize = "w342" | "w500";
+
+export function posterUrl(
+  path: string | null | undefined,
+  size: PosterSize = "w342",
+) {
+  return path ? `${IMAGE_BASE}${size}${path}` : null;
+}
+
 /** Cast headshot. Small on purpose — these render as a row of thumbnails. */
 export function profileUrl(path: string | null | undefined) {
   return path ? `${IMAGE_BASE}w185${path}` : null;
