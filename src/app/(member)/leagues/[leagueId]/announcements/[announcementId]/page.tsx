@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "lucide-react";
 
 import { TextLink } from "@/components/text-link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -35,9 +36,11 @@ export const metadata = { title: "Announcement" };
  * the notify cron's four kinds do not include one. Printing a delivery count
  * would be inventing a fact about people's inboxes.
  *
- * **Edit** — `post_league_announcement` and `delete_league_announcement` are
- * the only two functions on this table. There is no update RPC and no edit
- * route among the 25. Delete is built because it exists; Edit is raised.
+ * **Edit** was one of them until 2026-08-30. It is now real:
+ * `update_league_announcement` was added and `…/[announcementId]/edit` is the
+ * 26th route. Both controls are commissioner-only, and it is ANY commissioner
+ * — the RPCs gate on `is_league_commissioner`, not on authorship, because
+ * ADR-060 says a league's commissioners are equals.
  *
  * ── THE TIME OF DAY IS NOT SHOWN, AND THAT IS A DELIBERATE LOSS ─────────
  * The board reads "Tuesday 18 Nov, 9:14 AM". Rendering a wall-clock time on
@@ -139,11 +142,25 @@ export default async function AnnouncementPage({
           </TextLink>
 
           {isCommissioner && (
-            <DeleteAnnouncement
-              leagueId={league.id}
-              announcementId={announcement.id}
-              title={announcement.title}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link
+                    href={`/leagues/${league.id}/announcements/${announcement.id}/edit`}
+                  />
+                }
+              >
+                Edit
+              </Button>
+              <DeleteAnnouncement
+                leagueId={league.id}
+                announcementId={announcement.id}
+                title={announcement.title}
+              />
+            </div>
           )}
         </div>
       </article>

@@ -1671,6 +1671,10 @@ export type Database = {
         Args: { p_film_id: string; p_release_date: string }
         Returns: undefined
       }
+      update_league_announcement: {
+        Args: { p_body: string; p_id: string; p_title?: string }
+        Returns: undefined
+      }
       update_league_identity: {
         Args: {
           p_avatar_glyph?: string
@@ -1887,4 +1891,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 7f65aa0bb211b6acc27ff787272535bbd420d7f5623c9639db9a33479546031f
+// @migrations-sha256 2a4ef610d6365e3bfbf3f8ae2b7154ec386183e5ca9b1f8cc6f86a938b699e7f
