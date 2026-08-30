@@ -770,6 +770,21 @@ The season, its six weeks and its five memberships were deleted afterwards and D
 
 **Board:** `3.2  /seasons/[id]/weeks/[weekId] — settled`
 
+**✅ BUILT 2026-08-29 (`034ba8b`).** The `/bid` redirect pair now terminates — this page was the missing half of it, so `/bid` on a closed week used to 404.
+
+**Two places the build departs from the board, deliberately:**
+
+- **The board fades an unowned row to 72%.** `--muted-foreground` at 72% over card white lands near 2.7:1, under the 4.5 this app holds every string to. The intent is inverted instead — the OWNED row takes an ink border, only the poster of an unowned row fades, and no text loses contrast.
+- **The dek's tense follows the date.** "Opened Fri, Sep 11" on a pending week is a future date stated in the past; a skipped week reads "Weekend of". The empty section heading is "The slate", not "The reveal".
+
+**⚠ STATES NOT DRIVEN, and they are fixture gaps rather than code gaps:**
+
+1. **`skipped`** — no week anywhere in the database has that status. The empty state and the "Weekend of" tense were reviewed, not seen.
+2. **The tie note** — "a tie at $9 gives four owners" needs two winning bids at the same amount, and no fixture film has one. Every other reveal sentence was seen with real data.
+3. **A removed film** — `films.status` is `active` on every row in the database, so the removed section and the `remove_film` correction have never rendered.
+
+**Also worth knowing:** `reveal.ts` produces more than this screen draws — the cut hairline, the "Everyone else — $0" roster line and week-scaled bid bars, which is ADR-096's fuller locked sheet. Board 3.2 draws a compact settled week instead, and the plan's step 4 agrees with the board, so that is what was built. **The richer sheet has no screen among the 25.**
+
 **Files:**
 - Create: `src/app/(member)/seasons/[seasonId]/weeks/[weekId]/page.tsx`, `_components/*.tsx`, `error.tsx`
 - Create: `src/lib/week-board-view.ts`
@@ -779,43 +794,43 @@ The season, its six weeks and its five memberships were deleted afterwards and D
 - Consumes: `getWeekBoard`, `WeekOverride` (`week-board.ts`), plus `reveal.ts` and `week-status.ts` — **all already written.**
 - Produces: `getWeekBoardView(ctx, weekId) -> WeekBoardView | null` in its **own file, `src/lib/week-board-view.ts`**. Named `…View` and filed separately on purpose: `getWeekBoard` already exists with other callers, and two functions one letter apart in one file is how a wrong import happens.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 It is drawn **settled**, because the bid page already covers the open state and the reveal is the half nobody has seen. **The player's own result opens the page**, ahead of the reveal.
 
-- [ ] **Step 2: Preserve the in-page redirect**
+- [x] **Step 2: Preserve the in-page redirect**
 
 This page performs a state-based `redirect()` to `/bid` when the week is still biddable (ADR-108). **It is not in `next.config.ts` and reading that file will not reveal it.** It must survive, and it is what stops this screen and the bid page disagreeing about which one owns a live week.
 
-- [ ] **Step 3: The composer serves every week state**
+- [x] **Step 3: The composer serves every week state**
 
 Open (redirects), closed-and-unscored, settled, and skipped.
 
-- [ ] **Step 4: Build the page**
+- [x] **Step 4: Build the page**
 
 Your result first. Then the reveal — each film with opening, Tomatometer, score, and its owners with bids. Then corrections and removed films.
 
 **Corrections carry ink, not red.** `--destructive` is for a destructive action, not for a commissioner's correction to a score — and red beside the brand's red reads as one thing (Global Constraints). The owners line states the tie honestly — *"Three distinct amounts — a tie at $9 gives four owners"* — because that is the rule people misread.
 
-- [ ] **Step 5: Give `PosterCard` its destination**
+- [x] **Step 5: Give `PosterCard` its destination**
 
 The bid page's card takes an optional `href` that has been unset since it was built, waiting on the league-scoped film route. Pass `/leagues/${leagueId}/films/${tmdbId}`.
 
 **Under the 2026-08-29 re-order that route is already built when this task runs** — it is build-order 15, this is 16 — so the escape hatch the original plan offered is gone and the `href` is set here, for real. If for any reason it is not, leave it unset and **note it in the report** rather than pointing it at the catalog, which carries no pool history.
 
-- [ ] **Step 6: Add `error.tsx`**
+- [x] **Step 6: Add `error.tsx`**
 
-- [ ] **Step 7: Run the gate**
+- [x] **Step 7: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 8: Drive every reachable week state**
+- [x] **Step 8: Drive every reachable week state**
 
 Open (confirm it redirects to `/bid`), settled, and skipped. **Report which states you could not reach** — if no fixture week is closed-and-unscored, say so rather than implying it was checked.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A
@@ -895,6 +910,14 @@ git commit -m "feat(films): the catalog page carries the film and never the play
 
 **Board:** `2.3  /leagues/[id]/films/[tmdbId] — NEW route`
 
+**✅ BUILT 2026-08-29 (`a8d6c56`).** The redirect is the half that matters and it is driven both ways. Three things came out of it:
+
+- **`FilmMasthead` moved to `src/components/`** — backdrop, scrim and poster overlap are identical on boards 2.2 and 2.3; only the column beside them differs, so each page composes that as children. Second route needing it is the rule's own trigger.
+- **`getLeagueFilmRecord` gained `capturedAt`, `otherBidders` and `lowestWinningBid`** — all three off rows it already fetched. It had zero callers, so extending it was cheaper and safer than a second bids query beside it.
+- **`Figure` gained `size="hero"`** (`--text-numeral-xl`), the name `deadline-countdown.tsx` had already given that size. Two names for one size is how a scale stops being one.
+
+**The bid page's `PosterCard` href is set**, which closes Task 12's step 5 before Task 12 runs.
+
 **Why it exists.** ADR-408 says the film page shows **one scope** — the context league's own record — because commissioner-entered box office and Tomatometer values make play data league-local. The principle is untouched; the carrier changes from `?league=` to a path segment, which makes the league view bookmarkable and lets the trail name which league you are looking from.
 
 **Files:**
@@ -906,21 +929,21 @@ git commit -m "feat(films): the catalog page carries the film and never the play
 - Consumes: `getFilmCatalogPage` from Task 13, for the "About the film" section.
 - Produces: `getFilmLeagueRecord(ctx, leagueId, tmdbId) -> FilmLeagueRecord | null` — the score, its two inputs, the week it was on, and the owners with their bids.
 
-- [ ] **Step 1: Open the board**
+- [x] **Step 1: Open the board**
 
 **The league record leads and the TMDB material is demoted below it.** That ordering is ADR-408 expressed as layout; inverting it makes this a catalog page with a table bolted on.
 
-- [ ] **Step 2: The composer returns `null`, it does not throw**
+- [x] **Step 2: The composer returns `null`, it does not throw**
 
 Step 4's redirect depends on `null` being distinguishable from an error.
 
-- [ ] **Step 3: Build the page**
+- [x] **Step 3: Build the page**
 
 The score panel spells out the formula: **`Opening ($M) × Tomatometer = Score`**. The owners list shows bid and points-per-dollar per owner, and states that **every owner earns the full score** — the rule people get wrong.
 
 Resolve the tier count from `season_settings.top_n_distinct`. The heading reads "three winning tiers" only if that season says 3.
 
-- [ ] **Step 4: Implement the foreign-league path**
+- [x] **Step 4: Implement the foreign-league path**
 
 ```tsx
 const record = await getFilmLeagueRecord(ctx, leagueId, tmdbId);
@@ -929,7 +952,7 @@ if (!record) redirect(`/films/${tmdbId}?from=league`);
 
 **Not a 404** — the film exists and is readable; only this league's play is not.
 
-- [ ] **Step 5: Point every league-context film link here**
+- [x] **Step 5: Point every league-context film link here**
 
 ```bash
 git grep -n 'films/' -- 'src/**/*.tsx'
@@ -937,19 +960,19 @@ git grep -n 'films/' -- 'src/**/*.tsx'
 
 Every link from inside a league context carries the league. That includes the bid page's `PosterCard` `href` and anything Task 12 left noted.
 
-- [ ] **Step 6: Add `error.tsx`**
+- [x] **Step 6: Add `error.tsx`**
 
-- [ ] **Step 7: Run the gate**
+- [x] **Step 7: Run the gate**
 
 ```bash
 npm run verify
 ```
 
-- [ ] **Step 8: Drive it — including the redirect**
+- [x] **Step 8: Drive it — including the redirect**
 
 As `dev-player`, open a film the league owns and confirm the record renders with real owners. **Then, as `dev-outsider`, open the same URL** and confirm you land on the catalog page with the notice — not a 404, and not the league's data. **That second half is the whole point of the task and is the one branch no gate can check.**
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add -A
