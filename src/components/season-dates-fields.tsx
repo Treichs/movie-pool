@@ -1,9 +1,10 @@
 "use client";
 
 import { useId } from "react";
+import { addWeeks, format, nextFriday as fridayAfter, parseISO } from "date-fns";
 
+import { DatePicker } from "@/components/date-picker";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 
 /**
  * WHEN A SEASON RUNS — two Fridays, and the week count derived from them.
@@ -24,6 +25,13 @@ import { Input } from "@/components/ui/input";
  * ── THE DEFAULT FRIDAY IS COMPUTED IN THE BROWSER ─────────────────────────
  * Which Friday is next depends on the commissioner's own date, and a server
  * renders in UTC.
+ *
+ * ── THE FRIDAY RULE IS ENFORCED BY THE PICKER, NOT ONLY BY THE LABEL ──────
+ * `weeksBetween` divides the span by seven days, so a Tuesday paired with a
+ * Friday silently rounds down to a week count nobody asked for. The old
+ * `<input type="date">` offered every day of the week under a label that said
+ * "A Friday". `DatePicker` takes the rule as a matcher and greys the rest out,
+ * which is the reason the native input was replaced rather than restyled.
  */
 export type SeasonDates = {
   /** yyyy-mm-dd — the Friday week 01's films open on. */
@@ -34,12 +42,23 @@ export type SeasonDates = {
 
 const DAY = 86_400_000;
 
-/** The next Friday. Today counts only if today is not itself a Friday — a
- *  season opening in three hours is not what anyone means. */
+/** Every day but Friday, as a react-day-picker matcher. Sunday is 0. */
+const NOT_FRIDAY = { dayOfWeek: [0, 1, 2, 3, 4, 6] };
+
+/**
+ * The next Friday. Today counts only if today is not itself a Friday — a
+ * season opening in three hours is not what anyone means.
+ *
+ * ── THIS RETURNED A SATURDAY, AND THE PICKER IS WHAT SHOWED IT ────────────
+ * The old body stepped a LOCAL date forward and then read it back with
+ * `toISOString()`, which converts to UTC: on any evening west of Greenwich the
+ * next Friday came out as the Saturday after it. Nothing said so while the
+ * value sat in an `<input type="date">` as "09/05/2026" — the trigger now
+ * spells the weekday, and the matcher below greys out the day the default was
+ * landing on. `format` writes the local calendar day it was handed.
+ */
 export function nextFriday(from = new Date()): string {
-  const d = new Date(from);
-  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7 || 7));
-  return d.toISOString().slice(0, 10);
+  return format(fridayAfter(from), "yyyy-MM-dd");
 }
 
 /**
@@ -57,10 +76,12 @@ export function weeksBetween(first: string, last: string): number | null {
 
 export const SEASON_DATE_DEFAULTS = (): SeasonDates => {
   const first = nextFriday();
-  const last = new Date(Date.parse(`${first}T00:00:00Z`) + 19 * 7 * DAY);
   return {
     firstOpeningDate: first,
-    lastOpeningDate: last.toISOString().slice(0, 10),
+    // Twenty weeks inclusive, so the last opening weekend is nineteen after
+    // the first. `parseISO` reads a date-only string as LOCAL midnight, which
+    // is what keeps this on the same weekday as `first`.
+    lastOpeningDate: format(addWeeks(parseISO(first), 19), "yyyy-MM-dd"),
   };
 };
 
@@ -79,11 +100,11 @@ export function SeasonDatesFields({
     <>
       <Field>
         <FieldLabel htmlFor={firstId}>First opening weekend</FieldLabel>
-        <Input
+        <DatePicker
           id={firstId}
-          type="date"
           value={value.firstOpeningDate}
-          onChange={(e) => onChange({ firstOpeningDate: e.target.value })}
+          disabledDays={NOT_FRIDAY}
+          onChange={(firstOpeningDate) => onChange({ firstOpeningDate })}
         />
         <FieldDescription>
           A Friday. Week 01 is the weekend beginning that day.
@@ -92,11 +113,11 @@ export function SeasonDatesFields({
 
       <Field>
         <FieldLabel htmlFor={lastId}>Last opening weekend</FieldLabel>
-        <Input
+        <DatePicker
           id={lastId}
-          type="date"
           value={value.lastOpeningDate}
-          onChange={(e) => onChange({ lastOpeningDate: e.target.value })}
+          disabledDays={NOT_FRIDAY}
+          onChange={(lastOpeningDate) => onChange({ lastOpeningDate })}
         />
         {/* THE DERIVED COUNT IS SHOWN BACK so the dates can be sanity-checked
             before anything is committed — that is the whole reason for asking
