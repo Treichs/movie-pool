@@ -55,7 +55,7 @@ npm run verify   →  typecheck · lint · a11y:contrast · types:fresh · build
 |---|---|---|
 | **Charts** | **Recharts** | Already in, via `@shadcn/chart`. `bump-chart` is the reference. |
 | **Data tables** | **`@tanstack/react-table`** | Adopted at build order 13. **v9**, not v8 — see below. |
-| **Dates** | **`date-fns`**, and one date-picker everywhere | `date-fns` installed. The picker is **still owed** — see below. |
+| **Dates** | **`date-fns`**, and one date-picker everywhere | Both in. [src/components/date-picker.tsx](../../../src/components/date-picker.tsx) is the only date input in the app. |
 
 **TanStack is v9 and the internet is v8.** v9 renamed `useReactTable` to `useTable` and moved row models behind an explicit `tableFeatures()` call. Every v8 snippet — including shadcn's own data-table documentation page — fails to compile against it. `useLegacyTable` exists as a shim and is deliberately unused: adopting a library through its compatibility layer means writing the migration twice. **[players/[profileId]/_components/seasons-table.tsx](<../../../src/app/(member)/players/[profileId]/_components/seasons-table.tsx>) is the reference implementation** — copy its shape.
 
@@ -65,7 +65,12 @@ npm run verify   →  typecheck · lint · a11y:contrast · types:fresh · build
 
 **`src/lib/format.ts` stays on `Intl`, deliberately.** Its date formatters parse a date-only column at **UTC noon** — `new Date("2024-01-15")` is midnight UTC, which a browser west of Greenwich renders as the previous day, and in January as the previous *month*. Rewriting them on `date-fns` would reintroduce exactly that for no gain. **date-fns earns its place at the picker**, which is what `@shadcn/calendar` depends on.
 
-**⚠ STILL OWED: one date picker.** `src/components/season-dates-fields.tsx` uses two native `<input type="date">`, and it is shared by `/leagues/new` and `/leagues/[id]/seasons/new` — both already built. Installing `@shadcn/calendar` (`react-day-picker` + `date-fns`) and building one shared `DatePicker` is a small retrofit against two screens, not a new-screen task. **Do it before any screen that needs a date input.**
+**✅ DONE at build order 13.5 — one date picker, and it is the only one.** [src/components/date-picker.tsx](../../../src/components/date-picker.tsx) is `@shadcn/popover` + `@shadcn/calendar` (react-day-picker) with `date-fns` doing the parsing. **No screen uses `<input type="date">`; use this.**
+
+- **String in, string out.** The value is `yyyy-mm-dd`, the shape the forms and RPCs already use, so no caller holds a `Date`. Inside, `parseISO` reads that as **local** midnight and `format` writes local components back. `new Date("2026-01-02")` is midnight **UTC** and shows 1 January west of Greenwich — the same trap `format.ts` sidesteps with a UTC-noon parse, fixed differently because rendering a server-chosen date and round-tripping a user-chosen one are different jobs.
+- **The trigger is shaped like the Select trigger**, not like `Button variant="outline"`: a control boundary is `--edge` at 3:1, and the outline variant ships `--border`, which only draws panels.
+- **Restrictions are a matcher passed by the caller**, so the control stays a plain date field and the rule lives with whoever owns it. `season-dates-fields.tsx` passes `NOT_FRIDAY`.
+- **It found a defect the native input was hiding.** `nextFriday` stepped a local date and read it back with `toISOString()`, so the default first weekend was the **Saturday** after the intended Friday on any evening west of Greenwich. Unreadable as "09/05/2026"; obvious the moment the trigger spelled the weekday and the matcher greyed that day out. **The tell is local components in, UTC out** — `getDay()`/`setDate()` paired with `toISOString()`. Every other site in `src/lib` builds its date with `Date.UTC` or `setUTCDate` and is UTC-consistent on purpose, so those are correct. **One instance survives, in `scripts/seed-dev.mts`:** `fridays()` reads `today.getDay()` (local) and writes with `toISOString()` (UTC), so on a US evening the fixture's "Friday" is a Saturday — a plausible cause of the logged defect where `seed:dev` refreshes week 1's deadline but the week never surfaces on `/leagues`. Not fixed here: re-seeding the dev database is the commissioner's call, not a side effect of a screen task.
 
 ### The seven conditions — in force for every screen task
 
