@@ -850,6 +850,39 @@ function lastFriday(weeksBack: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// A multi-paragraph post, because the announcement page has to prove it keeps
+// its line breaks — a blank line between paragraphs AND a single newline
+// inside one, which are two different bugs. Every other fixture announcement
+// is one line, which is exactly the shape that hides both.
+const EDGE_ANNOUNCEMENT = {
+  title: "Week 04 slate is up early",
+  body: [
+    "Week 04 goes up on Tuesday rather than Thursday morning. Two wide releases land the same weekend and I would rather everyone had the time to look at both properly.",
+    "The deadline has not moved — it is still Thursday at noon Eastern. You simply get two extra days to think about it, which in my experience makes everybody bid worse.",
+    "One thing worth flagging: the second of the two may open limited rather than wide.\nIf that turns out to be the case I will pull it and refund whoever won it, the same way we handled it last season.",
+  ].join("\n\n"),
+};
+
+/** Post the fixture announcement if the league has none. Split out because it
+ *  has to run on a league that ALREADY EXISTS — the seeder skips those, and an
+ *  announcement added to the fixture after the league was first seeded would
+ *  otherwise never appear on anyone's database. */
+async function ensureEdgeAnnouncement(leagueId: string) {
+  const { count } = await admin
+    .from("league_announcements")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId);
+  if (count && count > 0) return;
+
+  const commish = await signIn("dev-commish@moviepool.local");
+  await rpc(commish, "post_league_announcement", {
+    p_league_id: leagueId,
+    p_body: EDGE_ANNOUNCEMENT.body,
+    p_title: EDGE_ANNOUNCEMENT.title,
+  });
+  console.log("  posted the multi-paragraph announcement");
+}
+
 async function seedEdgeCases() {
   const { data: existing } = await admin
     .from("leagues")
@@ -857,6 +890,7 @@ async function seedEdgeCases() {
     .eq("name", EDGE_NAME)
     .maybeSingle();
   if (existing) {
+    await ensureEdgeAnnouncement(existing.id);
     console.log(`  "${EDGE_NAME}" already seeded — skipping`);
     return;
   }
@@ -957,6 +991,8 @@ async function seedEdgeCases() {
   // is called on the draft the line above just made.
   await rpc(c.commish, "skip_week", { p_week_id: skippedId });
   console.log("  week 2 SKIPPED (no releases)");
+
+  await ensureEdgeAnnouncement(leagueId);
 }
 
 main().catch((err) => {

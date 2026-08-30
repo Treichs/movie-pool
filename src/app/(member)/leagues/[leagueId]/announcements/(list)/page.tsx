@@ -76,13 +76,18 @@ export default async function AnnouncementsPage({
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="flex flex-col gap-1.5">
           <h1>Announcements</h1>
-          {/* The board's dek states the count and then the rule. The rule half
-              is worth keeping verbatim: everyone gets an email, and a
-              commissioner about to write one should know that before they do. */}
+          {/* THE BOARD'S DEK SAYS "everyone gets an email". NOTHING EMAILS AN
+              ANNOUNCEMENT. `post_league_announcement` writes a row and an audit
+              entry and stops; the notify cron's four kinds are slate_up,
+              deadline_reminder, bids_revealed and results_up, and there is no
+              template for a fifth. Shipped with the board's wording on
+              2026-08-29 and corrected the next day — a commissioner deciding
+              whether to post would have been told their message goes to
+              everyone's inbox, and it does not. */}
           <p className="type-dek text-ui text-muted-foreground">
             {count === 0
-              ? "Commissioners write them; everyone gets an email."
-              : `${sentenceCase(numberWord(count))} post${count === 1 ? "" : "s"}. Commissioners write them; everyone gets an email.`}
+              ? "Commissioners write them; everyone in the league reads them here."
+              : `${sentenceCase(numberWord(count))} post${count === 1 ? "" : "s"}. Commissioners write them; everyone in the league reads them here.`}
           </p>
         </div>
 
@@ -107,8 +112,8 @@ export default async function AnnouncementsPage({
             <EmptyTitle>Nothing posted yet</EmptyTitle>
             <EmptyDescription>
               {isCommissioner
-                ? "Announcements are how you tell the league something the game cannot — a slate going up early, a change to the dues. Everyone gets an email."
-                : "When a commissioner posts something, it appears here and lands in your inbox."}
+                ? "Announcements are how you tell the league something the game cannot — a slate going up early, a change to the dues. They appear here, and nowhere else: nothing is emailed."
+                : "When a commissioner posts something, it appears here."}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

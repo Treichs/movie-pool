@@ -436,6 +436,68 @@ export async function getLeagueAnnouncementsPage(
   };
 }
 
+export type LeagueAnnouncementPage = {
+  league: { id: string; name: string };
+  announcement: LeagueAnnouncement;
+  /** Whether the VIEWER commissions this league — the Delete control's gate,
+   *  and it is ANY commissioner, matching `delete_league_announcement`'s own
+   *  check rather than a narrower "only the author" rule this page would then
+   *  be alone in believing. */
+  isCommissioner: boolean;
+  /** Whether the AUTHOR still commissions it. Only a commissioner can post, so
+   *  this is true on the day; it goes false when someone hands the role on, and
+   *  labelling a former commissioner as one would be the page asserting a fact
+   *  about today that stopped being true. */
+  authorIsCommissioner: boolean;
+};
+
+/**
+ * `/leagues/[leagueId]/announcements/[announcementId]` — board 4.7.
+ *
+ * `getLeagueAnnouncement` already reads the row and already scopes it by
+ * league, so a member cannot reach another league's post by guessing an id.
+ * This adds the two role answers the page needs and nothing else.
+ */
+export async function getLeagueAnnouncementPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string,
+  announcementId: string
+): Promise<LeagueAnnouncementPage | null> {
+  const { supabase, user } = ctx;
+
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const announcement = await getLeagueAnnouncement(
+    supabase,
+    leagueId,
+    announcementId
+  );
+  if (!announcement) return null;
+
+  // Both roles in one read — the author and the viewer are usually two rows of
+  // the same small table, and asking twice would be two round trips for one
+  // question about one league.
+  const { data: roles } = await supabase
+    .from("league_members")
+    .select("profile_id, role")
+    .eq("league_id", leagueId)
+    .in("profile_id", [user.id, announcement.authorId]);
+  const roleOf = new Map(
+    ((roles ?? []) as { profile_id: string; role: string }[]).map((r) => [
+      r.profile_id,
+      r.role,
+    ])
+  );
+
+  return {
+    league: { id: league.id, name: league.name },
+    announcement,
+    isCommissioner: roleOf.get(user.id) === "commissioner",
+    authorIsCommissioner: roleOf.get(announcement.authorId) === "commissioner",
+  };
+}
+
 export type LeagueRecordsPage = {
   league: { id: string; name: string };
   /** Null when the league has no season yet, or no standing in any of them —
