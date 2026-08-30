@@ -72,6 +72,11 @@ function Stat({
  * what happened.
  */
 function ownersNote(film: RevealFilm): string | null {
+  // A removed film has no tiers to explain — `is_winning` is still set on its
+  // bids (removal refunds the money without rewriting the close), so the tie
+  // arithmetic below would happily describe an outcome that was undone.
+  if (film.removed) return null;
+
   const winners = film.rows.filter((r) => r.isWinning);
   const distinct = new Set(winners.map((r) => r.amount));
 
@@ -169,8 +174,12 @@ export function RevealFilmRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* NOT "Owners" on a removed film. `remove_film` refunds the
+              winning bids and leaves `is_winning` where it was, so these are
+              the people who got their money back — calling them owners would
+              name them as holding something the commissioner took away. */}
           <span className="type-eyebrow me-1 text-eyebrow text-muted-foreground">
-            Owners
+            {film.removed ? "Refunded" : "Owners"}
           </span>
           {owners.length === 0 ? (
             <span className="type-body text-micro text-muted-foreground">

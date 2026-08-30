@@ -67,14 +67,15 @@ export default async function WeekBoardPage({
 
         {sheet.length === 0 ? (
           <Empty className="border">
+            {/* The TITLE names the state in a word and the DESCRIPTION is
+                `week-status.ts`'s own sentence, so a week explains itself the
+                same way here as everywhere else. Kept deliberately short: the
+                first draft titled a skipped week "Nothing opened this weekend"
+                directly above a blurb beginning with the same five words. */}
             <EmptyHeader>
               <EmptyTitle>
-                {status === "skipped"
-                  ? "Nothing opened this weekend"
-                  : "No slate yet"}
+                {status === "skipped" ? "Skipped" : "Not built yet"}
               </EmptyTitle>
-              {/* The status module's own sentence, so a week explains itself
-                  the same way here as it does everywhere else. */}
               <EmptyDescription>{display.blurb}</EmptyDescription>
             </EmptyHeader>
           </Empty>

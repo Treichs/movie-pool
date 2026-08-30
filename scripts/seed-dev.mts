@@ -19,6 +19,11 @@
  *     settlement surfaces. dev-commish commissions it; dev-player plays.
  *     Re-running RESETS it to unsettled so the commissioner's
  *     Generate -> Regenerate -> Finalize flow can be driven repeatedly.
+ *   - League "Dev Edge Cases" — a FOURTH league that exists only to reach the
+ *     week states nothing else does: a TIE at the cut (three distinct amounts,
+ *     four owners), a film REMOVED after the close with its refunds, and a
+ *     SKIPPED week. Its films carry real TMDB ids, so posters and the
+ *     league-scoped film page are live.
  *
  * Run:  npm run seed:dev
  * Env:  NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -330,6 +335,7 @@ async function main() {
 
   await seedFilmClub(ids);
   await seedClosingCredits();
+  await seedEdgeCases();
 
   console.log("\nDev fixtures ready:");
   for (const u of USERS) {
@@ -757,6 +763,200 @@ async function seedClosingCredits() {
     console.log(`    ${r.display_name}: ${r.points} pts / $${r.spent}`);
   }
   console.log("  -> drive Generate/Regenerate/Finalize from the commish workbench");
+}
+
+
+// ---------------------------------------------------------------------------
+// League #4: "Dev Edge Cases" — the three week states no other fixture reaches.
+//
+// Added 2026-08-29, when the week board (board 3.2) was driven and three of its
+// branches turned out to be unreachable against real data. They are not rare
+// states — a tie at the cut is the rule players misread most often, a removed
+// film is the only thing the corrections panel exists for, and a skipped week
+// is ADR-069's whole reason to exist. None of them had ever rendered.
+//
+//   week 1  FINAL, and carries two of the three:
+//             · a TIE at the cut — three distinct amounts, four owners
+//             · a film REMOVED after the close, with its refunds
+//   week 2  SKIPPED
+//
+// FILMS CARRY REAL TMDB IDS, so the poster, the artwork and the link to
+// `/leagues/[id]/films/[tmdbId]` are all live. `add_film` has no tmdb_id
+// parameter — it takes a title and an imdb id — so the id is written after the
+// fact with the admin client, which is the same thing the Dev League week does
+// a hundred lines above. All three films are already in `film_catalog`, so
+// nothing here fetches TMDB or invents artwork.
+//
+// WHAT THIS FIXTURE STILL CANNOT REACH: the OMDb half of a film page
+// (Tomatometer, Metacritic, IMDb). Those columns are written at PICK time by
+// the commissioner's catalog picker, and a seeded film is added by hand and
+// never picked. `OMDB_API_KEY` is set, so this is not a configuration gap —
+// but `src/lib/omdb.ts` is `import "server-only"` and cannot be called from a
+// script, and writing invented Tomatometers into `film_catalog` would be worse
+// than the gap: that table is a SHARED cache, and the replica league's film
+// pages read the same rows.
+// ---------------------------------------------------------------------------
+
+const EDGE_NAME = "Dev Edge Cases";
+
+type EdgeFilm = ClubFilm & {
+  /** Already in `film_catalog`, so artwork resolves with no API call. */
+  tmdbId: number;
+  /** Set to remove the film after the close, with this as the reason. */
+  removeBecause?: string;
+};
+
+// top_n_distinct is 3 — the rulebook default this league keeps.
+const EDGE_FILMS: EdgeFilm[] = [
+  {
+    // THE TIE. Distinct amounts are 12, 9 and 5 — three tiers — but two people
+    // bid 9, so FOUR players own it and all four earn the full score. That is
+    // the sentence the reveal has to be able to say. dev-commish bids under
+    // the cut on purpose, so the fixture also holds a visible loss.
+    title: "Motor City",
+    tmdbId: 87513,
+    box: 24.6,
+    tomato: 62,
+    bids: { grace: 12, player: 9, hana: 9, frank: 5, commish: 3 },
+  },
+  {
+    // dev-commish OWNS this one, so the your-week panel and the owned row's
+    // ink border have something to render.
+    title: "Desert Warrior",
+    tmdbId: 898704,
+    box: 41.0,
+    tomato: 78,
+    bids: { commish: 8, frank: 6, grace: 4, hana: 2 },
+  },
+  {
+    // REMOVED after bidding closed. Both bids are refunded in full, it scores
+    // for nobody, and the correction says so.
+    title: "Passenger",
+    tmdbId: 1368314,
+    box: 0,
+    tomato: 0,
+    bids: { player: 7, hana: 5 },
+    removeBecause: "Opened limited, not wide, so it is not eligible.",
+  },
+];
+
+/** The most recent Friday strictly before today. UTC on both ends — the same
+ *  local-in/UTC-out trap `fridays()` above was carrying. */
+function lastFriday(weeksBack: number): string {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  const back = (d.getUTCDay() - 5 + 7) % 7 || 7; // days since the last Friday
+  d.setUTCDate(d.getUTCDate() - back - weeksBack * 7);
+  return d.toISOString().slice(0, 10);
+}
+
+async function seedEdgeCases() {
+  const { data: existing } = await admin
+    .from("leagues")
+    .select("id")
+    .eq("name", EDGE_NAME)
+    .maybeSingle();
+  if (existing) {
+    console.log(`  "${EDGE_NAME}" already seeded — skipping`);
+    return;
+  }
+
+  console.log(`\nSeeding "${EDGE_NAME}" (tie, removal, skipped week)…`);
+
+  const c: Record<string, SupabaseClient> = {
+    commish: await signIn("dev-commish@moviepool.local"),
+    player: await signIn("dev-player@moviepool.local"),
+    grace: await signIn("dev-grace@moviepool.local"),
+    hana: await signIn("dev-hana@moviepool.local"),
+    frank: await signIn("dev-frank@moviepool.local"),
+  };
+
+  const leagueId = await rpc<string>(c.commish, "create_league", {
+    p_name: EDGE_NAME,
+  });
+  for (const mail of [
+    "dev-player@moviepool.local",
+    "dev-grace@moviepool.local",
+    "dev-hana@moviepool.local",
+    "dev-frank@moviepool.local",
+  ]) {
+    await rpc(c.commish, "add_league_member", {
+      p_league_id: leagueId,
+      p_email: mail,
+      p_role: "player",
+    });
+  }
+  const seasonId = await rpc<string>(c.commish, "create_season", {
+    p_league_id: leagueId,
+    p_first_opening_date: futureFriday(),
+    p_default_season_length: 1,
+  });
+  await clearSeededWeeks(admin, seasonId);
+  await rpc(c.commish, "open_due_weeks_for_season", { p_season_id: seasonId });
+
+  // ---- week 1: the tie and the removal ------------------------------------
+  const weekId = await rpc<string>(c.commish, "create_week", {
+    p_season_id: seasonId,
+    p_number: 1,
+    p_opening_date: lastFriday(2),
+    p_bid_deadline: null,
+  });
+
+  const filmIds: Record<string, string> = {};
+  for (const f of EDGE_FILMS) {
+    filmIds[f.title] = await rpc<string>(c.commish, "add_film", {
+      p_week_id: weekId,
+      p_title: f.title,
+      p_imdb_id: null,
+    });
+    const { error } = await admin
+      .from("films")
+      .update({ tmdb_id: f.tmdbId })
+      .eq("id", filmIds[f.title]);
+    if (error) throw new Error(`tmdb_id on ${f.title}: ${error.message}`);
+  }
+
+  await rpc(c.commish, "open_week", { p_week_id: weekId });
+  for (const f of EDGE_FILMS) {
+    for (const [who, amount] of Object.entries(f.bids)) {
+      await rpc(c[who], "place_bid", {
+        p_film_id: filmIds[f.title],
+        p_amount: amount,
+      });
+    }
+  }
+  // CLOSE FIRST. Removal is the commissioner reacting to what the close
+  // revealed, and `remove_film` refunds winning bids that have to exist first.
+  await rpc(c.commish, "close_week", { p_week_id: weekId });
+
+  for (const f of EDGE_FILMS) {
+    if (f.removeBecause) {
+      await rpc(c.commish, "remove_film", {
+        p_film_id: filmIds[f.title],
+        p_reason: f.removeBecause,
+      });
+      continue;
+    }
+    await rpc(c.commish, "capture_film", {
+      p_film_id: filmIds[f.title],
+      p_box_office_m: f.box,
+      p_tomatometer: f.tomato,
+    });
+  }
+  await rpc(c.commish, "finalize_week", { p_week_id: weekId });
+  console.log("  week 1 final — Motor City ties at $9 (4 owners), Passenger removed");
+
+  // ---- week 2: skipped -----------------------------------------------------
+  const skippedId = await rpc<string>(c.commish, "create_week", {
+    p_season_id: seasonId,
+    p_number: 2,
+    p_opening_date: lastFriday(1),
+    p_bid_deadline: null,
+  });
+  // `skip_week` refuses a week that has opened or still carries a slate, so it
+  // is called on the draft the line above just made.
+  await rpc(c.commish, "skip_week", { p_week_id: skippedId });
+  console.log("  week 2 SKIPPED (no releases)");
 }
 
 main().catch((err) => {
