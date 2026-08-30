@@ -40,6 +40,13 @@ export function numberWord(n: number): string {
   return NUMBER_WORDS[n] ?? String(n);
 }
 
+// First letter up. `numberWord` returns lowercase because most of its uses are
+// mid-sentence ("three winning tiers"); the two page deks that OPEN on a count
+// need it capitalised, and neither should carry its own copy of one line.
+export function sentenceCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // "1st", "2nd", "3rd", "11th" … used for ranks.
 export function ordinal(n: number): string {
   const mod100 = n % 100;

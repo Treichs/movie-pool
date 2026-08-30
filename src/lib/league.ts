@@ -378,25 +378,64 @@ export async function getLeagueAnnouncement(
   return toAnnouncement(data as unknown as AnnouncementRow);
 }
 
-// ---------------------------------------------------------------------------
-// LEAGUE HOME (board 4.2) — the composer for `/leagues/[leagueId]`.
-// ---------------------------------------------------------------------------
+export type LeagueAnnouncementsPage = {
+  league: { id: string; name: string };
+  /** Whether the VIEWER commissions this league — the "Write one" control's
+   *  only gate. Read here rather than derived from the career table, which
+   *  costs the whole record book to answer one boolean. */
+  isCommissioner: boolean;
+  announcements: LeagueAnnouncement[];
+};
 
 /**
- * THE CAREER TABLE IS THE ROSTER, and that is not a shortcut.
- * `CareerRow` already carries `name`, `isMe`, `isCommissioner`, `seasons` and
- * `points` — every column board 4.2's members list draws — and
- * `league-records.ts` says so itself: "the career table can stand in for the
- * roster (ADR-083)". Calling `getLeagueRoster` as well would be a second query
- * answering a question this one has already answered.
+ * `/leagues/[leagueId]/announcements` — board 4.5.
  *
- * DUES IS ABSENT, AND IT IS ABSENT FROM THE DATABASE. Board 4.2 draws a dues
- * panel and the plan carries a whole screen for it (Task 21), but there is no
- * dues table, no payments table and no composer — checked across all 116
- * migrations on 2026-08-29. It is a domain nobody has modelled yet, not a read
- * nobody has written, so this page cannot show a balance and the prototype's
- * dues strip has nothing to render. Raised rather than stubbed.
+ * ── IT IS NOT `src/lib/announcements.ts` ────────────────────────────────
+ * The plan asks for a new module and a new `getAnnouncements`. Both already
+ * live here: `getLeagueAnnouncements` reads the list and
+ * `getLeagueAnnouncement` reads one, and a second module re-wrapping them
+ * would split one small domain across two files for no gain. This is the
+ * page's own composer — the league for the trail, the role for one button,
+ * and the list — and it calls the reader rather than repeating it.
+ *
+ * ── THERE IS NO READ STATE, SO THE BOARD'S UNREAD MARK IS NOT BUILT ─────
+ * Board 4.5 gives an unread post an ink left edge and a vermilion dot.
+ * `league_announcements` has no `read_at` and there is no reads table —
+ * `shell-alerts.ts` reached the same conclusion on 2026-08-28 and wrote it
+ * down: "Announcements join this list the day someone adds a `read_at` — that
+ * is a migration and a decision, not a line of UI." So every post renders the
+ * same, and the gap is raised rather than faked with a proxy that would be
+ * wrong on every second render.
  */
+export async function getLeagueAnnouncementsPage(
+  ctx: { supabase: SupabaseClient; user: { id: string } },
+  leagueId: string
+): Promise<LeagueAnnouncementsPage | null> {
+  const { supabase, user } = ctx;
+
+  // THE GATE IS THIS READ AND IT IS RLS'S — `leagues` gates SELECT on
+  // `is_league_member`, so a stranger's league comes back null and 404s.
+  const league = await getLeague(supabase, leagueId);
+  if (!league) return null;
+
+  const [{ data: membership }, announcements] = await Promise.all([
+    supabase
+      .from("league_members")
+      .select("role")
+      .eq("league_id", leagueId)
+      .eq("profile_id", user.id)
+      .maybeSingle(),
+    getLeagueAnnouncements(supabase, leagueId),
+  ]);
+
+  return {
+    league: { id: league.id, name: league.name },
+    isCommissioner:
+      (membership as { role: string } | null)?.role === "commissioner",
+    announcements,
+  };
+}
+
 export type LeagueRecordsPage = {
   league: { id: string; name: string };
   /** Null when the league has no season yet, or no standing in any of them —
@@ -435,6 +474,29 @@ export async function getLeagueRecordsPage(
   return { league: { id: league.id, name: league.name }, book };
 }
 
+// ---------------------------------------------------------------------------
+// LEAGUE HOME (board 4.2) — the composer for `/leagues/[leagueId]`.
+// ---------------------------------------------------------------------------
+
+/**
+ * THE CAREER TABLE IS THE ROSTER, and that is not a shortcut.
+ * `CareerRow` already carries `name`, `isMe`, `isCommissioner`, `seasons` and
+ * `points` — every column board 4.2's members list draws — and
+ * `league-records.ts` says so itself: "the career table can stand in for the
+ * roster (ADR-083)". Calling `getLeagueRoster` as well would be a second query
+ * answering a question this one has already answered.
+ *
+ * DUES IS ABSENT FROM THIS COMPOSER, AND THAT IS ALL IT IS.
+ *
+ * CORRECTED 2026-08-29: this note used to say dues was absent from the
+ * DATABASE, "checked across all 116 migrations". That was wrong, and it was
+ * wrong because the check grepped for the word "dues", which the schema never
+ * uses. The money is modelled as `settlement_payments`
+ * (20260805030000_settlement_payments.sql) — who paid whom, against a
+ * settlement — with its own RLS and RPCs, and `getLeaguePayments` already
+ * reads it. Board 4.2's dues panel and Task 21's screen have something to
+ * render; this composer simply does not fetch it yet.
+ */
 export type LeagueHome = {
   league: { id: string; name: string; glyph: string | null };
   isCommissioner: boolean;

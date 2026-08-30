@@ -16,7 +16,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { requireUser } from "@/lib/auth";
-import { numberWord } from "@/lib/format";
+import { numberWord, sentenceCase } from "@/lib/format";
 import { getLeagueRecordsPage } from "@/lib/league";
 
 import { CareerTable } from "./_components/career-table";
@@ -84,7 +84,7 @@ export default async function LeagueRecordsPage({
         <p className="type-dek text-ui text-muted-foreground">
           {book === null
             ? "Nothing to record yet."
-            : `${numberWord(book.seasonsCounted)} season${book.seasonsCounted === 1 ? "" : "s"}, ${numberWord(book.aggregates.filmsScored)} film${book.aggregates.filmsScored === 1 ? "" : "s"} scored.`}
+            : `${sentenceCase(numberWord(book.seasonsCounted))} season${book.seasonsCounted === 1 ? "" : "s"}, ${numberWord(book.aggregates.filmsScored)} film${book.aggregates.filmsScored === 1 ? "" : "s"} scored.`}
         </p>
       </div>
 

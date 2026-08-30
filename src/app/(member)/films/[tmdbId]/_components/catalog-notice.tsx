@@ -56,7 +56,13 @@ export function CatalogNotice({
       </div>
 
       {leagues.length === 1 && (
-        <Button variant="outline" render={<Link href={href(leagues[0].id)} />}>
+        // `nativeButton={false}` because this renders an `<a>`: Base UI warns
+        // when a component that acts as a button is not a native <button>.
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href={href(leagues[0].id)} />}
+        >
           {leagues[0].name}
           <ChevronRightIcon data-icon="inline-end" />
         </Button>
