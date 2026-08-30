@@ -427,10 +427,18 @@ async function rpc<T = unknown>(
 
 // The most recent Friday strictly before today anchors the past weeks; the
 // open week points at the NEXT Friday with a deadline the Thursday before.
+// LOCAL IN, UTC OUT WAS A DAY-OFF BUG. `getDay()` reads the machine's local
+// weekday and `toISOString()` writes the UTC calendar date, so seeding on any
+// evening west of Greenwich produced SATURDAYS — a week whose opening_date is
+// not a Friday, in a game whose whole calendar is Fridays. It only ever showed
+// up if you seeded after about 8pm Eastern, which is why the fixture data
+// currently in the database happens to be correct. `getUTCDay`/`setUTCDate`
+// keep both ends in UTC, the same way `season-fixture.mts` already does.
 function fridays(): { past: string[]; next: string; deadline: string } {
   const day = 24 * 60 * 60 * 1000;
   const today = new Date();
-  const toFriday = (5 - today.getDay() + 7) % 7 || 7; // days until next Friday
+  today.setUTCHours(0, 0, 0, 0);
+  const toFriday = (5 - today.getUTCDay() + 7) % 7 || 7; // days until next Friday
   const next = new Date(today.getTime() + toFriday * day);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const past = [3, 2, 1].map((n) => iso(new Date(next.getTime() - n * 7 * day)));
