@@ -27,8 +27,24 @@ const inputGroupAddonVariants = cva(
   {
     variants: {
       align: {
-        "inline-start": "order-first pl-3 has-[>button]:-ml-1 has-[>kbd]:-ml-1",
-        "inline-end": "order-last pr-3 has-[>button]:-mr-1 has-[>kbd]:-mr-1",
+        // THE INLINE ADDONS ARE PADDED TO THE GROUP, NOT PAST IT.
+        //
+        // Registry stock is `pl-3 has-[>button]:-ml-1` on top of the base
+        // `py-2`, which puts an addon's box OUTSIDE its own field: 40px of
+        // padded height (24px control + 8px top + 8px bottom) centred in a
+        // 36px `h-9` group hangs 2px out top and bottom, and the negative
+        // inline margin pushes the far edge 4px past the group's inner edge.
+        // Invisible while the addon is transparent, and a clipped or
+        // mispainted edge the moment it is not.
+        //
+        // `py-0` because the group already centres the addon, so vertical
+        // padding on it only ever adds overflow; `pl-2`/`pr-2` land the
+        // control in exactly the spot `-ml-1`/`-mr-1` did (12px padding less
+        // a 4px pull is the same 8px from the edge) without leaving the box.
+        // The block aligns keep the base padding — they are what makes the
+        // group `h-auto`, so their padding is real spacing, not overflow.
+        "inline-start": "order-first py-0 pl-3 has-[>button]:pl-2 has-[>kbd]:pl-2",
+        "inline-end": "order-last py-0 pr-3 has-[>button]:pr-2 has-[>kbd]:pr-2",
         "block-start":
           "order-first w-full justify-start px-3 pt-3 group-has-[>input]/input-group:pt-3.5 [.border-b]:pb-3.5",
         "block-end":
