@@ -80,21 +80,54 @@ function ownersNote(film: RevealFilm): string | null {
   const winners = film.rows.filter((r) => r.isWinning);
   const distinct = new Set(winners.map((r) => r.amount));
 
+  // BOTH SENTENCES, WHEN BOTH ARE TRUE — and until 2026-08-31 they were an
+  // if/else, so the tie won and the reader's own losing bid was never
+  // mentioned. That is precisely backwards on the film it matters most: a tie
+  // AT THE CUT is what pushed somebody out, and the somebody is often the
+  // person reading. "Four owners" without "and you bid $3" answers a question
+  // they did not ask instead of the one they did.
+  const parts: string[] = [];
+
   if (winners.length > distinct.size) {
     // Which amount was shared. The lowest one, when more than one tie exists —
     // that is the tie at the cut, and it is the one that changed the outcome.
     const tied = [...distinct]
       .filter((a) => winners.filter((r) => r.amount === a).length > 1)
       .sort((a, b) => a - b)[0];
-    return `${numberWord(distinct.size)} distinct amounts — a tie at $${tied} gives ${numberWord(winners.length)} owners.`;
+    parts.push(
+      `${numberWord(distinct.size)} distinct amounts — a tie at $${tied} gives ${numberWord(winners.length)} owners.`
+    );
   }
 
   const mine = film.rows.find((r) => r.isMe);
   if (mine && !mine.isWinning) {
-    return `You bid $${mine.amount} and lost the tier — ${numberWord(distinct.size)} distinct amounts above yours.`;
+    parts.push(
+      `You bid $${mine.amount} and lost the tier — ${numberWord(distinct.size)} distinct amounts above yours.`
+    );
   }
 
-  return null;
+  return parts.length > 0 ? parts.join(" ") : null;
+}
+
+/**
+ * THE ARITHMETIC, SPELLED OUT — `$24.6M × 62% = 15.25`.
+ *
+ * The three stats above already carry every number in this sentence, and the
+ * multiplication between them was left for the reader to perform. Printing it
+ * is the single best-evidenced change available on this page: Grimmelikhuijsen
+ * (Public Administration Review, 2023; two experiments, n = 897) found that
+ * EXPLAINING a computed outcome moves trust substantially more than making the
+ * rules accessible does — and that the gain transfers to the human whose
+ * decision it was. A linked rulebook is accessibility. This is explainability,
+ * and the trust it buys lands on the commissioner as well as the app.
+ *
+ * Null until both inputs are captured; a half-scored film explains nothing.
+ */
+function scoreWorking(film: RevealFilm): string | null {
+  if (film.score === null || film.boxOfficeM === null || film.tomatometer === null) {
+    return null;
+  }
+  return `$${film.boxOfficeM}M × ${film.tomatometer}% = ${two(film.score)}`;
 }
 
 export function RevealFilmRow({
@@ -107,6 +140,7 @@ export function RevealFilmRow({
   const poster = posterUrl(film.posterPath);
   const owners = film.rows.filter((r) => r.isWinning);
   const note = ownersNote(film);
+  const working = scoreWorking(film);
   const href =
     leagueId && film.tmdbId
       ? `/leagues/${leagueId}/films/${film.tmdbId}`
@@ -172,6 +206,12 @@ export function RevealFilmRow({
             />
           </div>
         </div>
+
+        {working && (
+          <p className="type-numeral text-micro tabular-nums text-muted-foreground">
+            {working}
+          </p>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
           {/* NOT "Owners" on a removed film. `remove_film` refunds the
