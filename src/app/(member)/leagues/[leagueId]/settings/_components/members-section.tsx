@@ -116,6 +116,17 @@ export function MembersSection({
                     >
                       {m.profile.display_name}
                     </Link>
+                    {/* THE ADDRESS STAYS VISIBLE — decided 2026-08-31, after a
+                        UX pass raised it as an inconsistency worth naming.
+                        It IS one: `postTheStatement` needs a service-role
+                        client precisely because no user-facing policy lets one
+                        member read another's address, and here a commissioner
+                        reads five. The difference is that this is the one role
+                        that has to act on them — chase a dues payment, re-send
+                        an invitation that never arrived, tell two similar
+                        display names apart. Hiding it behind a reveal was
+                        considered and rejected as friction on the only screen
+                        where the address is the point. */}
                     <span className="type-body truncate text-micro text-muted-foreground">
                       {m.profile.email}
                     </span>
