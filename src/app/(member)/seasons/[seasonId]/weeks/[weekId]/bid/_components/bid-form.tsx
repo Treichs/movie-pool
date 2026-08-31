@@ -289,7 +289,11 @@ export function BidForm({
                   why. Once bidding is over the button's job is over too, so a
                   link to the board takes its place. */}
               {closed ? (
-                <Button variant="ink" render={<Link href={`/seasons/${seasonId}/weeks/${weekId}`} />}>
+                <Button
+                  variant="ink"
+                  nativeButton={false}
+                  render={<Link href={`/seasons/${seasonId}/weeks/${weekId}`} />}
+                >
                   See the week
                 </Button>
               ) : (

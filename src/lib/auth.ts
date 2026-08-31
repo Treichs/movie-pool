@@ -129,7 +129,19 @@ export async function requireCommissionerOfLeague(leagueId: string): Promise<{
     .eq("league_id", leagueId)
     .eq("profile_id", user.id)
     .maybeSingle();
-  if ((data as { role: string } | null)?.role !== "commissioner") redirect("/leagues");
+  // NOT FOUND, NOT A REDIRECT — and this changed on 2026-08-31.
+  //
+  // It used to bounce a player to `/leagues`, silently, from the far side of
+  // the app. Three commissioner-gated routes then behaved three different ways:
+  // league settings 404'd, a new announcement bounced to the announcements
+  // list, and a new season bounced all the way out to Home. None said anything
+  // had happened.
+  //
+  // `settings/page.tsx` already carried the right reasoning and now everything
+  // follows it: "sending them to /leagues would tell them the page is real and
+  // merely not theirs". A 404 is also the only one of the three that does not
+  // silently discard where the user was trying to go.
+  if ((data as { role: string } | null)?.role !== "commissioner") notFound();
   return { supabase, user };
 }
 
