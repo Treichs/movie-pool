@@ -29,12 +29,15 @@ import { getLeagueInvites, type PendingInvite } from "@/lib/invites";
  * rather than `getSettingsForSeason`, which answers a different question.
  */
 
-/** The three house rules board 4.11 draws, out of the fourteen the row holds.
- *  The rest are carried untouched so the full-replace RPC can put them back. */
+/** The two house rules board 4.11 draws, out of the fourteen the row holds.
+ *  The rest are carried untouched so the full-replace RPC can put them back.
+ *
+ *  It was three until 2026-08-31. `includeLimitedReleases` came off with its
+ *  switch: ADR-078 replaced that rule with a per-film eligibility call at
+ *  settlement, and nothing had read the column since. */
 export type HouseRules = {
   fakeBankroll: number;
   topNDistinct: number;
-  includeLimitedReleases: boolean;
 };
 
 /** Everything `update_league_settings` needs, since it replaces the whole row
@@ -111,7 +114,6 @@ export async function getLeagueSettingsPage(
       ? {
           fakeBankroll: rulesRow.fake_bankroll,
           topNDistinct: rulesRow.top_n_distinct,
-          includeLimitedReleases: rulesRow.include_limited_releases,
         }
       : null,
     rulesRow,

@@ -73,7 +73,6 @@ export async function updateHouseRules(
 
   const bankroll = Number(formData.get("fakeBankroll"));
   const tiers = Number(formData.get("topNDistinct"));
-  const includeLimited = formData.get("includeLimitedReleases") === "on";
 
   // Restated so a commissioner is told before the round trip; the RPC and its
   // table constraints still decide.
@@ -84,9 +83,17 @@ export async function updateHouseRules(
     return fail("A season needs at least one winning tier.", "topNDistinct");
   }
 
-  // The eleven fields this form does not show, carried through the browser and
+  // The twelve fields this form does not show, carried through the browser and
   // posted back. They came off the server on the same render, so they are the
   // row as it stood when the form was drawn.
+  //
+  // `include_limited_releases` JOINED THEM on 2026-08-31, when its switch was
+  // removed for controlling nothing (see house-rules-section). It is carried
+  // rather than defaulted on purpose: the RPC replaces the whole row and its
+  // parameter defaults to false, so omitting it would silently rewrite the
+  // stored value of every league whose commissioner had ever turned it on.
+  // Nothing reads the column, so that would break nothing — and it would still
+  // be this form quietly editing a field it no longer shows.
   let row: HouseRulesRow;
   try {
     row = JSON.parse(rest) as HouseRulesRow;
@@ -99,7 +106,7 @@ export async function updateHouseRules(
     p_league_id: leagueId,
     p_fake_bankroll: bankroll,
     p_top_n_distinct: tiers,
-    p_include_limited_releases: includeLimited,
+    p_include_limited_releases: row.include_limited_releases,
     p_min_bid: row.min_bid,
     p_buy_in: row.buy_in,
     // The generated RPC type wants `Json`; the row carries it opaque because
