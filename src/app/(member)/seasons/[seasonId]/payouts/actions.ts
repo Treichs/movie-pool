@@ -204,9 +204,14 @@ export async function finalizeSettlement(
 
   const { sent, failed } = await postTheStatement(seasonId);
   if (failed > 0) {
+    // "0 statements emailed" is a count nobody needs; when nothing got through,
+    // the sentence should only carry what went wrong.
+    const missed = `${failed} statement${failed === 1 ? "" : "s"} could not be emailed`;
     return ok(
       undefined,
-      `Payouts published to the league. ${sent} statement${sent === 1 ? "" : "s"} emailed, ${failed} did not send — everyone can still open the page.`
+      sent > 0
+        ? `Payouts published, and the statement emailed to ${sent} player${sent === 1 ? "" : "s"}. ${missed} — everyone can still open the page.`
+        : `Payouts published to the league. ${missed} — everyone can still open the page.`
     );
   }
   return ok(
