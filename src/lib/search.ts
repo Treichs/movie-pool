@@ -193,6 +193,9 @@ export async function search(
           .order("opening_date", { ascending: false })
           .limit(PER_GROUP),
 
+    // No `tmdb_id is not null` filter: the column is NOT NULL as of
+    // 20260831200000, so every film has a page to link to.
+    //
     // The league comes back with the film because the film page is
     // league-scoped: the same film in two of the viewer's leagues is two
     // results, with different scores behind them, and collapsing them would
@@ -201,7 +204,6 @@ export async function search(
       .from("films")
       .select("id, title, tmdb_id, week:weeks!inner(number, season:seasons!inner(league:leagues!inner(id, name)))")
       .ilike("title", like)
-      .not("tmdb_id", "is", null)
       .order("title")
       .limit(PER_GROUP),
 

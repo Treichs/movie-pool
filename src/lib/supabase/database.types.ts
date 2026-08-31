@@ -432,7 +432,7 @@ export type Database = {
           score: number | null
           status: Database["public"]["Enums"]["film_status"]
           title: string
-          tmdb_id: number | null
+          tmdb_id: number
           tomatometer: number | null
           week_id: string
         }
@@ -449,7 +449,7 @@ export type Database = {
           score?: number | null
           status?: Database["public"]["Enums"]["film_status"]
           title: string
-          tmdb_id?: number | null
+          tmdb_id: number
           tomatometer?: number | null
           week_id: string
         }
@@ -466,7 +466,7 @@ export type Database = {
           score?: number | null
           status?: Database["public"]["Enums"]["film_status"]
           title?: string
-          tmdb_id?: number | null
+          tmdb_id?: number
           tomatometer?: number | null
           week_id?: string
         }
@@ -1801,4 +1801,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 dd45b018f90417c4b808fc10c2230321f07b27964bf92a6dfe5ec401ee75d302
+// @migrations-sha256 bc91394cef350baf147a769f77e79441d11fa19422f159b5c63da2e2cdc7960f
