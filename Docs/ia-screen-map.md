@@ -95,6 +95,12 @@ unchanged and still load-bearing.
 
 **AMENDED 2026-08-30 — the count is 26.** `/leagues/[leagueId]/announcements/[announcementId]/edit` was added when editing an announcement was decided on: the table had shipped with only post and delete, so fixing a typo meant deleting and reposting, which loses the post's place in the list and its date. The address is a verb leaf for §7.5's own reasons — the carrier is a path segment rather than a query string, the nesting is no deeper than `/bid` and `/new`, and both truncations land on a real page (chop `/edit` for the post, chop the post for the list). §7.5's closing rule says no further IA change without a redirect; nothing is public yet, so there was nothing to redirect.
 
+**AMENDED 2026-08-31 — the count is 28.** `/films` and `/leagues/[leagueId]/films` were added, and they are the reason §7.5's closing rule was rewritten the same day: both film pages had shipped as leaves, so chopping the id off either gave a 404, and rule 5 — every truncation lands on a real page — was broken by the map's own route set. Adding the parents is the fix, and it needed no redirect because nothing moved.
+
+Neither is "the catalogue", and the distinction is the whole design. `film_catalog` is a cache of films *someone* picked — `getFilmPage` falls back to a live TMDB read for anything uncatalogued — so listing it would neither be complete nor be the viewer's. Both pages read `films`, actual playings, scoped by RLS: `/films` spans the leagues you belong to, `/leagues/[leagueId]/films` is one league's filmography. A film two of your leagues played is two rows, because the score and the owners differ.
+
+**The child is deliberately broader than the parent.** `/films/[tmdbId]` renders any film TMDB knows, including one a commissioner is only considering; that film is not listed on `/films`, because it has not been played. A parent that had to contain every child would have to be the whole of TMDB, and rule 5 asks that the truncation land somewhere real, not that it enumerate its children.
+
 ---
 
 ## 2. The commissioner tree dissolves completely
