@@ -18,11 +18,24 @@ import { Button } from "@/components/ui/button";
  * underneath the invitation they were just sent. `dev-outsider` is in exactly
  * that state, which is how it surfaced.
  */
-export function NoLeagues({ awaitingInvite }: { awaitingInvite: boolean }) {
+export function NoLeagues({ invitePending }: { invitePending: boolean }) {
+  // AN INVITATION ABOVE CHANGES WHAT THIS PANEL IS FOR.
+  //
+  // Unchanged, it headed itself "You are not in a league yet" and offered
+  // "Start a league" as its primary action — directly beneath an invitation
+  // the reader had just been sent. The biggest block on the screen argued
+  // against the one path they already had.
+  //
+  // It does not disappear, because starting your own league is still a real
+  // choice and this is the only place that explains what a league IS. It
+  // steps down: the heading stops describing their state (the invitation
+  // above already does that), the explanation stays, and the button gives up
+  // ink for an outline so the Accept above it is the only filled control on
+  // the page.
   return (
     <div className="flex flex-col items-start gap-5 rounded border-2 border-dashed px-8 py-10">
       <div className="flex max-w-measure-tight flex-col gap-2">
-        <h2>You are not in a league yet</h2>
+        <h2>{invitePending ? "Or start your own league" : "You are not in a league yet"}</h2>
         <p className="text-muted-foreground">
           A league is a group of people playing one season together — your
           friends, your office, whoever argues with you about films. Someone
@@ -33,7 +46,7 @@ export function NoLeagues({ awaitingInvite }: { awaitingInvite: boolean }) {
         <Button
           render={<Link href="/leagues/new" />}
           nativeButton={false}
-          variant="ink"
+          variant={invitePending ? "outline" : "ink"}
         >
           Start a league
         </Button>
@@ -41,7 +54,7 @@ export function NoLeagues({ awaitingInvite }: { awaitingInvite: boolean }) {
           Read how it works first
         </TextLink>
       </div>
-      {awaitingInvite && (
+      {!invitePending && (
         <p className="type-micro text-micro text-muted-foreground">
           Waiting on an invitation? It will appear here the moment it is sent.
         </p>

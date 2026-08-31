@@ -75,7 +75,7 @@ export default async function LeaguesPage() {
       ))}
 
       {home.leagues.length === 0 ? (
-        <NoLeagues awaitingInvite={home.invites.length === 0} />
+        <NoLeagues invitePending={home.invites.length > 0} />
       ) : (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
           <section className="flex flex-col gap-3">
