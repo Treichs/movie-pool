@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { SubmitButton } from "@/components/submit-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { ok, type ActionResult } from "@/lib/action-result";
 import type { HouseRules, HouseRulesRow } from "@/lib/league-settings";
 
@@ -21,9 +20,9 @@ import { updateHouseRules } from "../actions";
  * the board's own caption and it is load-bearing — a commissioner changing a
  * bankroll mid-season would otherwise reasonably expect it to apply.
  *
- * ── THE OTHER ELEVEN SETTINGS RIDE ALONG IN A HIDDEN FIELD ─────────────
+ * ── THE OTHER TWELVE SETTINGS RIDE ALONG IN A HIDDEN FIELD ─────────────
  * `update_league_settings` replaces the whole row rather than patching it, so
- * a form that posted only these three would reset the payout structure, the
+ * a form that posted only these two would reset the payout structure, the
  * deadline day, the timezone and the rest to the RPC's parameter defaults.
  * They came off the server on this render and go back untouched.
  */
@@ -41,11 +40,9 @@ export function HouseRulesSection({
 }) {
   const bankrollId = useId();
   const tiersId = useId();
-  const limitedId = useId();
 
   const [bankroll, setBankroll] = useState(String(rules.fakeBankroll));
   const [tiers, setTiers] = useState(String(rules.topNDistinct));
-  const [limited, setLimited] = useState(rules.includeLimitedReleases);
 
   const [state, formAction] = useActionState(updateHouseRules, INITIAL);
   const last = useRef<ActionResult>(state);
@@ -60,9 +57,7 @@ export function HouseRulesSection({
     !state.ok && state.field === field ? state.error : null;
 
   const unchanged =
-    bankroll === String(rules.fakeBankroll) &&
-    tiers === String(rules.topNDistinct) &&
-    limited === rules.includeLimitedReleases;
+    bankroll === String(rules.fakeBankroll) && tiers === String(rules.topNDistinct);
 
   return (
     <section className="flex flex-col gap-4">
@@ -98,7 +93,10 @@ export function HouseRulesSection({
             />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-3.5">
+          {/* No `border-b`: this is the last row now that the limited-releases
+              switch is gone, and the rule would draw a hairline across the
+              bottom edge of the card. */}
+          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5">
             <label htmlFor={tiersId} className="flex flex-col gap-0.5">
               <span className="type-ui text-ui font-semibold">
                 Winning tiers
@@ -118,22 +116,21 @@ export function HouseRulesSection({
             />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5">
-            <label htmlFor={limitedId} className="flex flex-col gap-0.5">
-              <span className="type-ui text-ui font-semibold">
-                Include limited releases
-              </span>
-              <span className="type-body text-micro text-muted-foreground">
-                Off is the standard game
-              </span>
-            </label>
-            <Switch
-              id={limitedId}
-              name="includeLimitedReleases"
-              checked={limited}
-              onCheckedChange={setLimited}
-            />
-          </div>
+          {/* "INCLUDE LIMITED RELEASES" WAS HERE AND CONTROLLED NOTHING.
+              ADR-078 replaced the rule with a per-film call the commissioner
+              makes at settlement (`films.eligible`), and both the picker and
+              the calendar say so in their own comments: "wide AND limited
+              both… there is no eligibility filter". The 2026-08-05 settings
+              rework listed the column as RETIRED and left it in place for a
+              Phase 2 cleanup that was never written, so the switch outlived
+              the rule by four weeks.
+              It was worse than a no-op: it saved, and re-rendered your choice,
+              so it read as working — while misleading in both directions.
+              Off (labelled "the standard game") did not exclude limited
+              releases; on did not add them.
+              The COLUMN stays, carried through untouched by `updateHouseRules`
+              exactly as `box_office_days` already is. Dropping it is the real
+              Phase 2 and a separate job. */}
         </Card>
 
         <div className="flex">
