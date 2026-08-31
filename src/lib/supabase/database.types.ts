@@ -1345,13 +1345,6 @@ export type Database = {
           league_name: string
         }[]
       }
-      get_player_directory: {
-        Args: never
-        Returns: {
-          display_name: string
-          profile_id: string
-        }[]
-      }
       get_player_profile: {
         Args: { p_profile_id: string }
         Returns: {
@@ -1808,4 +1801,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 06315fe1eecca3d987bf0ed86706a71d8212f491d27458b03ce534e9cb668d7f
+// @migrations-sha256 dd45b018f90417c4b808fc10c2230321f07b27964bf92a6dfe5ec401ee75d302

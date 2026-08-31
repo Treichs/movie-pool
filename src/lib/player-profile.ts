@@ -188,7 +188,19 @@ export async function getPlayerProfilePage(
 }
 
 /**
- * Everyone the viewer shares a league with, by id — so PlayerChip can link.
+ * Everyone the viewer may see, by id — so PlayerChip can link.
+ *
+ * ── THIS WAS A `SECURITY DEFINER` RPC, AND IT SHOULD NOT HAVE BEEN ────────
+ * `get_player_directory()` selected from `profiles` with a hand-written WHERE
+ * clause meaning "me, or anyone I share a league with". `profiles_select` —
+ * the RLS policy on that table — already says exactly that, and says MORE: it
+ * has a third clause for someone who plays a season inside a league you are in.
+ * So the function was a narrower copy of a policy that had already moved on,
+ * and the people in that gap rendered as plain text instead of links.
+ *
+ * The plain query below is scoped by the policy itself. There is no WHERE
+ * clause here to drift, because the one that matters is not written here.
+ * Dropped in migration 20260831190000.
  *
  * The name half of the map is built by buildPlayerDirectory, which drops any
  * name two accounts share rather than picking one of them (ADR-082).
@@ -196,7 +208,9 @@ export async function getPlayerProfilePage(
 export async function getPlayerDirectory(
   supabase: SupabaseClient
 ): Promise<PlayerDirectory> {
-  const { data, error } = await supabase.rpc("get_player_directory");
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("profile_id:id, display_name");
   // A failed directory just means chips render as plain text — never a broken
   // frame, since this loads on every signed-in page.
   if (error || !data) return EMPTY_DIRECTORY;

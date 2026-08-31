@@ -1,0 +1,32 @@
+-- ============================================================================
+-- `get_player_directory` goes: it was RLS, re-implemented by hand, narrower.
+--
+-- The function's whole body was
+--
+--     select p.id, p.display_name from profiles p
+--     where p.id = auth.uid()
+--        or exists (... shares a league with me ...)
+--
+-- and `profiles_select`, the RLS policy on that table, already carries both
+-- of those clauses PLUS a third: someone who plays a season inside a league
+-- the viewer belongs to. So the function was not just redundant, it had
+-- DRIFTED — the people in that third clause are visible to the viewer
+-- everywhere else in the app and rendered as plain text in the one place this
+-- directory feeds, because the copy never learned about them.
+--
+-- That is the failure mode `SECURITY DEFINER` invites on a read. A DEFINER
+-- function bypasses RLS, so it has to restate the policy to stay safe, and a
+-- restated policy is a policy with two definitions. `select id, display_name
+-- from profiles` through the caller's own client returns the correct set by
+-- construction and cannot drift, because the rule is not written twice.
+--
+-- WHAT IS NOT BEING CHANGED, and why this is not a general rule: the other
+-- DEFINER reads earn it. `get_my_league_invites` and `peek_league_invite`
+-- serve someone who is NOT a member yet, and the `league_invites` policy
+-- admits only the commissioner — RLS would return them nothing. The player
+-- pages aggregate across seasons the viewer does not play but may know about,
+-- and gate on shared-league visibility first. The five `is_*` helpers must be
+-- DEFINER or the policies that call them recurse into the tables they guard.
+-- ============================================================================
+
+drop function if exists public.get_player_directory();
