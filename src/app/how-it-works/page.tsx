@@ -46,7 +46,7 @@ export default async function HowItWorksPage() {
   return (
     <>
       <PublicHeader signedIn={Boolean(user)} />
-      <main>
+      <main id="main" tabIndex={-1}>
         <HowItWorksHero />
         <div className="mx-auto flex max-w-measure-page flex-col gap-12 px-8 pt-12 pb-16">
           <WeekBeats />

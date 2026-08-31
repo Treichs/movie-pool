@@ -69,6 +69,11 @@ export function PasswordInput({
           type="button"
           size="icon-xs"
           variant="ghost"
+          // `icon-xs` IS 24px BECAUSE THE FIELD IS 36px — the next size up
+          // would not fit inside the group. `tap-target` grows the touch area
+          // to 44px on a coarse pointer without touching the drawn control, so
+          // the field keeps its height and a thumb still lands on the eye.
+          className="tap-target"
           aria-label={shown ? "Hide password" : "Show password"}
           onClick={() => setShown((v) => !v)}
         >

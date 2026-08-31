@@ -51,7 +51,7 @@ export default async function PlayerPage({
   const { profile, seasons, spansLeagues } = page;
 
   return (
-    <main className="mx-auto flex max-w-measure-page flex-col gap-6 px-8 py-8">
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

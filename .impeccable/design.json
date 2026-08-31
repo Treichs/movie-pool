@@ -1,0 +1,378 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-31T00:00:00.000Z",
+  "title": "Design System: The Movie Pool",
+  "extensions": {
+    "colorMeta": {
+      "marquee-vermilion": {
+        "role": "primary",
+        "displayName": "Marquee Vermilion",
+        "canonical": "#C52F1B",
+        "note": "The paper-side red (5.04:1 on #F5F4F3). Never appears on an ink surface.",
+        "tonalRamp": [
+          "oklch(20% 0.09 32)",
+          "oklch(30% 0.13 32)",
+          "oklch(38% 0.16 32)",
+          "oklch(48% 0.19 32)",
+          "oklch(58% 0.19 32)",
+          "oklch(70% 0.15 32)",
+          "oklch(83% 0.09 32)",
+          "oklch(94% 0.03 32)"
+        ]
+      },
+      "marquee-vermilion-ink": {
+        "role": "primary",
+        "displayName": "Marquee Vermilion (Ink)",
+        "canonical": "#EB4B37",
+        "note": "The ink-side red (5.59:1 on #000000). Legal ONLY on the permanent ink surface.",
+        "tonalRamp": [
+          "oklch(22% 0.10 32)",
+          "oklch(32% 0.14 32)",
+          "oklch(42% 0.18 32)",
+          "oklch(52% 0.20 32)",
+          "oklch(63% 0.20 32)",
+          "oklch(74% 0.14 32)",
+          "oklch(86% 0.08 32)",
+          "oklch(95% 0.03 32)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#F5F4F3",
+        "note": "The page ground. Warm neutral so a white sheet reads as a separate object on it.",
+        "tonalRamp": [
+          "oklch(15% 0.003 60)",
+          "oklch(26% 0.003 60)",
+          "oklch(38% 0.004 60)",
+          "oklch(50% 0.004 60)",
+          "oklch(62% 0.004 60)",
+          "oklch(75% 0.004 60)",
+          "oklch(87% 0.003 60)",
+          "oklch(96% 0.002 60)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#000000",
+        "note": "Body text, and the permanent black masthead band. Declared at the same value in light and dark on purpose.",
+        "tonalRamp": [
+          "oklch(0% 0 0)",
+          "oklch(14% 0 0)",
+          "oklch(27% 0 0)",
+          "oklch(40% 0 0)",
+          "oklch(53% 0 0)",
+          "oklch(67% 0 0)",
+          "oklch(81% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "#FFFFFF",
+        "note": "Panels and cards — the column of type on the page.",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(27% 0 0)",
+          "oklch(39% 0 0)",
+          "oklch(51% 0 0)",
+          "oklch(63% 0 0)",
+          "oklch(76% 0 0)",
+          "oklch(88% 0 0)",
+          "oklch(100% 0 0)"
+        ]
+      },
+      "quiet-ink": {
+        "role": "neutral",
+        "displayName": "Quiet Ink",
+        "canonical": "#6B6A68",
+        "note": "Secondary text at 4.92:1 on paper. Its dark-mode counterpart is #8E8D8B — the two must never be unified.",
+        "tonalRamp": [
+          "oklch(16% 0.003 80)",
+          "oklch(27% 0.004 80)",
+          "oklch(38% 0.005 80)",
+          "oklch(49% 0.005 80)",
+          "oklch(60% 0.005 80)",
+          "oklch(73% 0.004 80)",
+          "oklch(85% 0.003 80)",
+          "oklch(95% 0.002 80)"
+        ]
+      },
+      "edge": {
+        "role": "neutral",
+        "displayName": "Edge",
+        "canonical": "#84827E",
+        "note": "Control boundaries only, at 3.25:1 worst-ground. One value serves both themes. Not interchangeable with Rule.",
+        "tonalRamp": [
+          "oklch(17% 0.004 85)",
+          "oklch(28% 0.005 85)",
+          "oklch(40% 0.006 85)",
+          "oklch(51% 0.006 85)",
+          "oklch(62% 0.006 85)",
+          "oklch(74% 0.005 85)",
+          "oklch(86% 0.004 85)",
+          "oklch(95% 0.002 85)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#DCDBD9",
+        "note": "Panel edges and dividers at 1.26:1. Decoration — it is allowed to be faint.",
+        "tonalRamp": [
+          "oklch(18% 0.003 75)",
+          "oklch(30% 0.004 75)",
+          "oklch(42% 0.004 75)",
+          "oklch(54% 0.004 75)",
+          "oklch(66% 0.004 75)",
+          "oklch(78% 0.004 75)",
+          "oklch(89% 0.003 75)",
+          "oklch(96% 0.002 75)"
+        ]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Wash",
+        "canonical": "#EDECEA",
+        "note": "Field fills, muted chips, secondary button ground.",
+        "tonalRamp": [
+          "oklch(18% 0.003 75)",
+          "oklch(30% 0.004 75)",
+          "oklch(42% 0.004 75)",
+          "oklch(54% 0.004 75)",
+          "oklch(66% 0.004 75)",
+          "oklch(79% 0.004 75)",
+          "oklch(90% 0.003 75)",
+          "oklch(97% 0.002 75)"
+        ]
+      },
+      "cobalt": {
+        "role": "tertiary",
+        "displayName": "Cobalt",
+        "canonical": "#14567A",
+        "note": "Links, and only links. Lifted to #249BDB in dark, where #14567A is 2.64:1 on ink.",
+        "tonalRamp": [
+          "oklch(20% 0.05 240)",
+          "oklch(30% 0.07 240)",
+          "oklch(40% 0.09 240)",
+          "oklch(50% 0.10 240)",
+          "oklch(62% 0.11 240)",
+          "oklch(74% 0.09 240)",
+          "oklch(86% 0.05 240)",
+          "oklch(95% 0.02 240)"
+        ]
+      },
+      "settled-green": {
+        "role": "tertiary",
+        "displayName": "Settled Green",
+        "canonical": "#266445",
+        "note": "State, not brand: a week settled, a payment recorded.",
+        "tonalRamp": [
+          "oklch(20% 0.05 155)",
+          "oklch(30% 0.07 155)",
+          "oklch(40% 0.08 155)",
+          "oklch(50% 0.09 155)",
+          "oklch(62% 0.10 155)",
+          "oklch(74% 0.08 155)",
+          "oklch(86% 0.05 155)",
+          "oklch(95% 0.02 155)"
+        ]
+      },
+      "caution-ochre": {
+        "role": "tertiary",
+        "displayName": "Caution Ochre",
+        "canonical": "#76550A",
+        "note": "State, not brand: a deadline approaching, a slate not yet built.",
+        "tonalRamp": [
+          "oklch(20% 0.05 85)",
+          "oklch(30% 0.07 85)",
+          "oklch(40% 0.09 85)",
+          "oklch(50% 0.10 85)",
+          "oklch(62% 0.11 85)",
+          "oklch(74% 0.09 85)",
+          "oklch(86% 0.05 85)",
+          "oklch(95% 0.02 85)"
+        ]
+      },
+      "deep-oxblood": {
+        "role": "tertiary",
+        "displayName": "Deep Oxblood",
+        "canonical": "#7A1D10",
+        "note": "Destructive acts. Always as text on a 10% tint, never as a solid slab.",
+        "tonalRamp": [
+          "oklch(18% 0.08 30)",
+          "oklch(28% 0.11 30)",
+          "oklch(37% 0.14 30)",
+          "oklch(47% 0.16 30)",
+          "oklch(58% 0.17 30)",
+          "oklch(71% 0.13 30)",
+          "oklch(84% 0.07 30)",
+          "oklch(94% 0.03 30)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The landing hero's headline and nothing else. Steps up to 6rem above lg." },
+      "headline": { "displayName": "Headline (h1)", "purpose": "The page's subject. One per page." },
+      "title": { "displayName": "Title (h2)", "purpose": "A section within a page." },
+      "subtitle": { "displayName": "Subtitle (h3)", "purpose": "A panel's own heading. Width returns to 100 here — the boundary between headline and interface." },
+      "dek": { "displayName": "Dek", "purpose": "The standfirst under a display headline. The one light weight in the system." },
+      "body": { "displayName": "Body", "purpose": "Prose, bounded by a measure container (45/65/80ch)." },
+      "ui": { "displayName": "UI", "purpose": "Every control label, table cell and nav item." },
+      "eyebrow": { "displayName": "Eyebrow", "purpose": "The kicker above a headline, and the wordmark." },
+      "label": { "displayName": "Button / Micro", "purpose": "The smallest type in the app. Always uppercase and letterspaced so it survives." },
+      "numeral": { "displayName": "Numeral", "purpose": "Every figure the game produces. Tabular, so columns line up on digits." },
+      "numeral-hero": { "displayName": "Hero Numeral", "purpose": "The one number a screen is about: a bid deadline countdown, a film's score." }
+    },
+    "shadows": [
+      { "name": "raised-object", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "purpose": "The default Card — the container a poster sits in. Always paired with ring-1 at 5% ink, because a shadow alone is nearly invisible on paper." },
+      { "name": "overlay", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Dialogs, popovers, dropdowns and sheets. These float above the page and must say so." },
+      { "name": "overlay-tall", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "Full-height sheets and drawers." },
+      { "name": "focus-ring", "value": "0 0 0 3px color-mix(in oklch, var(--ring), transparent 70%)", "purpose": "Every interactive focus state. Drawn in box-shadow, which is why the autofill fix never touches box-shadow." }
+    ],
+    "motion": [
+      { "name": "press", "value": "translateY(1px)", "purpose": "Every button on :active, except one that opens a menu. The system's only physical affordance." },
+      { "name": "reduced-motion-collapse", "value": "1ms", "purpose": "Under prefers-reduced-motion every animation still RUNS at an imperceptible duration. Never animation: none — a menu whose animationend never fires stays in the DOM." },
+      { "name": "spinner-reduced", "value": "1.6s linear infinite", "purpose": "The one animation that keeps running under reduced motion. It is the only channel a pending action has." },
+      { "name": "skeleton-reduced", "value": "none", "purpose": "The one animation stopped outright under reduced motion. The skeleton already holds the page's shape and announces Loading." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px", "note": "The structural break: desktop nav band out, bottom nav and drawer in." },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px", "note": "Below this the perforated edge columns are hidden — band content would otherwise paint over them." },
+      { "name": "2xl", "value": "1536px" }
+    ],
+    "measures": [
+      { "name": "measure-tight", "value": "45ch" },
+      { "name": "measure-default", "value": "65ch" },
+      { "name": "measure-wide", "value": "80ch" },
+      { "name": "measure-page", "value": "72rem", "note": "The page frame. In rem, not ch, because a page is not text." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The accent control. Reserved for actions that are themselves 'live and yours' — placing a bid, opening a week.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Place bid</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid transparent; border-radius: 10.4px; font-family: Archivo, system-ui, sans-serif; font-size: 0.875rem; font-variation-settings: \"wdth\" 100, \"wght\" 500; line-height: 1.45; white-space: nowrap; cursor: pointer; transition: all 0.15s ease; outline: none; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { border-color: var(--ring, #000); box-shadow: 0 0 0 3px rgb(0 0 0 / 0.3); } .ds-btn-primary { background: var(--primary, #C52F1B); color: var(--primary-foreground, #F5F4F3); } .ds-btn-primary:hover { background: color-mix(in oklch, var(--primary, #C52F1B), transparent 20%); }"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Weight without colour. The heaviest control on a surface where the accent is already committed — the correct default for Save and Submit.",
+      "html": "<button class=\"ds-btn ds-btn-ink\">Save changes</button>",
+      "css": ".ds-btn-ink { background: var(--foreground, #000); color: var(--background, #F5F4F3); } .ds-btn-ink:hover { background: color-mix(in oklch, var(--foreground, #000), transparent 15%); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "The secondary action beside a primary one. Takes the panel border, not the control edge.",
+      "html": "<button class=\"ds-btn ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { background: var(--background, #F5F4F3); color: var(--foreground, #000); border-color: var(--border, #DCDBD9); } .ds-btn-outline:hover { background: var(--muted, #EDECEA); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Oxblood text on a 10% tint. Never a solid red slab — a destructive act should read as serious, not as the loudest thing on screen.",
+      "html": "<button class=\"ds-btn ds-btn-destructive\">Remove film</button>",
+      "css": ".ds-btn-destructive { background: color-mix(in oklch, var(--destructive, #7A1D10), transparent 90%); color: var(--destructive, #7A1D10); } .ds-btn-destructive:hover { background: color-mix(in oklch, var(--destructive, #7A1D10), transparent 80%); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The app's field. Bounded by --edge rather than --border, because a control boundary must reach 3:1 and a panel edge need not.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Your bid\" aria-label=\"Your bid\" />",
+      "css": ".ds-input { height: 36px; width: 100%; min-width: 0; padding: 4px 12px; border: 1px solid var(--edge, #84827E); border-radius: 8.8px; background: color-mix(in oklch, var(--input, #EDECEA), transparent 50%); color: var(--foreground, #000); font-family: Archivo, system-ui, sans-serif; font-size: 0.875rem; font-variation-settings: \"wdth\" 100, \"wght\" 400; outline: none; transition: color 0.15s, box-shadow 0.15s, background-color 0.15s; } .ds-input::placeholder { color: var(--muted-foreground, #6B6A68); } .ds-input:focus-visible { border-color: var(--ring, #000); box-shadow: 0 0 0 3px rgb(0 0 0 / 0.3); } .ds-input[aria-invalid=\"true\"] { border-color: var(--destructive, #7A1D10); box-shadow: 0 0 0 3px color-mix(in oklch, var(--destructive, #7A1D10), transparent 80%); }"
+    },
+    {
+      "name": "Flat Panel",
+      "kind": "card",
+      "refersTo": "card-flat",
+      "description": "The ordinary panel. If it holds data, it is flat: a border, the base radius, and padding from one variable so header, content and footer cannot drift apart.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-panel-title\">This week</div><div class=\"ds-panel-body\">Bidding closes Friday at 6:00 PM.</div></div>",
+      "css": ".ds-panel { display: flex; flex-direction: column; gap: 6px; padding: 20px; border: 1px solid var(--border, #DCDBD9); border-radius: 4px; background: var(--card, #FFFFFF); color: var(--card-foreground, #000); font-family: Archivo, system-ui, sans-serif; } .ds-panel-title { font-size: 1rem; font-variation-settings: \"wdth\" 100, \"wght\" 700; } .ds-panel-body { font-size: 0.875rem; color: var(--muted-foreground, #6B6A68); font-variation-settings: \"wdth\" 100, \"wght\" 400; }"
+    },
+    {
+      "name": "Raised Card",
+      "kind": "card",
+      "refersTo": "card-raised",
+      "description": "The artifact container — what a poster sits in. Shadow plus a 5% ink ring, because a shadow alone is nearly invisible on paper.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">Backrooms</div><div class=\"ds-card-figure\">72.45</div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 24px; padding: 24px; border-radius: 10.4px; background: var(--card, #FFFFFF); color: var(--card-foreground, #000); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.05); font-family: Archivo, system-ui, sans-serif; overflow: hidden; } .ds-card-title { font-size: 1rem; font-variation-settings: \"wdth\" 100, \"wght\" 700; } .ds-card-figure { font-size: 4.5rem; line-height: 0.82; font-variation-settings: \"wdth\" 78, \"wght\" 800; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Ink Masthead",
+      "kind": "nav",
+      "refersTo": "nav-band",
+      "description": "The top band of every page, signed in or out. The only ground in this palette where the accent is legal as text.",
+      "html": "<div class=\"ds-nav\"><a class=\"ds-nav-mark\" href=\"#\">TMP</a><div class=\"ds-nav-end\"><span class=\"ds-nav-item\">Search</span><span class=\"ds-nav-item\">Account</span></div></div>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 32px; background: var(--nav, #000000); color: var(--nav-foreground, #F5F4F3); font-family: Archivo, system-ui, sans-serif; } .ds-nav-mark { padding: 4px 8px; border-radius: 8.8px; color: var(--nav-primary, #EB4B37); font-size: 0.875rem; font-variation-settings: \"wdth\" 62, \"wght\" 800; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; outline: none; } .ds-nav-mark:focus-visible { box-shadow: 0 0 0 3px rgb(245 244 243 / 0.3); } .ds-nav-end { margin-left: auto; display: flex; align-items: center; gap: 16px; } .ds-nav-item { font-size: 0.875rem; font-variation-settings: \"wdth\" 100, \"wght\" 500; color: var(--nav-muted-foreground, #8E8D8B); } .ds-nav-item:hover { color: var(--nav-foreground, #F5F4F3); }"
+    },
+    {
+      "name": "Figure",
+      "kind": "custom",
+      "refersTo": "typography.numeral",
+      "description": "A label and its number, stacked — the app's most repeated unit. The numeral is always tabular so a row of them lines up on its digits.",
+      "html": "<div class=\"ds-figure\"><span class=\"ds-figure-label\">Remaining budget</span><span class=\"ds-figure-value\">$42</span></div>",
+      "css": ".ds-figure { display: flex; flex-direction: column; gap: 2px; font-family: Archivo, system-ui, sans-serif; } .ds-figure-label { font-size: 0.6875rem; line-height: 1.4; letter-spacing: 0.06em; text-transform: uppercase; font-variation-settings: \"wdth\" 100, \"wght\" 600; color: var(--muted-foreground, #6B6A68); } .ds-figure-value { font-size: 1.125rem; line-height: 1.1; font-variation-settings: \"wdth\" 78, \"wght\" 800; font-variant-numeric: tabular-nums; color: var(--foreground, #000); }"
+    },
+    {
+      "name": "Perforated Edge",
+      "kind": "custom",
+      "refersTo": "rounded.perf",
+      "description": "The brand's signature: 26 x 34 at rx 7, repeated down the inside edge of an ink band. Decorative, hidden from assistive technology at the column, and hidden below xl.",
+      "html": "<div class=\"ds-band\"><div class=\"ds-perf-col\" aria-hidden=\"true\"><i class=\"ds-perf\"></i><i class=\"ds-perf\"></i><i class=\"ds-perf\"></i><i class=\"ds-perf\"></i></div><div class=\"ds-band-text\">Opening this weekend</div></div>",
+      "css": ".ds-band { position: relative; background: var(--nav, #000000); color: var(--nav-foreground, #F5F4F3); padding: 32px 72px; font-family: Archivo, system-ui, sans-serif; } .ds-perf-col { position: absolute; inset-block: 0; left: 28px; display: flex; flex-direction: column; justify-content: space-around; padding-block: 12px; } .ds-perf { display: block; width: 26px; height: 34px; border-radius: 7px; background: rgb(245 244 243 / 0.88); } .ds-band-text { font-size: 1.875rem; line-height: 0.96; text-transform: uppercase; font-variation-settings: \"wdth\" 70, \"wght\" 800; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Trade Paper",
+    "overview": "This is Variety for a league of friends. The app reports on a game the way a trade publication reports on an industry: an ink masthead at the top of every page, a paper body underneath it, headlines set narrow and heavy and shouted in uppercase, and figures — box office, Tomatometer, bid, score — set as evidence rather than as decoration. A number in this app is the story. Everything else is the column it sits in.\n\nThe material is film itself, but stated as geometry rather than as illustration. A perforation is a rounded rectangle at 26 x 34 with a 7px corner, and that one ratio is the whole visual signature: it repeats down the edge of the ink bands, and it is restated in viewBox units inside the league mark so a league reads as a film cell rather than as a rounded square. There are no photographs of projectors, no reel icons, no grain overlays. The brand is a ratio, not a texture.\n\nControls are tactile and confident. Buttons carry a wide pill radius and physically push down one pixel when pressed; fields have a real boundary, not a hairline. The app should feel like something you play, not something you file. That tactility is spent on the controls and withheld from the page: panels stay flat, borders stay quiet, and the red is rationed hard enough that when it appears you look at it.",
+    "keyCharacteristics": [
+      "Hierarchy is built from width, not size — one variable family across eleven roles.",
+      "Ink and paper are two different grounds, each with its own legal red.",
+      "Flat by default; elevation is reserved for things that behave like physical objects.",
+      "Numbers get a dedicated type role with tabular figures, so columns line up on digits.",
+      "One geometric signature (26 : 34 : 7) carries the entire brand."
+    ],
+    "rules": [
+      { "name": "The Two Grounds Rule", "body": "No red is legible on both grounds. --primary is the paper-side red and appears nowhere on an ink surface; --nav-primary is the ink-side red and appears nowhere on paper. Reaching for one on the wrong ground is a contrast failure, not a taste call.", "section": "colors" },
+      { "name": "The One Meaning Rule", "body": "Vermilion means 'live and yours'. It is not the color of a Save button — the ink button variant exists precisely so a screen can have a heaviest control without spending the accent on it. A screen that paints its primary action red has nothing left to mark the open week with.", "section": "colors" },
+      { "name": "The Ten Percent Rule", "body": "The accent covers no more than roughly a tenth of any screen. Its rarity is the mechanism.", "section": "colors" },
+      { "name": "The Sealed Palette Rule", "body": "Tailwind's stock palette is deleted at the root (--color-*: initial), so bg-blue-500 emits no CSS at all. A raw palette class is impossible here, not merely discouraged. Every color must be a token.", "section": "colors" },
+      { "name": "The Width Rule", "body": "Hierarchy is width first, size second. Two headings at the same size and different widths are a legitimate distinction here; two at the same width and different sizes usually are not.", "section": "typography" },
+      { "name": "The Tabular Rule", "body": "Any figure that could appear in a column uses the numeral role. A standings table whose digits do not line up is a defect.", "section": "typography" },
+      { "name": "The Axis Rule", "body": "Naming wdth in the font binding is load-bearing. Omit it and the loader ships weight-only Archivo, every width distinction collapses silently, and nothing errors.", "section": "typography" },
+      { "name": "The Flat Panel Rule", "body": "If it holds data, it is flat. If it holds an artifact, it may lift. A dashboard of shadowed tiles is the failure mode this rule exists to prevent.", "section": "elevation" },
+      { "name": "The One Perforation Rule", "body": "The 26 : 34 : 7 ratio lives in exactly two files — the Perforation component for full-height columns, and LeagueMark, which restates it in viewBox units because a fixed-size div cannot scale into a 26px mark. Never invent a second perforation rhythm.", "section": "shapes" },
+      { "name": "The Circle-and-Cell Rule", "body": "A person is a circle. A league is a film cell. The shape is the entity type, and it is the brand's geometry doing the work a generic rounded square would otherwise do.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do cite a token. The stock palette is deleted, so there is no fallback to reach for.",
+      "Do pick the red by ground: the paper red on paper, the ink red on ink, never the reverse.",
+      "Do use the ink button for the heaviest action on a screen, and keep vermilion for 'live and yours'.",
+      "Do set every game figure in the numeral role so columns align on their digits.",
+      "Do use --edge for anything a user types in or clicks, and --border only for panels and dividers.",
+      "Do build hierarchy by narrowing the width axis before reaching for a larger size.",
+      "Do keep panels flat and let only artifacts lift."
+    ],
+    "donts": [
+      "Don't ship anything that reads as a generic SaaS dashboard — indigo on white, Inter, large radii everywhere, three KPI tiles above a line chart. That is the default this system was built to escape.",
+      "Don't borrow sportsbook language: neon on black, odds flashes, urgency banners, green money glow. This is fake money and a season-long game, not a wager.",
+      "Don't hardcode a radius. Every corner derives from the base value, except the perforation's 7px, which derives from the mark.",
+      "Don't invent a second perforation rhythm, or draw a league as a plain rounded square.",
+      "Don't unify the muted foreground across themes, or treat the nav tokens as a dark-mode variant. The ink surface is ink in both modes on purpose.",
+      "Don't add a second <main> inside the shell — every page owns its own landmark, and two fails the accessibility pass on every screen at once.",
+      "Don't disable animation under reduced motion; collapse its duration instead."
+    ]
+  }
+}

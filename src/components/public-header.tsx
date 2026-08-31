@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { SkipLink } from "@/components/skip-link";
 
 /**
  * THE SIGNED-OUT HEADER, shared by every public page. Sits OUTSIDE `<main>` —
@@ -38,7 +39,12 @@ import { Button } from "@/components/ui/button";
  */
 export function PublicHeader({ signedIn = false }: { signedIn?: boolean }) {
   return (
-    <header className="flex h-14 items-center justify-between bg-nav px-4 text-nav-foreground md:px-8">
+    // `relative` IS FOR THE SKIP LINK, which positions against this bar when it
+    // is focused. The signed-in header gets the same anchoring free from being
+    // `sticky`; a static header would fling the chip to the viewport corner.
+    <header className="relative flex h-14 items-center justify-between bg-nav px-4 text-nav-foreground md:px-8">
+      <SkipLink />
+
       {/* DECORATIVE, with the full name beside it in the accessibility tree.
           A screen reader announcing "T M P" is the brand spelled out letter by
           letter, which is noise; the sr-only span is what it should say. Same

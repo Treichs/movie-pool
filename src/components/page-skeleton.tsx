@@ -35,10 +35,10 @@ export function PageSkeleton({
   children: React.ReactNode;
 }) {
   return (
-    <main
+    <main id="main" tabIndex={-1}
       aria-busy="true"
       className={cn(
-        "mx-auto flex max-w-measure-page flex-col gap-6 px-8 py-8",
+        "mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8",
         className,
       )}
     >

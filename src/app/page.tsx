@@ -58,7 +58,7 @@ export default async function LandingPage({
   return (
     <>
       <PublicHeader />
-      <main>
+      <main id="main" tabIndex={-1}>
         <LandingHero />
         <div className="mx-auto flex max-w-measure-page flex-col gap-14 px-8 pt-14 pb-18">
           <LandingBeats />

@@ -54,7 +54,7 @@ export default async function LeagueRecordsPage({
   const { league, book } = page;
 
   return (
-    <main className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
+    <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

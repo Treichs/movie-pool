@@ -16,7 +16,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <>
       <PublicHeader signedIn />
-      <main className="flex items-center justify-center px-6 py-20">
+      <main id="main" tabIndex={-1} className="flex items-center justify-center px-6 py-20">
         <div className="flex w-full max-w-160 flex-col gap-7">{children}</div>
       </main>
     </>

@@ -82,7 +82,7 @@ npm run verify   →  typecheck · lint · a11y:contrast · types:fresh · build
 4. The segment has an `error.tsx` **built on `ErrorScreen`**, and — if the screen reads anything — a `loading.tsx` **built on `PageSkeleton`**, scoped by a route group if the segment has children. See *What every remaining screen inherits*.
 5. Anything the screen replaced, and its now-unreferenced components, are deleted in the same commit.
 6. `npm run verify` is green.
-7. The screen has been driven in a browser at **1440×900** — desktop only (Ruling 78).
+7. The screen has been driven in a browser at **1440×900 and 390×844** — Ruling 78 was lifted 2026-08-31.
 
 ### Condition 7 — the drive, exactly
 
@@ -94,7 +94,9 @@ Use the **`ui-review` skill** ([.claude/skills/ui-review/SKILL.md](../../../.cla
 - **Report what was NOT driven** — roles not signed in as, states with no fixture, branches not reachable.
 - Clean up anything the drive wrote to the shared dev database.
 
-**Ruling 78's reversal condition:** the moment a screen is built with a fixed width, a horizontal-scroll container that assumes desktop, or a `min-width` that would force a phone to pan, restore the 390×844 capture for that screen.
+**Ruling 78 is lifted, 2026-08-31.** It deferred the 390×844 capture for the whole of this phase and named the conditions that would restore it per screen — a fixed width, a horizontal-scroll container assuming desktop, a `min-width` that forces a phone to pan. Those conditions no longer gate anything: **both viewports are captured for every screen**, and a phone-width defect is now a review finding rather than a deferral.
+
+What the ruling bought is still true and worth keeping: the phone layouts were **drawn to shape** while it was in force — `BottomNav`, the mobile drawer, the league band, the `md:` gates throughout — so lifting it opens a review, not a build.
 
 ### The route contract
 
@@ -1585,5 +1587,5 @@ Record: which screens revealed defects the gates could not see, which states wer
 - **The commissioner Queue is a strip, not a route** — and `getOverdueWeeks` was a composer with no UI, folded into `getSeasonHome` rather than deleted as dead code.
 - **Configuration centralizes, operations distribute** — the test that settled the commissioner question and produced `/leagues/[leagueId]/settings` as the one legitimate second commissioner page.
 - **`/how-it-works` survives the landing page** — the landing **sells**, how-it-works **explains**.
-- **Ruling 78:** desktop-only review at 1440×900 for this phase, with the named reversal conditions.
+- **Ruling 78:** desktop-only review at 1440×900 for this phase, with the named reversal conditions. **Lifted 2026-08-31** — every screen is now driven at both 1440×900 and 390×844.
 - **A film is not exclusively scoped to a league**, which is why the hybrid — a top-level catalog resource and a league-scoped one — is the documented right answer rather than a query parameter.

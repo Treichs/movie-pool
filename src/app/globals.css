@@ -337,6 +337,40 @@
 @utility type-micro   { font-variation-settings: var(--fvs-micro); text-transform: uppercase; letter-spacing: 0.06em; }
 @utility type-numeral { font-variation-settings: var(--fvs-numeral); font-variant-numeric: tabular-nums; }
 
+/* A TAP AREA WIDER THAN THE THING YOU CAN SEE — for the two controls whose
+ * drawn size is fixed by what they sit in. The password toggle is 24px because
+ * it lives inside a 36px field, and a panel's `micro` link is 15px because that
+ * is the type role; neither can simply be made bigger without breaking the
+ * shape around it.
+ *
+ * Both already PASS WCAG 2.5.8: the toggle is exactly the 24px minimum, and
+ * every micro link clears the spacing exception by 90px or more. This is about
+ * the thumb, not the checklist — 15px is hard to hit on a phone whether or not
+ * a success criterion says so.
+ *
+ * COARSE POINTERS ONLY. A mouse is precise enough already, and silently growing
+ * a hover region on the desktop layout would change which element is under the
+ * cursor in a dense panel. `pointer: coarse` is the documented way to ask about
+ * the input device rather than guessing it from the viewport — a touchscreen
+ * laptop gets the bigger target at 1440 too, which is the point.
+ *
+ * `max(100%, 44px)` NEVER SHRINKS A TARGET: a control already larger than 44px
+ * keeps its own size, so this is safe to apply to anything. */
+@utility tap-target {
+  position: relative;
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
 /* THE BROWSER'S AUTOFILL PAINT, TAKEN OUT OF THE FIELD.
  *
  * Chrome paints an autofilled control with its own opaque background —
@@ -378,6 +412,17 @@
   h2 { @apply text-h2 type-h2; }
   h3 { @apply text-h3 type-h3; }
 
+  /* THE SKIP LINK'S LANDING PAD. `<main id="main" tabIndex={-1}>` is what the
+     shells' "Skip to content" jumps to, and the `tabindex` is what makes the
+     jump land in EVERY browser rather than most of them — the spec moves the
+     sequential-focus starting point on its own, but Safari has been unreliable
+     about it for long enough that WebAIM still writes the attribute.
+     The cost is a focus ring drawn around the whole page, which is why it is
+     suppressed here: the scroll to the top of the content IS the confirmation,
+     and the focus is gone on the next Tab. Only `main` elements that opted in
+     with `tabindex="-1"` are touched. */
+  main[tabindex="-1"]:focus { @apply outline-none; }
+
   input:autofill, textarea:autofill, select:autofill {
     background-clip: text;
     -webkit-background-clip: text;
@@ -387,5 +432,48 @@
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: var(--foreground);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   5. REDUCED MOTION — what the app gives up when the system asks, and the two
+   things it keeps.
+
+   NOT A BLANKET KILL. `animation: none` on everything would take the state
+   WITH the motion: an `animate-out` that never runs leaves Base UI waiting for
+   an `animationend` that never fires, so a closed menu stays in the DOM. So
+   every animation still RUNS, at a duration nobody can perceive — every end
+   state (visible, gone, rotated open) arrives exactly as it does at full speed.
+
+   THE TWO EXCEPTIONS ARE MOTION THAT IS THE MESSAGE:
+     - The spinner keeps turning, slower. A still spinner says nothing, and it
+       is the only channel a pending action has; WCAG 2.3.3 asks for
+       non-essential motion, and this is the essential kind.
+     - The skeleton pulse stops outright. That one IS decoration — the skeleton
+       already holds the page's shape, and `PageSkeleton` announces "Loading"
+       to a screen reader, so the shimmer is the one thing here carrying no
+       information at all.
+
+   The bump chart is NOT listed because it handles itself: recharts' default
+   `isAnimationActive="auto"` reads this same query in JavaScript, which is the
+   only place it could be read — react-smooth interpolates inline styles frame
+   by frame and no CSS rule can reach it.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  [data-slot="skeleton"] {
+    animation: none !important;
   }
 }

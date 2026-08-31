@@ -64,7 +64,7 @@ export default async function WeekBoardPage({
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
+    <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <WeekHeader view={view} />
 
       {view.mine && <YourWeek mine={view.mine} scored={scored} />}
