@@ -147,7 +147,12 @@ export default async function LeaguePage({
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3">
-            <h2>Seasons</h2>
+            {/* "Past seasons", because that is all this table ever holds —
+                `SeasonsTable` filters to completed and archived. Headed
+                "Seasons" it sat directly under the running season's own card
+                and then said "No finished seasons yet", which reads as the
+                page contradicting itself rather than as two different things. */}
+            <h2>Past seasons</h2>
             <SeasonsTable
               seasons={home.seasons}
               liveSeasonId={home.current.season?.id ?? null}

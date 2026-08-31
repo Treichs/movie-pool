@@ -97,11 +97,12 @@ export default async function WeekBoardPage({
           <h2>Removed</h2>
           {/* An epilogue, not a result: these score for nobody and their bids
               were refunded, which is why they sit below the corrections that
-              explain them rather than among the films that counted. */}
-          <p className="type-body max-w-measure-default text-ui text-muted-foreground">
-            Removed after bidding closed. They score for nobody and every bid on
-            them was refunded in full.
-          </p>
+              explain them rather than among the films that counted.
+              NO BLURB. The corrections panel directly above already says
+              "removed after bidding closed… refunded in full" — with the
+              commissioner's own reason attached, which this could not carry.
+              Repeating it verbatim two inches lower made the page read as
+              though it were arguing with itself. */}
           {removed.map((film) => (
             <RevealFilmRow
               key={film.filmId}

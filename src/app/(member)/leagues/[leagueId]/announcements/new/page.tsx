@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import {
   Breadcrumb,
@@ -42,9 +42,10 @@ export default async function NewAnnouncementPage({
     getProfile(supabase, user.id),
   ]);
   if (!page) notFound();
-  if (!page.isCommissioner) {
-    redirect(`/leagues/${leagueId}/announcements`);
-  }
+  // NOT a bounce to the list. Every commissioner-gated route 404s now — see
+  // `requireCommissionerOfLeague`. A redirect tells a player the page is real
+  // and merely not theirs, and discards where they were trying to go.
+  if (!page.isCommissioner) notFound();
 
   const { league } = page;
   const listHref = `/leagues/${league.id}/announcements`;

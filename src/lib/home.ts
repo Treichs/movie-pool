@@ -2,6 +2,7 @@ import { getProfile } from "@/lib/auth";
 import { getMyInvites, type MyInvite } from "@/lib/invites";
 import { getNavLeagues, type NavLeague } from "@/lib/nav";
 import type { SupabaseClient } from "@/lib/supabase";
+import { getWeeksAwaitingBid } from "@/lib/unbid-weeks";
 
 // Data for HOME — the signpost that replaced the Dashboard (2026-08-03).
 //
@@ -25,6 +26,19 @@ export type HomeLeague = NavLeague & {
    *  the one with a deadline actually approaching. */
   closesAt: string | null;
   openWeekNumber: number | null;
+  /** THE ONE QUESTION A PLAYER OPENS THIS PAGE TO ANSWER, and the row could not
+   *  answer it until 2026-08-31: a week is open, but have I bid in it?
+   *
+   *  "Bids close in 2 hours" and "bids close in 2 hours, and you have not bid"
+   *  are different messages needing different actions, and the row was sending
+   *  the first while the bell three inches above it knew the second. Same query
+   *  as the bell now (`getWeeksAwaitingBid`), so they cannot disagree.
+   *
+   *  False when nothing is open — there is no debt between weeks. */
+  awaitingYourBid: boolean;
+  /** The open week's bid page, when there is one. The row links here rather
+   *  than to League Home when a bid is owed. */
+  bidHref: string | null;
 };
 
 export async function getHomeLeagues(
@@ -52,11 +66,18 @@ export async function getHomeLeagues(
     counts.set(row.league_id, (counts.get(row.league_id) ?? 0) + 1);
   }
 
+  // Skips the database entirely between weeks — see `getWeeksAwaitingBid`.
+  const awaiting = await getWeeksAwaitingBid(supabase, userId, leagues);
+
   return leagues.map((l) => ({
     ...l,
     memberCount: counts.get(l.id) ?? 0,
     closesAt: l.openWeek?.bidDeadline ?? null,
     openWeekNumber: l.openWeek?.number ?? null,
+    awaitingYourBid: l.openWeek ? awaiting.has(l.openWeek.id) : false,
+    bidHref: l.openWeek
+      ? `/seasons/${l.openWeek.seasonId}/weeks/${l.openWeek.id}/bid`
+      : null,
   }));
 }
 
@@ -116,7 +137,12 @@ export async function getHome(ctx: {
   ]);
 
   return {
-    displayName: profile?.display_name ?? ctx.user.email ?? "there",
+    // NOT THE EMAIL. A missing profile row is an anomaly (a trigger creates one
+    // on sign-up), and the fallback used to be the address — which rendered as
+    // "EVENING, DEV-COMMISH@MOVIEPOOL.LOCAL" in 40px caps, the first thing on
+    // the first screen after signing in. An email is an identifier, not a name;
+    // "there" is a worse greeting and a better one to fail to.
+    displayName: profile?.display_name ?? "there",
     email: ctx.user.email ?? "",
     leagues: [...leagues].sort(byUrgency),
     invites,

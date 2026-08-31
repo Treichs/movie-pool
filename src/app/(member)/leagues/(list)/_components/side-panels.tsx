@@ -25,10 +25,30 @@ function Panel({
   );
 }
 
-export function SidePanels({ email }: { email: string }) {
+/**
+ * THE HELP RETIRES; THE REFERENCE DOES NOT.
+ *
+ * This was headed "Getting started" beside a player with five leagues and four
+ * seasons played. The blank-slate pattern it comes from (Jason Fried, 2003)
+ * carries a second half that is usually dropped: remove each help nugget once
+ * the user has completed that action. The teaching is transient by design.
+ *
+ * So the two rules links stay forever — they are reference, and a rules-heavy
+ * game needs them at any tenure — but the panel stops calling itself an
+ * onboarding step, and "Starting your own league" goes once you are in one:
+ * that nugget's action is done, the shell carries the control anyway, and it
+ * was the third offer of the rarest action on the newcomer's screen.
+ */
+export function SidePanels({
+  email,
+  hasLeagues,
+}: {
+  email: string;
+  hasLeagues: boolean;
+}) {
   return (
     <div className="flex flex-col gap-4">
-      <Panel title="Getting started">
+      <Panel title={hasLeagues ? "The rules" : "Getting started"}>
         <div className="flex flex-col gap-2.5">
           <TextLink href="/how-it-works" size="ui">
             How the pool works
@@ -36,9 +56,11 @@ export function SidePanels({ email }: { email: string }) {
           <TextLink href="/how-it-works#faq" size="ui">
             The rules worth knowing
           </TextLink>
-          <TextLink href="/leagues/new" size="ui">
-            Starting your own league
-          </TextLink>
+          {!hasLeagues && (
+            <TextLink href="/leagues/new" size="ui">
+              Starting your own league
+            </TextLink>
+          )}
         </div>
       </Panel>
 

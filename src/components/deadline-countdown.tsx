@@ -35,8 +35,18 @@ export function DeadlineCountdown({
   if (left === null) {
     return <span className={cn("type-numeral tabular-nums opacity-0", scale)}>--:--</span>;
   }
+  // THE CLOSE IS A STATUS MESSAGE (WCAG 2.2 SC 4.1.3, Level AA). The ticking
+  // figure is deliberately silent — `role="timer"` carries an implicit
+  // `aria-live: off` so seconds are not announced — but the transition to
+  // Closed is a change of state the user did not initiate, and it has to be
+  // spoken exactly once. Escalating the role at the threshold is MDN's own
+  // documented pattern for this component.
   if (left <= 0) {
-    return <span className={cn("type-numeral tabular-nums", scale)}>Closed</span>;
+    return (
+      <span className={cn("type-numeral tabular-nums", scale)} role="alert">
+        Closed
+      </span>
+    );
   }
 
   const totalMin = Math.floor(left / 60000);
@@ -50,17 +60,22 @@ export function DeadlineCountdown({
   // who has not bid still can and needs telling.
   const urgent = left < 3 * 60 * 60 * 1000;
 
+  // UNITS, ALWAYS. `2:19` was two hours nineteen above the hour threshold and
+  // two minutes nineteen below it — the same four characters meaning different
+  // things depending on a state the reader cannot see. Every source that covers
+  // a consequential cutoff (Cloudscape, Primer) says carry the unit; Primer
+  // additionally warns that bare abbreviated time is misread aloud.
   const text =
     days > 0
       ? `${days}d ${hours}h`
       : hours > 0
-        ? `${hours}:${String(mins).padStart(2, "0")}`
-        : `${mins}:${String(secs).padStart(2, "0")}`;
+        ? `${hours}h ${String(mins).padStart(2, "0")}m`
+        : `${mins}m ${String(secs).padStart(2, "0")}s`;
 
   return (
     <span
       className={cn("type-numeral tabular-nums", scale, urgent && "text-primary")}
-      aria-live="off"
+      role="timer"
     >
       {text}
     </span>

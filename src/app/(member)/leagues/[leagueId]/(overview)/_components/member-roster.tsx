@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 
+import { PlayerAvatar } from "@/components/player-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,12 +35,17 @@ function Row({ member }: { member: CareerRow }) {
       className={`rounded-none border-b last:border-b-0 hover:bg-muted ${member.isMe ? "bg-muted" : ""}`}
     >
       <ItemMedia>
-        <span
-          aria-hidden
-          className="type-micro flex size-6.5 items-center justify-center rounded-full border bg-muted text-micro"
-        >
-          {member.name.charAt(0).toUpperCase()}
-        </span>
+        {/* THE PRIMITIVE, NOT A HAND-ROLLED CIRCLE. This drew one grey letter
+            per member, so on the one screen that lists the whole league every
+            person looked identical — the exact thing the derived-avatar system
+            exists to prevent. `PlayerAvatar` takes two initials and a colour
+            derived from the profile id. */}
+        <PlayerAvatar
+          id={member.profileId}
+          name={member.name}
+          isMe={member.isMe}
+          className="size-6.5"
+        />
       </ItemMedia>
       <ItemContent className="flex-row flex-wrap items-center gap-2.5">
         <ItemTitle className={member.isMe ? "type-h3 text-ui" : "type-ui text-ui"}>

@@ -75,14 +75,14 @@ export default async function LeaguesPage() {
       ))}
 
       {home.leagues.length === 0 ? (
-        <NoLeagues awaitingInvite={home.invites.length === 0} />
+        <NoLeagues invitePending={home.invites.length > 0} />
       ) : (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
           <section className="flex flex-col gap-3">
             <h2>Your leagues</h2>
             <LeagueRows leagues={home.leagues} />
           </section>
-          <SidePanels email={home.email} />
+          <SidePanels email={home.email} hasLeagues={home.leagues.length > 0} />
         </div>
       )}
 
@@ -90,7 +90,7 @@ export default async function LeaguesPage() {
           no leagues there is no left column for them to sit next to. */}
       {home.leagues.length === 0 && (
         <div className="max-w-100">
-          <SidePanels email={home.email} />
+          <SidePanels email={home.email} hasLeagues={home.leagues.length > 0} />
         </div>
       )}
     </main>

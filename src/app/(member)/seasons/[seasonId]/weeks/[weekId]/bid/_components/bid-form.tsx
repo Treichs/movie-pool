@@ -1,8 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { TriangleAlertIcon } from "lucide-react";
 import { toast } from "sonner";
+
+import { useNow } from "@/hooks/use-now";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +62,7 @@ export function BidForm({
   films,
   minBid,
   remaining,
+  deadline,
 }: {
   seasonId: string;
   weekId: string;
@@ -74,6 +78,10 @@ export function BidForm({
    * the ADR-001 sum-exposure cap the database enforces in `place_bids`.
    */
   remaining: number;
+  /** The moment this closes. Null when the commissioner set none, in which case
+   *  the week runs until they close it by hand and there is nothing to count
+   *  to — the form stays open and this guard never fires. */
+  deadline: string | null;
 }) {
   const norm = (v: number | null | undefined) => v ?? 0;
 
@@ -149,7 +157,24 @@ export function BidForm({
 
   const overBudget = total > remaining;
   const anyClientProblem = biddable.some((f) => clientProblem(f.id) !== null);
-  const blocked = overBudget || anyClientProblem;
+
+  // THE DEADLINE PASSING IS A STATE CHANGE THE PLAYER DID NOT INITIATE.
+  //
+  // The page's own guard is a server-render redirect on `!board.biddable`, so
+  // it only fires on the NEXT navigation. A player already sitting here — which
+  // is exactly where they are in the last minutes, because that is when people
+  // bid — watched the clock reach zero with a live form, and found out it was
+  // over only when the RPC refused them.
+  //
+  // NN/g's remedy for a state that changes underneath a user is to SAY SO and
+  // keep their own work visible, not to make the affordance quietly stop
+  // working. The amounts stay on screen and stay readable; only the ability to
+  // submit ends, which is the thing that actually ended.
+  const now = useNow(1000);
+  const closed =
+    deadline !== null && now !== null && now.getTime() >= new Date(deadline).getTime();
+
+  const blocked = overBudget || anyClientProblem || closed;
 
   // The browser's own guard. Nothing else here can stop a click on the nav, and
   // a slate of typed amounts is the most expensive state in the app to lose —
@@ -194,7 +219,13 @@ export function BidForm({
             Bid on as many films as you like. Leave one blank to pass on it.
           </FieldDescription>
           <FieldGroup>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5">
+            {/* THE SUMMARY BAR IS STICKY AND OVERLAYS THIS GRID, so the grid
+                has to reserve room for it. Without this padding a short slate
+                on a 900px viewport put the bar straight across the poster row
+                and pushed the inputs — the only reason the page exists — under
+                it and below the fold. The reserve is the bar's height plus its
+                `bottom-4` offset. */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5 pb-28">
               {films.map((film) => (
                 <FilmBidField
                   key={film.id}
@@ -249,23 +280,48 @@ export function BidForm({
             </div>
 
             <div className="flex items-center gap-4">
-              {dirty && (
+              {dirty && !closed && (
                 <span className="type-eyebrow text-eyebrow text-muted-foreground">Unsaved</span>
               )}
-              {/* INK, NOT THE ACCENT. The budget is already spent on the clock
-                  and on the films the player has money on. */}
-              <Button type="submit" variant="ink" disabled={pending || blocked || !dirty}>
-                {pending ? "Saving…" : dirty ? "Save your bids" : "Saved"}
-              </Button>
+              {/* THE CONTROL IS REPLACED, NOT GREYED OUT. GOV.UK: "disabled
+                  buttons have poor contrast and can confuse some users, so
+                  avoid them if possible" — and a dead button says nothing about
+                  why. Once bidding is over the button's job is over too, so a
+                  link to the board takes its place. */}
+              {closed ? (
+                <Button
+                  variant="ink"
+                  nativeButton={false}
+                  render={<Link href={`/seasons/${seasonId}/weeks/${weekId}`} />}
+                >
+                  See the week
+                </Button>
+              ) : (
+                /* INK, NOT THE ACCENT. The budget is already spent on the clock
+                   and on the films the player has money on. */
+                <Button type="submit" variant="ink" disabled={pending || blocked || !dirty}>
+                  {pending ? "Saving…" : dirty ? "Save your bids" : "Saved"}
+                </Button>
+              )}
             </div>
           </div>
 
-          {blocked && (
+          {/* role="alert" so the close is spoken once when it happens, which is
+              the same Level AA duty the countdown itself carries. */}
+          {closed ? (
             <p role="alert" className="mt-3 text-sm text-destructive">
-              {overBudget
-                ? `That's $${total - remaining} more than you have. Lower a bid to save.`
-                : "Fix the amount marked above to save."}
+              {dirty
+                ? "Bidding closed before these changes were saved, so they will not count. The bids you saved earlier are the ones that stand."
+                : "Bidding is closed. Your saved bids are in and the sheet is sealed."}
             </p>
+          ) : (
+            blocked && (
+              <p role="alert" className="mt-3 text-sm text-destructive">
+                {overBudget
+                  ? `That's $${total - remaining} more than you have. Lower a bid to save.`
+                  : "Fix the amount marked above to save."}
+              </p>
+            )
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { PublicHeader } from "@/components/public-header";
+import { PublicFooter } from "./_components/public-footer";
 import { resolveLandingPath, safeNextPath } from "@/lib/landing";
 import { createClient } from "@/lib/supabase/server";
 
@@ -65,6 +66,7 @@ export default async function LandingPage({
           <LandingClose />
         </div>
       </main>
+      <PublicFooter />
     </>
   );
 }

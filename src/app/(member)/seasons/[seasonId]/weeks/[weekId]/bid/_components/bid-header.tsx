@@ -15,14 +15,21 @@ import type { WeekBidBoard } from "@/lib/week-bid";
 export function BidHeader({ board }: { board: WeekBidBoard }) {
   const { season, league, week } = board;
 
+  // THE WEEK IS THE CURRENT PAGE HERE, not a link above it.
+  //
+  // It used to be a crumb pointing at `/seasons/[s]/weeks/[w]` — which, while
+  // the window is live, redirects straight back to this page (ADR-108: a live
+  // bidding window belongs to /bid and nowhere else). So the one crumb a player
+  // would reach for to leave the form returned them to the form.
+  //
+  // The trail now ends where the user actually is. During bidding this screen
+  // IS the week, which is the same thing ADR-108 says, said in the breadcrumb.
   const crumbs = [
-    { label: "Home", href: "/leagues" },
+    // "Your leagues", not "Home" — every other trail in the app names this
+    // destination that way, and a root that renames itself reads as two places.
+    { label: "Your leagues", href: "/leagues" },
     ...(league ? [{ label: league.name, href: `/leagues/${league.id}` }] : []),
     { label: season.name, href: `/seasons/${season.id}` },
-    {
-      label: weekLabel(week.number, week.weekOf),
-      href: `/seasons/${season.id}/weeks/${week.id}`,
-    },
   ];
 
   return (
@@ -41,7 +48,7 @@ export function BidHeader({ board }: { board: WeekBidBoard }) {
             </Fragment>
           ))}
           <BreadcrumbItem>
-            <BreadcrumbPage>Bid</BreadcrumbPage>
+            <BreadcrumbPage>{weekLabel(week.number, week.weekOf)}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -56,7 +63,12 @@ export function BidHeader({ board }: { board: WeekBidBoard }) {
 }
 
 /** `weekOf` is the generated Monday of the Mon–Sun range (ADR-042) and is what
- *  players are shown; the number is the fallback when it is null. */
+ *  players are shown; the number is the fallback when it is null.
+ *
+ *  THE DATE IS LABELLED, because a week has two that matter and they can fall
+ *  in different months. This one is the Monday the week is OF; the season page
+ *  lists the Friday films open on. Unlabelled, "Week 01 · Aug 31" beside
+ *  "Fri, Sep 4" reads as one of the two being wrong. */
 function weekLabel(number: number, weekOf: string | null) {
   const n = `Week ${String(number).padStart(2, "0")}`;
   if (!weekOf) return n;
@@ -65,5 +77,5 @@ function weekLabel(number: number, weekOf: string | null) {
     day: "numeric",
     timeZone: "UTC",
   });
-  return `${n} · ${d}`;
+  return `${n} · week of ${d}`;
 }

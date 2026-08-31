@@ -169,6 +169,15 @@ export function SignInForm({
                   exists for. */}
               Don&apos;t have an account?{" "}
               <TextLink href={signUpHref}>Create one</TextLink>
+              {/* THE INVITATION IS NAMED HERE because the landing page sends
+                  people here with a button that says "I have an invite", and
+                  this screen used to say nothing about invitations at all —
+                  so the promise broke on arrival, in front of the one reader
+                  least likely to have an account yet. Use the address it was
+                  sent to, because that is what the invite is keyed on. */}
+              <br />
+              Invited to a league? Sign in or create an account with the email
+              it was sent to — the invitation will be waiting.
             </FieldDescription>
           </Field>
         </FieldGroup>

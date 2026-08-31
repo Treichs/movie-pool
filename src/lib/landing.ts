@@ -167,7 +167,7 @@ export function rememberLeagueFromRequest(
  *  jar. `resolveLandingPath` below is the thin shell that fetches the two
  *  inputs. */
 export function chooseLandingPath(
-  leagues: Pick<NavLeague, "id" | "currentSeason">[],
+  leagues: Pick<NavLeague, "id" | "currentSeason" | "openWeek">[],
   rememberedLeagueId: string | null | undefined
 ): string {
   // Belongs to nothing: /leagues IS that empty state — the explanation of what a
@@ -204,20 +204,37 @@ export function chooseLandingPath(
   // arbitrary sort.
   //
   // SECOND, and this is what makes the fallback acceptable: it lands on the
-  // LEAGUE page rather than the season, and League Home's own <h1> IS the
-  // league switcher (league-title-picker, 2026-08-05) whenever you belong to
-  // two or more. So an inference arrives named, on the one screen that offers
-  // the alternatives in a click. The failure the single-league shortcut above
-  // guards against is being SILENTLY dropped into the wrong league; a title
-  // that says which league this is and lists the others is the opposite.
+  // LEAGUE page rather than the season, where the shell's league switcher names
+  // the league you arrived in and lists the alternatives in one click. So an
+  // inference arrives NAMED. The failure the single-league shortcut above
+  // guards against is being SILENTLY dropped into the wrong league; chrome that
+  // says which league this is and offers the others is the opposite.
+  //
+  // (This comment used to claim League Home's own <h1> was that switcher, via a
+  // `league-title-picker` component. No such component exists in this repo —
+  // the claim was never true, and the switcher it describes is the one in the
+  // nav band. Corrected 2026-08-30 rather than left pointing at a file that
+  // would be looked for and not found.)
   //
   // It also self-corrects exactly once: opening any league sets the remembered
   // cookie, so the next sign-in takes the `known` branch and goes straight to
   // the season. Landing on the league rather than the season is the price of
   // having guessed, and it is paid one time.
   const live = leagues.filter((l) => l.currentSeason?.status === "active");
-  const inferred = live.length === 1 ? live[0] : leagues[0];
-  return `/leagues/${inferred.id}`;
+  if (live.length === 1) return `/leagues/${live[0].id}`;
+
+  // SEVERAL LIVE SEASONS — A DEADLINE OUTRANKS JOIN ORDER. This used to fall
+  // straight to leagues[0], the league you joined FIRST, which is a fact about
+  // 2019 rather than about this Friday: it dropped a player into a dormant
+  // league while another was two hours from closing its bids. Among leagues
+  // that are actually taking bids, the soonest deadline is the only one of
+  // these that is time-boxed, so it is the only defensible guess.
+  const bidding = leagues
+    .filter((l) => l.openWeek?.bidDeadline)
+    .sort((a, b) => a.openWeek!.bidDeadline!.localeCompare(b.openWeek!.bidDeadline!));
+  if (bidding.length > 0) return `/leagues/${bidding[0].id}`;
+
+  return `/leagues/${leagues[0].id}`;
 }
 
 /** Fetches the rule's two inputs and applies it. Returns a path, never a
