@@ -186,6 +186,25 @@ function sentOrFailed(result: SendResult): "sent" | "failed" {
 }
 
 /**
+ * The season-scoped twin of `getAlreadyEmailed` — the payouts statement is
+ * about a season, not a week, and `email_log_season_dedupe` is the unique index
+ * that says so.
+ */
+export async function getAlreadySeasonEmailed(
+  admin: SupabaseClient,
+  seasonId: string,
+  kind: string
+): Promise<Set<string>> {
+  const { data } = await admin
+    .from("email_log")
+    .select("profile_id")
+    .eq("season_id", seasonId)
+    .eq("kind", kind)
+    .eq("status", "sent");
+  return new Set((data ?? []).map((r) => r.profile_id as string));
+}
+
+/**
  * The Resend idempotency key for one notification.
  *
  * IT IS THE UNIQUE INDEX, SPELLED OUT. `email_log_week_id_profile_id_kind_key`
@@ -204,6 +223,17 @@ export function notifyIdempotencyKey(
   profileId: string
 ): string {
   return `${kind}/${weekId}:${profileId}`;
+}
+
+/** The same idea against `email_log_season_dedupe`. `payouts_final` is the only
+ *  season-scoped kind, and it is not a NotifyKind because nothing sweeps for
+ *  it — finalizing is a human act, and the action sends it directly. */
+export function seasonIdempotencyKey(
+  kind: string,
+  seasonId: string,
+  profileId: string
+): string {
+  return `${kind}/${seasonId}:${profileId}`;
 }
 
 /**
