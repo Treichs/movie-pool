@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AuthSplitShell } from "@/components/auth-split-shell";
 import { TextLink } from "@/components/text-link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { FieldDescription, FieldGroup } from "@/components/ui/field";
+import { hasRecoveryMark } from "@/lib/recovery";
 import { createClient } from "@/lib/supabase/server";
 
 import { ResetPasswordForm } from "./reset-password-form";
@@ -50,6 +52,21 @@ export default async function ResetPasswordPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // A SESSION IS NOT ENOUGH TO REACH THIS SCREEN (decided 2026-08-31, closing
+  // the open question in the docstring above).
+  //
+  // This form sets a password without asking for the old one. `/account` does
+  // ask, and says why — a password change signs out every other session, so
+  // both it and the email change are account-takeover vectors. An ordinary
+  // signed-in visitor reaching this page was therefore a way around that check,
+  // one URL away from the door it protects.
+  //
+  // So a live session gets sent to the screen that WILL ask. Only the recovery
+  // mark — set at `/auth/confirm` when a mailed `type=recovery` token verifies,
+  // and nowhere else — opens this one. Someone who genuinely forgot their
+  // password has no session at all and lands here from the link, unaffected.
+  if (user && !(await hasRecoveryMark())) redirect("/account");
 
   return (
     // `<main>` WRAPS THE WHOLE SHELL, as on the other three auth screens.
