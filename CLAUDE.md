@@ -149,8 +149,9 @@ A screen is done when:
 3. Route-private components are in `_components/`.
 4. The segment has an `error.tsx`.
 5. `npm run verify` is green.
-6. It has been driven in a browser at 1440×900, console clean, exactly one
-   `<main>`, every control with an accessible name.
+6. It has been driven in a browser at 1440×900 **and 390×844**, console clean,
+   exactly one `<main>`, every control with an accessible name, and no
+   horizontal page scroll at phone width.
 
 ## Environment
 

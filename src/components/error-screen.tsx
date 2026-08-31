@@ -45,7 +45,7 @@ export function ErrorScreen({
   }, [error]);
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-measure-default flex-col justify-center px-6 py-12">
+    <main id="main" tabIndex={-1} className="mx-auto flex min-h-svh max-w-measure-default flex-col justify-center px-6 py-12">
       <h1>{title}</h1>
       <p className="mt-3 text-muted-foreground">{children}</p>
       <div className="mt-6 flex flex-wrap gap-3">

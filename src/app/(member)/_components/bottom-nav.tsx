@@ -14,8 +14,9 @@ import { isCurrent } from "./nav-links";
  * Labels are never hidden behind icons: an icon-only bar is a memory test, and
  * the four words fit. Every target is 56px tall against a 44px floor.
  *
- * Ruling 78 keeps the REVIEW desktop-only for this phase, so this bar ships
- * drawn-to-shape and gets its own pass with the phone build.
+ * It shipped drawn-to-shape under Ruling 78, which deferred the phone review
+ * for the whole phase. That ruling was lifted 2026-08-31 and this bar has been
+ * driven at 390×844 since.
  */
 export function BottomNav({
   focused,

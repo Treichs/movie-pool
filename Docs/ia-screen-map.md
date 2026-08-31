@@ -95,6 +95,12 @@ unchanged and still load-bearing.
 
 **AMENDED 2026-08-30 — the count is 26.** `/leagues/[leagueId]/announcements/[announcementId]/edit` was added when editing an announcement was decided on: the table had shipped with only post and delete, so fixing a typo meant deleting and reposting, which loses the post's place in the list and its date. The address is a verb leaf for §7.5's own reasons — the carrier is a path segment rather than a query string, the nesting is no deeper than `/bid` and `/new`, and both truncations land on a real page (chop `/edit` for the post, chop the post for the list). §7.5's closing rule says no further IA change without a redirect; nothing is public yet, so there was nothing to redirect.
 
+**AMENDED 2026-08-31 — the count is 28.** `/films` and `/leagues/[leagueId]/films` were added, and they are the reason §7.5's closing rule was rewritten the same day: both film pages had shipped as leaves, so chopping the id off either gave a 404, and rule 5 — every truncation lands on a real page — was broken by the map's own route set. Adding the parents is the fix, and it needed no redirect because nothing moved.
+
+Neither is "the catalogue", and the distinction is the whole design. `film_catalog` is a cache of films *someone* picked — `getFilmPage` falls back to a live TMDB read for anything uncatalogued — so listing it would neither be complete nor be the viewer's. Both pages read `films`, actual playings, scoped by RLS: `/films` spans the leagues you belong to, `/leagues/[leagueId]/films` is one league's filmography. A film two of your leagues played is two rows, because the score and the owners differ.
+
+**The child is deliberately broader than the parent.** `/films/[tmdbId]` renders any film TMDB knows, including one a commissioner is only considering; that film is not listed on `/films`, because it has not been played. A parent that had to contain every child would have to be the whole of TMDB, and rule 5 asks that the truncation land somewhere real, not that it enumerate its children.
+
 ---
 
 ## 2. The commissioner tree dissolves completely
@@ -276,4 +282,13 @@ Five rules, and they are why:
 4. **`/` sells; the signed-in front door is a real address.** It is the league list, so it is `/leagues` — naming it `/home` gave the app two homes and invented a word the map does not otherwise use.
 5. **URLs are typed and truncated by people.** Every truncation must land on a real page: chop `/bid` for the week board, the week for the season, the season for your leagues. Lowercase, hyphenated, permanent from launch (NN/g, *URL as UI*).
 
-**This closes the window §7 opened.** From here the map's own rule stands: no further IA change without a redirect.
+**This closes the window §7 opened**, for the shape of the addresses that exist. What it does not close is the SET.
+
+**AMENDED 2026-08-31 — the route set is open; the shape is not.** The closing line used to read "no further IA change without a redirect", and it was being read as "the count is frozen": the 2026-08-30 announcement-edit amendment argued its way past it, and `/films` stayed a 404 for months partly because adding a page felt like amending a settled document. That is not what the rule was for, and the conflation is worth naming.
+
+Two different things:
+
+- **Adding an address is open.** A route earns its place with a reason, and then it must satisfy rules 1–5 above like every other — plural collection, at most two levels, both truncations landing somewhere real. Nothing moves, so nothing is owed. A new page is a product decision, not a constitutional amendment.
+- **Moving or removing an address still owes a redirect**, once anything public points at it. That is the rule §7 opened the window for, and it stands unchanged. §7.6's audit is why the four renames cost nothing: pre-launch, with no crawler, no inbound link and no bookmark, is the one window where a move is free — and it is closing.
+
+So the count is a FACT ABOUT TODAY, not a budget. It is written down because a map should say what it covers, and it is expected to move.

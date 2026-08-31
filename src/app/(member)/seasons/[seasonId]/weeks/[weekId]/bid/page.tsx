@@ -45,7 +45,7 @@ export default async function BidPage({
   if (!board.biddable) redirect(`/seasons/${seasonId}/weeks/${weekId}`);
 
   return (
-    <main className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
+    <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <BidHeader board={board} />
       <WeekStatusBar board={board} />
       <BidForm

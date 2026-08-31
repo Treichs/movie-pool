@@ -59,10 +59,14 @@ before every fullPage capture.
    (refs churn across re-renders) and verify the *effect* — an attribute, the
    text, the URL. Never trust the click. `window.confirm` buttons need
    `browser_handle_dialog`.
-7. **Mobile is skipped by default** (Ruling 78 — Phase 6 is desktop-only). Do
-   the 390x844 pass only when the screen introduces a fixed width, a `min-width`
-   floor, or a desktop-assuming scroll container. Those are layout defects, not
-   review findings.
+7. **Then do it again at 390x844.** Ruling 78 deferred this for the whole of
+   Phase 6 and was lifted 2026-08-31, so the phone pass is no longer conditional
+   — resize, re-navigate, re-screenshot, re-check the console. What to look for
+   that desktop cannot show you: horizontal page scroll
+   (`scrollWidth > clientWidth` on `documentElement` — the page body must never
+   pan, though a table inside its own `overflow-x-auto` may), touch targets
+   under 44px, a control that only had a hover state, and text that overflows
+   rather than wraps. Those are layout defects, reported with the rest.
 
 ## Judging
 

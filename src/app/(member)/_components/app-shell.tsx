@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronDownIcon } from "lucide-react";
 
 import { LeagueMark } from "@/components/league-mark";
+import { SkipLink } from "@/components/skip-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +63,8 @@ export function AppShell({
   return (
     <div className="flex min-h-svh flex-col">
       <header className="sticky top-0 z-40">
+        <SkipLink />
+
         <div className="flex h-14 items-center gap-1 bg-nav px-2 text-nav-foreground md:px-8">
           <MobileDrawer leagues={leagues} focused={focused} pathname={pathname} />
 
@@ -82,15 +85,24 @@ export function AppShell({
 
         {/* THE NAV BAND, desktop only. On a phone these two groups live in the
             drawer, because a dropdown that opens under a thumb is a worse
-            control than a list you can scroll. */}
-        <div className="hidden h-13 items-center gap-1 border-b bg-background px-8 md:flex">
+            control than a list you can scroll.
+
+            IT IS A LANDMARK, and it is the only one the signed-in app has on a
+            desktop: `BottomNav` carries the same `aria-label` but is
+            `md:hidden`, and `display: none` takes an element out of the
+            accessibility tree entirely. So exactly one "Primary" navigation is
+            ever exposed, and which one depends on the viewport. */}
+        <nav
+          aria-label="Primary"
+          className="hidden h-13 items-center gap-1 border-b bg-background px-8 md:flex"
+        >
           <NavItem href="/leagues" label="Home" current={isCurrent(pathname, "/leagues", true)} />
           <NavGroup label="Season" links={season} pathname={pathname} />
           <NavGroup label="League" links={league} pathname={pathname} />
           <div className="ml-auto">
             <LeagueSwitcher leagues={leagues} focused={focused} />
           </div>
-        </div>
+        </nav>
 
         {/* The phone's stand-in for the switcher, which is inside the drawer
             there: without it nothing on screen says which league you are

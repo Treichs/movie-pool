@@ -50,7 +50,7 @@ export default async function LeaguesPage() {
   const home = await getHome({ supabase, user });
 
   return (
-    <main className="mx-auto flex max-w-measure-page flex-col gap-6 px-8 py-8">
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <Greeting name={home.displayName} />
         {/* Hidden in the empty state, which offers the same action with room to

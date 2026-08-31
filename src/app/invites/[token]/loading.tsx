@@ -19,7 +19,7 @@ export default function InviteLoading() {
   return (
     <>
       <PublicHeader signedIn />
-      <main
+      <main id="main" tabIndex={-1}
         aria-busy="true"
         className="flex items-center justify-center px-6 py-20"
       >

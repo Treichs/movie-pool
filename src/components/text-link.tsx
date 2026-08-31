@@ -13,6 +13,13 @@ import { cn } from "@/lib/utils";
  * `size` exists because the surrounding text genuinely differs: inside a
  * `FieldDescription` the link should inherit, and a panel's footer link is
  * deliberately smaller than its body. Nothing else about it varies.
+ *
+ * `micro` ALSO TAKES `tap-target`, and only `micro` does. Every use of it is a
+ * panel's standalone action — "Open", "Edit your profile" — rather than a word
+ * inside a sentence, so it gets none of the spacing a line of prose gives its
+ * neighbours, and 15px is the smallest thing in the app to aim a thumb at. The
+ * other two sizes are inline in text, where WCAG's own inline exception applies
+ * and an expanded hit area would overlap the words either side of it.
  */
 export function TextLink({
   size = "inherit",
@@ -26,7 +33,7 @@ export function TextLink({
       className={cn(
         "text-link underline underline-offset-4",
         size === "ui" && "type-ui text-ui",
-        size === "micro" && "type-micro text-micro",
+        size === "micro" && "type-micro text-micro tap-target",
         className,
       )}
       {...props}

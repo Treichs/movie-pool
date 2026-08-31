@@ -54,7 +54,7 @@ export default async function FilmPage({
   const trailer = trailerEmbedUrl(film.trailer_youtube_key);
 
   return (
-    <main className="flex flex-col gap-6 pb-8">
+    <main id="main" tabIndex={-1} className="flex flex-col gap-6 pb-8">
       <FilmHero film={film} />
 
       <div className="mx-auto flex w-full max-w-measure-page flex-col gap-6 px-8">

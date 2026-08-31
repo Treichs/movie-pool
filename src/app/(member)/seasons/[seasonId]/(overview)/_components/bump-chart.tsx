@@ -30,6 +30,23 @@ import type { TrendSeries } from "@/lib/leaderboard";
  * would sit at the bottom of the chart, which is the opposite of what "leading"
  * looks like. `reversed` fixes it, and the ticks are whole ranks only — there
  * is no 2.5th place.
+ *
+ * ── `title` AND `desc` ARE THE HALF RECHARTS DOES NOT DEFAULT ─────────────
+ * `accessibilityLayer` is already ON — recharts 3 defaults it to `true`, which
+ * is what puts `role="application"` and `tabIndex={0}` on the `<svg>` and moves
+ * the tooltip with the arrow keys. What it cannot supply is what this chart is
+ * OF: an application-role element with no accessible name announces itself as
+ * an unlabelled application and stops there. `Surface` renders these two props
+ * as the SVG's own `<title>` and `<desc>`, which is the native mechanism and
+ * the reason they are not `aria-label` — the name comes from the same element
+ * a sighted user's tooltip does. `desc` carries the keyboard instruction,
+ * because a control that is only navigable by a key nobody was told about is
+ * navigable in theory.
+ *
+ * Motion needs nothing here: `isAnimationActive` defaults to `"auto"`, which
+ * reads `prefers-reduced-motion` in JavaScript. It has to be JavaScript —
+ * react-smooth interpolates inline styles frame by frame, so the media query
+ * in `globals.css` cannot reach it.
  */
 export function BumpChart({
   series,
@@ -66,7 +83,12 @@ export function BumpChart({
 
   return (
     <ChartContainer config={config} className="h-72 w-full">
-      <LineChart data={data} margin={{ left: 4, right: 16, top: 8 }}>
+      <LineChart
+        data={data}
+        margin={{ left: 4, right: 16, top: 8 }}
+        title={`Rank by week for ${series.length} ${series.length === 1 ? "player" : "players"}`}
+        desc={`One line per player, plotting their place in the standings after each of ${scoredWeeks.length} scored weeks. First place is the top of the chart. Press the left and right arrow keys to move week by week.`}
+      >
         <CartesianGrid vertical={false} />
         <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis
