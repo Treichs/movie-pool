@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { emailLinkTarget, landingPathForCurrentUser, safeNextPath } from "@/lib/landing";
 import { SITE_URL, sendEmail } from "@/lib/email";
 import { passwordResetEmail } from "@/lib/email-templates";
+import { clearRecovery, hasRecoveryMark } from "@/lib/recovery";
 
 // WHERE TO GO AFTER AUTHENTICATING. An explicit, validated `next` wins over the
 // ordinary landing rule — it means the visitor asked for a specific page and was
@@ -206,10 +207,19 @@ export async function signInWithGoogle(formData?: FormData): Promise<void> {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  // Signing out lands on the SIGN-IN screen, not the landing page (ADR-435).
-  // The commonest reason to sign out is to sign in as someone else, and `/` is
-  // now a pitch aimed at people who have never played.
-  redirect("/login");
+  // SIGNING OUT LANDS ON `/`, THE LANDING PAGE — reversing ADR-435 on
+  // 2026-08-31 at the developer's decision.
+  //
+  // ADR-435 sent it to `/login` on the reasoning that the commonest reason to
+  // sign out is to sign in as someone else. What that reasoning describes is
+  // development: a commissioner hopping between their own account and a test
+  // one. A player signing out is stating an intention to leave, and answering
+  // that with a login form is a mild nag.
+  //
+  // `/` is also the only page a signed-in member would otherwise never see
+  // again after the day they joined, and it carries the rules link for someone
+  // who has just walked away with a question. Sign-in is one click from it.
+  redirect("/");
 }
 
 // Forgot-password, step one: mail a recovery link. The link lands on
@@ -267,8 +277,24 @@ export async function completePasswordReset(
     };
   }
 
+  // THE GATE IS HERE TOO, not only on the page. The page redirects an ordinary
+  // signed-in visitor to /account, but a redirect is a rendering decision and
+  // this action is a public endpoint a form post can reach directly. The check
+  // that actually protects the write has to sit beside the write.
+  if (!(await hasRecoveryMark())) {
+    return {
+      error:
+        "To set a new password from here, use the link we email you. Signed in already? Change it under Account, which will ask for your current password.",
+    };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message };
+
+  // SPENT. The mark opened this once and must not open it again — otherwise a
+  // single recovery link leaves a fifteen-minute window in which the check
+  // above is off for every subsequent post.
+  await clearRecovery();
 
   // OWASP: "whenever a successful password reset occurs, all other sessions
   // should be invalidated." A reset is the flow people use precisely BECAUSE

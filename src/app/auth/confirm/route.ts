@@ -3,6 +3,7 @@ import { type NextRequest } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { landingPathForCurrentUser, safeNextPath } from "@/lib/landing";
+import { markRecovery } from "@/lib/recovery";
 
 // WHERE EVERY EMAILED AUTH LINK LANDS (?token_hash=…&type=…).
 //
@@ -54,6 +55,13 @@ export async function GET(request: NextRequest) {
       // Without either, verifying signed them in, so this is a landing like any
       // other (ADR-104): an invited player confirming their email arrives at
       // the league that invited them rather than at a signpost.
+      // THE ONE HOP THAT EARNS THE RECOVERY MARK. `/reset-password` sets a new
+      // password without asking for the old one, which is only safe for someone
+      // who proved possession of the mailbox — that is exactly what verifying a
+      // `type=recovery` token above does. Set here rather than at the
+      // destination so nothing else in the app can grant it. See lib/recovery.
+      if (type === "recovery") await markRecovery();
+
       const fallback =
         type === "recovery"
           ? "/reset-password"
