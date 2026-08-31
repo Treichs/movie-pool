@@ -45,13 +45,20 @@ build; redeploying it aliased ~10 minutes of stale code onto `www.moviepool.app`
 
 The same rule holds for GitHub's own deployments API, which is the cheapest way
 to answer "what is live": `gh api repos/Treichs/movie-pool/deployments` returns
-rows for **every** environment, so `.[0]` can be a preview or — while the decoy
-project existed — another project entirely. Always filter:
+rows for **every** environment, so `.[0]` is as often a preview as production.
+Always filter — and match on a PREFIX, never the full string:
 
 ```bash
 gh api repos/Treichs/movie-pool/deployments \
-  --jq '.[] | select(.environment=="Production – movie-pool-app") | {sha: .sha[0:7], created: .created_at}'
+  --jq '.[] | select(.environment | startswith("Production")) | {sha: .sha[0:7], created: .created_at}'
 ```
+
+**The environment name is not stable.** Vercel labelled these
+`Production – movie-pool-app` while two projects were connected to this repo and
+plain `Production` from the moment the second was deleted (2026-08-31, observed
+within the hour). The PR status check renamed itself the same way,
+`Vercel – movie-pool-app` → `Vercel`, which silently matched nothing in a poll
+written against the old name. Prefix-match both.
 
 Production deploys from **`master` of `Treichs/movie-pool`**. Anything whose
 `githubCommitRepo` is `movie_pool_app` is history and must never be promoted.
