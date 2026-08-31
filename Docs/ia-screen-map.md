@@ -2,7 +2,7 @@
 status: canon
 mode: decision-log
 owns: Which routes exist in v2 and which were deleted
-amended: 2026-08-26 — the four API route handlers §1 had omitted are now listed
+amended: 2026-08-30 — two handlers retired; four remain
 supersedes: none
 ---
 
@@ -70,7 +70,7 @@ Everything else, unchanged in address:
 
 ### Route handlers (6) — added 2026-08-26
 
-This section is an **amendment**. Until now this document named two route handlers and stopped there, which was wrong by four. Every one of the six is load-bearing, none is a screen, none appears in any Phase 6 screen task, and a rebuild driven off the page list alone would ship without them. They move across unchanged.
+This section is an **amendment**. Until now this document named two route handlers and stopped there, which was wrong by four. Every one of the four that remain is load-bearing, none is a screen, none appears in any Phase 6 screen task, and a rebuild driven off the page list alone would ship without them. They move across unchanged.
 
 | Handler | What it does | What breaks without it |
 |---|---|---|
@@ -78,14 +78,20 @@ This section is an **amendment**. Until now this document named two route handle
 | `/auth/confirm` | Token-hash exchange | Every signup-confirmation and password-reset link in the mail |
 | `/api/cron/notify` | Scheduled mail — 24h bid warning, week settled, season ends | **All outbound notification email.** The failure is silent: no error, players simply stop being told |
 | `/api/cron/tomatometer` | Polls OMDb for Tomatometer suggestions | The commissioner's score capture loses its suggested value and goes fully manual |
-| `/api/cron/automate` | Week lifecycle automation | Weeks stop advancing on their own |
-| `/api/peep-head` | Avatar composition endpoint | Player avatars |
 
-The three `/api/cron/*` handlers are **Vercel cron targets**, so `vercel.json`'s schedule block is part of the move and is as load-bearing as the routes themselves. They also authenticate with `CRON_SECRET`, which must exist in the new project's environment before the first deploy or every scheduled run returns 401 — again silently.
+The two `/api/cron/*` handlers are **Vercel cron targets**, so `vercel.json`'s schedule block is part of the move and is as load-bearing as the routes themselves. They also authenticate with `CRON_SECRET`, which must exist in the new project's environment before the first deploy or every scheduled run returns 401 — again silently.
 
 **Why they were missed.** This document was produced from a screen inventory, and a route handler is not a screen. The omission is worth naming rather than quietly fixing: the same blind spot would drop them again the next time the route set is re-derived from the design canvas.
 
-**25 page routes** (plus the six route handlers above): the 21 kept above, plus the one new address the split adds (`/leagues/[leagueId]/films/[tmdbId]` — `/films/[tmdbId]` itself is already one of the 21), plus the 3 added routes (`/`, `/login`, `/leagues/[leagueId]/settings`). The merge contributes no new address: `/commish/[seasonId]/payouts` folds into `/seasons/[seasonId]/payouts`, which was already among the 21 kept.
+**25 page routes** (plus the four route handlers above): the 21 kept above, plus the one new address the split adds (`/leagues/[leagueId]/films/[tmdbId]` — `/films/[tmdbId]` itself is already one of the 21), plus the 3 added routes (`/`, `/login`, `/leagues/[leagueId]/settings`). The merge contributes no new address: `/commish/[seasonId]/payouts` folds into `/seasons/[seasonId]/payouts`, which was already among the 21 kept.
+
+**AMENDED 2026-08-30 — the handler count is 4, not 6.** Two were retired the
+same day. `/api/peep-head` composed the Open Peeps avatars and went when avatars
+became derived colour and initials. `/api/cron/automate` was a second door into
+`run_bidding_automation` — the pg_cron job `bidding-automation` calls that
+function directly every minute, so the route was scheduled by nothing and
+duplicated work already being done. Neither had a caller. The remaining four are
+unchanged and still load-bearing.
 
 **AMENDED 2026-08-30 — the count is 26.** `/leagues/[leagueId]/announcements/[announcementId]/edit` was added when editing an announcement was decided on: the table had shipped with only post and delete, so fixing a typo meant deleting and reposting, which loses the post's place in the list and its date. The address is a verb leaf for §7.5's own reasons — the carrier is a path segment rather than a query string, the nesting is no deeper than `/bid` and `/new`, and both truncations land on a real page (chop `/edit` for the post, chop the post for the list). §7.5's closing rule says no further IA change without a redirect; nothing is public yet, so there was nothing to redirect.
 

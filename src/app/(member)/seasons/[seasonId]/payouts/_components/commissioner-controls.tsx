@@ -147,7 +147,8 @@ export function CommissionerControls({
           <div className="flex max-w-measure-default flex-col gap-1">
             <h3>Finalize</h3>
             <p className="type-body text-ui text-muted-foreground">
-              Publishes these payouts to every member.{" "}
+              Publishes these payouts to every member and emails each player
+              their own statement.{" "}
               <span className="font-semibold text-foreground">
                 It cannot be regenerated afterwards.
               </span>
@@ -176,8 +177,8 @@ export function CommissionerControls({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Finalize the payouts?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    They become visible to every member and can no longer be
-                    regenerated.
+                    Every member sees them, each player is emailed their own
+                    statement, and they can no longer be regenerated.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { ok, fail, type ActionResult } from "@/lib/action-result";
 import { SITE_URL, sendEmail } from "@/lib/email";
+import {
+  emailChangeRequestedEmail,
+  passwordChangedEmail,
+} from "@/lib/email-templates";
 import { verifyCurrentPassword } from "@/lib/reauth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -92,8 +96,6 @@ export async function updateEmailPreferences(
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("update_email_preferences", {
-    p_slate_up: on("slate_up"),
-    p_deadline_reminder: on("deadline_reminder"),
     p_bids_revealed: on("bids_revealed"),
     p_results_up: on("results_up"),
   });
@@ -140,17 +142,8 @@ export async function changeEmail(
   // The OLD address is told, which is how the owner finds out if it was not
   // them. Best-effort: the change is already requested, and a mail failure must
   // not be reported as a failed change.
-  await sendEmail(
-    user.email,
-    "Your Movie Pool sign-in email is being changed",
-    `<p>Someone asked to change the sign-in address on your Movie Pool account
-       to <strong>${email}</strong>.</p>
-     <p>It is not changed yet — it takes effect only when the link sent to the
-       new address is opened. Until then this address still signs you in.</p>
-     <p><strong>If this was not you</strong>, change your password now at
-       <a href="${SITE_URL}/forgot-password">${SITE_URL}/forgot-password</a>.</p>`,
-    "transactional"
-  );
+  const changing = emailChangeRequestedEmail({ newEmail: email, siteUrl: SITE_URL });
+  await sendEmail(user.email, changing.subject, changing.html, "transactional");
 
   return ok(
     undefined,
@@ -191,16 +184,8 @@ export async function changePassword(
 
   await supabase.auth.signOut({ scope: "others" });
 
-  await sendEmail(
-    user.email,
-    "Your Movie Pool password was changed",
-    `<p>Your Movie Pool password was just changed, and every other signed-in
-       device was signed out.</p>
-     <p><strong>If this was you, there is nothing to do.</strong></p>
-     <p>If it was not, reset it straight away at
-       <a href="${SITE_URL}/forgot-password">${SITE_URL}/forgot-password</a>.</p>`,
-    "transactional"
-  );
+  const changed = passwordChangedEmail(SITE_URL);
+  await sendEmail(user.email, changed.subject, changed.html, "transactional");
 
   return ok(
     undefined,

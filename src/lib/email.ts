@@ -66,13 +66,41 @@ export function emailSendingEnabled(category: EmailCategory): boolean {
 
 export type SendResult = { ok: boolean; error?: string; suppressed?: boolean };
 
+/**
+ * IDEMPOTENCY, AND WHY IT IS NOT OPTIONAL FOR THE SWEEPS.
+ *
+ * Deduplication used to rest entirely on the ledger: the sweep reads who has
+ * been mailed, sends to everyone else, then records it. Read, send, write —
+ * with no lock across the three. TWO SCHEDULERS CALL THAT SWEEP: vercel.json
+ * daily, and the pg_cron job `notify-sweep` hourly at :05. Vercel Hobby fires
+ * anywhere inside its scheduled HOUR, so the daily run and the 15:05 hourly run
+ * genuinely overlap. Both read an empty set, both send, and the unique index on
+ * (week_id, profile_id, kind) then rejects the second LEDGER ROW — after the
+ * second email has already left.
+ *
+ * Resend closes that from the other side. A repeated request carrying a key it
+ * has seen returns the first request's response without sending again; keys
+ * live 24 hours, which is longer than any gap between the two schedulers.
+ *
+ * THE KEY IS THE LEDGER'S OWN UNIQUE INDEX, spelled in Resend's documented
+ * `<event-type>/<entity-id>` shape. That is deliberate: the two mechanisms then
+ * agree on what "the same email" means by construction rather than by comment.
+ *
+ * A 409 (`invalid_idempotent_request`) means the same key was used with a
+ * DIFFERENT payload — for this app that is a template change mid-run, and it is
+ * reported like any other failure rather than swallowed.
+ */
 export async function sendEmail(
   to: string,
   subject: string,
   html: string,
   // Defaulted so no existing call site had to change. The notify sweeps pass
   // "automatic" explicitly; everything else is one person, one action.
-  category: EmailCategory = "transactional"
+  category: EmailCategory = "transactional",
+  // Omitted where there is no natural key. The account and auth notices are one
+  // message per deliberate human act, and a second act genuinely IS a second
+  // email — giving them a key would suppress the real one.
+  idempotencyKey?: string
 ): Promise<SendResult> {
   // Suppression is NOT a failure and must not be recorded as one — see
   // recordEmail in lib/notifications, which maps `suppressed` to a 'sent'
@@ -91,11 +119,19 @@ export async function sendEmail(
     return { ok: false, error: "RESEND_KEY is not set" };
   }
 
+  // 256 is Resend's documented ceiling. A key built from two uuids and a kind
+  // is ~90 characters, so the guard is a belt rather than a real bound — but a
+  // silently-rejected key would silently restore the double-send.
+  if (idempotencyKey && idempotencyKey.length > 256) {
+    return { ok: false, error: "Idempotency key exceeds 256 characters" };
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.RESEND_KEY}`,
       "Content-Type": "application/json",
+      ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
     },
     body: JSON.stringify({ from: FROM, to: [to], subject, html }),
   });
