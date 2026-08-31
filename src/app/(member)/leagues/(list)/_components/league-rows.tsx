@@ -71,7 +71,16 @@ export function LeagueRows({ leagues }: { leagues: HomeLeague[] }) {
         <Item
           key={league.id}
           variant="outline"
-          render={<Link href={`/leagues/${league.id}`} />}
+          // THE ROW GOES WHERE THE WORK IS. When this league is waiting on your
+          // bid, the door is the bid form; otherwise it is League Home. The
+          // badge and the "you have not bid" line beside it say which, so the
+          // destination is never a surprise.
+          //
+          // Not a second link inside the row: `Item` already renders as one,
+          // and an <a> inside an <a> is invalid HTML that fails hydration.
+          render={
+            <Link href={league.awaitingYourBid && league.bidHref ? league.bidHref : `/leagues/${league.id}`} />
+          }
           className="hover:bg-muted"
         >
           <ItemMedia>
@@ -82,10 +91,19 @@ export function LeagueRows({ leagues }: { leagues: HomeLeague[] }) {
             <ItemDescription>{state(league)}</ItemDescription>
           </ItemContent>
           <ItemActions className="gap-3.5">
+            {/* RED ONLY WHEN IT IS ASKING FOR SOMETHING. `badge.tsx` spends the
+                accent on "the one thing asking to be acted on"; a week you have
+                already bid in is not asking, so it goes quiet and keeps the
+                clock beside it from reading as a debt. */}
             {league.openWeekNumber !== null && (
-              <Badge>
+              <Badge variant={league.awaitingYourBid ? "default" : "outline"}>
                 Week {String(league.openWeekNumber).padStart(2, "0")} open
               </Badge>
+            )}
+            {league.openWeekNumber !== null && (
+              <span className="type-micro text-micro text-muted-foreground">
+                {league.awaitingYourBid ? "You have not bid" : "Your bids are in"}
+              </span>
             )}
             {league.isCommissioner && league.openWeekNumber === null && (
               <span className="type-micro text-micro text-muted-foreground">

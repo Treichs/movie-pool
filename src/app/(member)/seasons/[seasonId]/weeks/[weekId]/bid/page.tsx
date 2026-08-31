@@ -58,6 +58,10 @@ export default async function BidPage({
         // Adding them back would offer a budget the player does not have and
         // green-light a basket the RPC then rejects.
         remaining={board.remaining}
+        // So the form can end WITH the clock. The redirect above only runs on a
+        // fresh render, and the player who matters most is the one already on
+        // this page when the deadline lands.
+        deadline={board.week.bidDeadline}
         films={board.slate.map((film) => ({
           id: film.id,
           title: film.title,
