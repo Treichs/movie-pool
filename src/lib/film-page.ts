@@ -48,6 +48,9 @@ export type FilmDetailPage = {
   director: string | null;
   composer: string | null;
   cinematographer: string | null;
+  /** Every production company TMDB credits, comma-separated. Null on every
+   *  row picked before 2026-08-31 — it fills in lazily. */
+  studios: string | null;
   imdb_rating: number | null;
   imdb_votes: number | null;
   metascore: number | null;
@@ -160,6 +163,7 @@ async function getFilmPageFromTmdb(tmdbId: number): Promise<FilmDetailPage | nul
     director: c.director,
     composer: c.composer,
     cinematographer: c.cinematographer,
+    studios: c.studios,
     // OMDb fields are captured at pick time; an unpicked film has none.
     imdb_rating: null,
     imdb_votes: null,

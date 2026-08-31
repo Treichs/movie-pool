@@ -153,6 +153,7 @@ export type CatalogPayload = {
   director: string | null;
   composer: string | null;
   cinematographer: string | null;
+  studios: string | null;
   tmdb_vote_average: number | null;
   tmdb_vote_count: number | null;
   tmdb_popularity_at_pick: number | null;
@@ -180,6 +181,28 @@ export const RELEASE_TYPE = {
 
 /** How many cast members we keep out of the ~95 TMDB returns. */
 const TOP_BILLED = 5;
+
+/**
+ * EVERY production company TMDB credits, comma-separated, in TMDB's order.
+ *
+ * This took the singular first — `production_companies[0]` — and the data
+ * refused it. The array is not ranked, and sampling six films from this
+ * catalogue put a producer's shingle first on half of them: "Lord Miller"
+ * ahead of Amazon MGM, "Tea Shop Productions" ahead of Blumhouse in fourth.
+ * TMDB exposes no distributor on `/movie` and nothing to rank by, so any
+ * single pick is arbitrary — and one that credits Tea Shop for a Blumhouse
+ * film is worse than no row at all.
+ *
+ * So the fact is "who is credited", which the data supports, rather than
+ * "the studio", which it does not. Null rather than "" when there are none,
+ * so the facts panel omits the row instead of printing an empty one.
+ */
+function allStudios(detail: Json): string | null {
+  const names = asArr(detail.production_companies)
+    .map((c) => (isObj(c) ? asStr(c.name) : null))
+    .filter((n): n is string => n !== null);
+  return names.length > 0 ? names.join(", ") : null;
+}
 
 type UsRelease = { type: number; date: string | null; certification: string | null };
 
@@ -294,6 +317,7 @@ export function parseMovieDetail(json: unknown): CatalogPayload | null {
     director: crewMember(json, "Director"),
     composer: crewMember(json, "Original Music Composer", "Music"),
     cinematographer: crewMember(json, "Director of Photography"),
+    studios: allStudios(json),
     tmdb_vote_average: asNum(json.vote_average),
     tmdb_vote_count: asInt(json.vote_count),
     tmdb_popularity_at_pick: asNum(json.popularity),

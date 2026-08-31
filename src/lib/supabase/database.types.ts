@@ -278,6 +278,7 @@ export type Database = {
           revenue_worldwide: number | null
           rt_tomatometer: number | null
           runtime_min: number | null
+          studios: string | null
           tagline: string | null
           title: string
           tmdb_id: number
@@ -318,6 +319,7 @@ export type Database = {
           revenue_worldwide?: number | null
           rt_tomatometer?: number | null
           runtime_min?: number | null
+          studios?: string | null
           tagline?: string | null
           title: string
           tmdb_id: number
@@ -358,6 +360,7 @@ export type Database = {
           revenue_worldwide?: number | null
           rt_tomatometer?: number | null
           runtime_min?: number | null
+          studios?: string | null
           tagline?: string | null
           title?: string
           tmdb_id?: number
@@ -1801,4 +1804,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 d26d424699f772b0425d351e58ae6a6529a8e0e29d0e8a7dc3cd24b23b135e24
+// @migrations-sha256 639f85e28d02f63e8ed42e6eb6e790628f01175f534e96fe7d0542d9e98c3565

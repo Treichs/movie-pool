@@ -535,6 +535,11 @@ async function ensureCatalogFilm(tmdbId: number): Promise<string> {
     runtime_min: num(d.runtime),
     budget: num(d.budget),
     original_language: str(d.original_language),
+    studios:
+      arr(d.production_companies)
+        .map((c) => str(obj(c).name))
+        .filter((n): n is string => n !== null)
+        .join(", ") || null,
     tmdb_vote_average: num(d.vote_average),
     tmdb_vote_count: num(d.vote_count),
     fetched_at: new Date().toISOString(),

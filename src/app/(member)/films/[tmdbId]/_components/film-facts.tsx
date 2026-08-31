@@ -5,11 +5,13 @@ import { formatDateFull } from "@/lib/format";
 /**
  * THE FACTS PANEL — board 2.2's rail.
  *
- * ── "STUDIO" IS ON THE BOARD AND IS NOT IN THE DATA ──────────────────────
- * `film_catalog` holds no production company and `fetchMovieDetail` does not
- * read one, so the row is absent rather than stubbed. Adding it is a TMDB
- * field plus a column plus a migration — a decision, not an oversight to fix
- * quietly here.
+ * ── "STUDIO" IS REAL AS OF 2026-08-31, AND OFTEN NULL ────────────────────
+ * `film_catalog.studios` is every production company TMDB credits, not one —
+ * the array is not ranked and its first entry is a producer's shingle about
+ * half the time. It is NOT backfilled: the 340 rows picked before that date
+ * carry null and fill in when their film is next picked, so this row is
+ * missing on most older films and that is the design rather than a bug. The
+ * rule below is what makes that safe to ship.
  *
  * ── A ROW WITH NO VALUE IS NOT DRAWN ─────────────────────────────────────
  * An uncatalogued film renders straight from TMDB with every OMDb-sourced
@@ -66,6 +68,18 @@ export function FilmFacts({ film }: { film: FilmDetailPage }) {
           }
         />
         <Fact label="Director" value={film.director} />
+        {/* "Studio" reads wrong over four names and "Studios" reads wrong
+            over one, so the label follows the value. TMDB credits everyone,
+            and this row does not pretend one of them is THE studio — see
+            `allStudios` in lib/tmdb. */}
+        <Fact
+          label={
+            film.studios !== null && film.studios.includes(",")
+              ? "Studios"
+              : "Studio"
+          }
+          value={film.studios}
+        />
         <Fact label="Rated" value={film.certification} />
         <Fact label="Budget" value={money(film.budget)} numeral />
       </dl>

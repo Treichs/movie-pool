@@ -276,4 +276,13 @@ Five rules, and they are why:
 4. **`/` sells; the signed-in front door is a real address.** It is the league list, so it is `/leagues` — naming it `/home` gave the app two homes and invented a word the map does not otherwise use.
 5. **URLs are typed and truncated by people.** Every truncation must land on a real page: chop `/bid` for the week board, the week for the season, the season for your leagues. Lowercase, hyphenated, permanent from launch (NN/g, *URL as UI*).
 
-**This closes the window §7 opened.** From here the map's own rule stands: no further IA change without a redirect.
+**This closes the window §7 opened**, for the shape of the addresses that exist. What it does not close is the SET.
+
+**AMENDED 2026-08-31 — the route set is open; the shape is not.** The closing line used to read "no further IA change without a redirect", and it was being read as "the count is frozen": the 2026-08-30 announcement-edit amendment argued its way past it, and `/films` stayed a 404 for months partly because adding a page felt like amending a settled document. That is not what the rule was for, and the conflation is worth naming.
+
+Two different things:
+
+- **Adding an address is open.** A route earns its place with a reason, and then it must satisfy rules 1–5 above like every other — plural collection, at most two levels, both truncations landing somewhere real. Nothing moves, so nothing is owed. A new page is a product decision, not a constitutional amendment.
+- **Moving or removing an address still owes a redirect**, once anything public points at it. That is the rule §7 opened the window for, and it stands unchanged. §7.6's audit is why the four renames cost nothing: pre-launch, with no crawler, no inbound link and no bookmark, is the one window where a move is free — and it is closing.
+
+So the count is a FACT ABOUT TODAY, not a budget. It is written down because a map should say what it covers, and it is expected to move.
