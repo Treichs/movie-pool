@@ -94,6 +94,9 @@ export type NewLeague = {
   firstOpeningDate: string;
   seasonLength: number;
   inviteEmails: string[];
+  /** Accounts picked by name in the wizard. Invited by id, so their addresses
+   *  are resolved in the database and never travel to the browser. */
+  inviteProfileIds: string[];
 };
 
 /**
@@ -175,6 +178,20 @@ export async function createLeague(
     // the commissioner is the only person who can retry it, and the invited
     // player has no other way of learning the link exists.
     if (!res.ok || !res.outcome?.sent) failedInvites.push(email);
+  }
+  // Picked accounts, by id. The address comes BACK from the RPC, which is the
+  // only place it is known here — so a failure is still named by address even
+  // though one was never sent.
+  for (const profileId of input.inviteProfileIds) {
+    const res = await inviteToLeague(supabase, {
+      leagueId: leagueId as string,
+      leagueName: input.name,
+      invitedBy,
+      profileId,
+    });
+    if (!res.ok || !res.outcome?.sent) {
+      failedInvites.push(res.outcome?.email || "someone you picked");
+    }
   }
 
   revalidateMembershipSurfaces();

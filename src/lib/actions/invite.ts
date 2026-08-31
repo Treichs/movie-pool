@@ -28,6 +28,13 @@ import type { SupabaseClient } from "@/lib/supabase";
  * to one person as the direct result of one commissioner's act, which is the
  * definition the mailer's category split already uses.
  *
+ * ── EITHER AN ADDRESS OR A PICKED ACCOUNT ─────────────────────────────────
+ * `create_league_invite` has always taken both and resolves a `p_profile_id`
+ * to that account's address ITSELF. This passed `null` for it until
+ * 2026-08-31, so the invite picker's whole reason to exist went unused: an
+ * account can now be invited without its address ever reaching the browser.
+ * When both arrive the RPC prefers the id, which is the explicit choice.
+ *
  * ── THE ROW IS THE INVITATION; THE EMAIL IS DELIVERY ──────────────────────
  * A send failure must not fail the invitation. The row exists, it is listed in
  * league settings, and the link can be copied from there — so a bounced address
@@ -43,13 +50,18 @@ export async function inviteToLeague(
     leagueName: string;
     /** Who is asking — shown in the subject line and the first sentence. */
     invitedBy: string;
-    email: string;
+    /** Typed by the commissioner. Omit when `profileId` is given — the RPC
+     *  looks that account's address up rather than trusting one sent from a
+     *  browser, which is what lets the picker show a NAME and never an email. */
+    email?: string;
+    /** A picked account, from the invite picker. */
+    profileId?: string;
   }
 ): Promise<{ ok: boolean; error?: string; outcome?: InviteOutcome }> {
   const { data, error } = await supabase.rpc("create_league_invite", {
     p_league_id: opts.leagueId,
-    p_email: opts.email,
-    p_profile_id: null,
+    p_email: opts.email ?? null,
+    p_profile_id: opts.profileId ?? null,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -75,7 +87,7 @@ export async function inviteToLeague(
   // different email. What the key buys is a double-submitted form: two requests
   // for one invite reach Resend once.
   const result = await sendEmail(
-    row.email ?? opts.email,
+    row.email ?? opts.email ?? "",
     mail.subject,
     mail.html,
     "transactional",
@@ -84,6 +96,6 @@ export async function inviteToLeague(
 
   return {
     ok: true,
-    outcome: { email: row.email ?? opts.email, sent: result.ok },
+    outcome: { email: row.email ?? opts.email ?? "", sent: result.ok },
   };
 }

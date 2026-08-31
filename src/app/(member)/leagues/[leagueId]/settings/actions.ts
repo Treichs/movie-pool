@@ -205,8 +205,14 @@ export async function createInvite(
 ): Promise<ActionResult> {
   const leagueId = String(formData.get("leagueId") ?? "");
   const email = String(formData.get("email") ?? "").trim();
+  // The picker sends one or the other, never both: a chosen account arrives as
+  // an id and its address is looked up in the database, so an email the
+  // commissioner never typed never reaches this browser.
+  const profileId = String(formData.get("profileId") ?? "").trim();
   if (!leagueId) return fail("Which league is this?");
-  if (!email) return fail("An invitation needs an address.", "email");
+  if (!email && !profileId) {
+    return fail("Choose someone, or type an email address.", "email");
+  }
 
   const supabase = await createClient();
 
@@ -224,19 +230,25 @@ export async function createInvite(
     leagueId,
     leagueName: league?.name ?? "a league",
     invitedBy: myProfile?.display_name ?? "A commissioner",
-    email,
+    email: email || undefined,
+    profileId: profileId || undefined,
   });
   if (!res.ok) return fail(res.error ?? "The invitation was not created.");
+
+  // Named from what came BACK, not from what went in: on a picked account the
+  // address was resolved in the database and this is the only place it is
+  // known here. `who` is what the toast says.
+  const who = res.outcome?.email || email || "them";
 
   surfaces(leagueId);
   // The row is the invitation and the email is delivery, so a bounce is said
   // out loud rather than hidden behind a success: the link is still copyable
   // from the list below, and the commissioner is the only one who can pass it on.
   return res.outcome?.sent
-    ? ok(undefined, `Invitation emailed to ${email}.`)
+    ? ok(undefined, `Invitation emailed to ${who}.`)
     : ok(
         undefined,
-        `Invitation created for ${email}, but the email did not send. Copy the link from the list below.`
+        `Invitation created for ${who}, but the email did not send. Copy the link from the list below.`
       );
 }
 

@@ -1517,7 +1517,7 @@ export type Database = {
       run_bidding_automation: { Args: never; Returns: number }
       run_notify_sweep: { Args: never; Returns: undefined }
       search_invitable_profiles: {
-        Args: { p_league_id: string; p_query: string }
+        Args: { p_league_id?: string; p_query?: string }
         Returns: {
           already_member: boolean
           display_name: string
@@ -1801,4 +1801,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 bc91394cef350baf147a769f77e79441d11fa19422f159b5c63da2e2cdc7960f
+// @migrations-sha256 d26d424699f772b0425d351e58ae6a6529a8e0e29d0e8a7dc3cd24b23b135e24

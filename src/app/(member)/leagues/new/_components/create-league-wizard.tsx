@@ -26,6 +26,7 @@ import {
   StepperTitle,
   StepperTrigger,
 } from "@/components/reui/stepper";
+import { InviteePicker } from "@/components/invitee-picker";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,11 +80,19 @@ export function CreateLeagueWizard() {
   const [rules, setRules] = useState<HouseRules>(HOUSE_RULE_DEFAULTS);
   const [dates, setDates] = useState<SeasonDates>(SEASON_DATE_DEFAULTS);
   const [invites, setInvites] = useState("");
+  // People PICKED by name. Kept apart from the pasted addresses because they
+  // travel differently: an account is invited by id so its address is looked
+  // up in the database and never reaches this browser.
+  const [picked, setPicked] = useState<
+    { profileId: string; displayName: string }[]
+  >([]);
+  const pickerId = useId();
 
   const emails = invites
     .split(/[\s,;]+/)
     .map((e) => e.trim())
     .filter(Boolean);
+  const inviteCount = emails.length + picked.length;
 
   const named = name.trim().length > 0;
   const weeks = weeksBetween(dates.firstOpeningDate, dates.lastOpeningDate);
@@ -102,6 +111,7 @@ export function CreateLeagueWizard() {
         firstOpeningDate: dates.firstOpeningDate,
         seasonLength: weeks ?? 1,
         inviteEmails: emails,
+        inviteProfileIds: picked.map((p) => p.profileId),
       });
       if (!result.ok) {
         setError(result.error);
@@ -189,6 +199,61 @@ export function CreateLeagueWizard() {
         <StepperContent value={3}>
           <FieldGroup>
             <h2>Invite people</h2>
+            {/* THE PICKER IS FOR PEOPLE WHO ALREADY PLAY; the box below is for
+                everyone else. Two controls, but they answer different
+                questions — "who do I already know here" and "here is a list of
+                addresses" — rather than making the commissioner declare which
+                kind of person they are about to invite. */}
+            <Field>
+              <FieldLabel htmlFor={pickerId}>Already on The Movie Pool</FieldLabel>
+              <div className="max-w-80">
+                <InviteePicker
+                  id={pickerId}
+                  placeholder="Search by name"
+                  onPick={(invitee) => {
+                    if (invitee.kind === "profile") {
+                      setPicked((current) =>
+                        current.some((p) => p.profileId === invitee.profileId)
+                          ? current
+                          : [...current, invitee],
+                      );
+                    } else {
+                      // Typed an address into the name box. Send it where
+                      // addresses go rather than refusing it.
+                      setInvites((current) =>
+                        current.trim() === ""
+                          ? invitee.email
+                          : `${current.trim()}, ${invitee.email}`,
+                      );
+                    }
+                  }}
+                />
+              </div>
+              {picked.length > 0 && (
+                <ul className="flex flex-wrap gap-2 pt-1">
+                  {picked.map((p) => (
+                    <li key={p.profileId}>
+                      <span className="flex items-center gap-1.5 rounded-4xl border border-edge bg-input/50 py-1 pr-1.5 pl-3">
+                        <span className="type-ui text-micro">{p.displayName}</span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${p.displayName}`}
+                          onClick={() =>
+                            setPicked((current) =>
+                              current.filter((x) => x.profileId !== p.profileId),
+                            )
+                          }
+                          className="rounded-4xl px-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30"
+                        >
+                          <span aria-hidden>×</span>
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Field>
+
             <Field>
               <FieldLabel htmlFor={invitesId}>Email addresses</FieldLabel>
               {/* Separated however the commissioner pastes them — commas,
@@ -202,9 +267,9 @@ export function CreateLeagueWizard() {
                 placeholder="ada@example.com, grace@example.com"
               />
               <FieldDescription>
-                {emails.length === 0
+                {inviteCount === 0
                   ? "Optional — you can invite people later from league settings."
-                  : `${emails.length} address${emails.length === 1 ? "" : "es"}. Each gets its own link.`}
+                  : `${inviteCount} invitation${inviteCount === 1 ? "" : "s"}. Each gets its own link.`}
               </FieldDescription>
             </Field>
           </FieldGroup>

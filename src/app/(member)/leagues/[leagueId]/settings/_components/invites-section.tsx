@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { InviteePicker, type Invitee } from "@/components/invitee-picker";
 import { ok, type ActionResult } from "@/lib/action-result";
 import { relativeDay } from "@/lib/format";
 import type { PendingInvite } from "@/lib/invites";
@@ -93,6 +93,33 @@ function InviteRow({
   );
 }
 
+/** The made choice, standing in for the field until it is sent or cleared.
+ *  A picked ACCOUNT shows its name; a typed address shows the address, because
+ *  that one the commissioner wrote themselves. */
+function ChosenInvitee({
+  invitee,
+  onClear,
+}: {
+  invitee: Invitee;
+  onClear: () => void;
+}) {
+  return (
+    <span className="flex h-9 max-w-80 min-w-0 items-center gap-2 rounded-4xl border border-edge bg-input/50 px-3">
+      <span className="type-ui truncate text-ui">
+        {invitee.kind === "profile" ? invitee.displayName : invitee.email}
+      </span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={`Remove ${invitee.kind === "profile" ? invitee.displayName : invitee.email}`}
+        className="shrink-0 rounded-4xl px-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30"
+      >
+        <span aria-hidden>×</span>
+      </button>
+    </span>
+  );
+}
+
 export function InvitesSection({
   leagueId,
   invites,
@@ -100,8 +127,11 @@ export function InvitesSection({
   leagueId: string;
   invites: PendingInvite[];
 }) {
-  const emailId = useId();
-  const [email, setEmail] = useState("");
+  const pickerId = useId();
+  // What the commissioner has chosen: a real account, or an address they
+  // typed. Held rather than submitted straight away so the field can show the
+  // choice and let them change their mind before pressing Invite.
+  const [chosen, setChosen] = useState<Invitee | null>(null);
   const [state, formAction] = useActionState(createInvite, INITIAL);
 
   // CLEARING THE FIELD IS AN ADJUSTMENT DURING RENDER, NOT AN EFFECT.
@@ -112,7 +142,7 @@ export function InvitesSection({
   const [seen, setSeen] = useState(state);
   if (state !== seen) {
     setSeen(state);
-    if (state.ok && state.notice) setEmail("");
+    if (state.ok && state.notice) setChosen(null);
   }
 
   const last = useRef<ActionResult>(state);
@@ -131,22 +161,42 @@ export function InvitesSection({
 
       <form action={formAction} className="flex flex-col gap-3">
         <input type="hidden" name="leagueId" value={leagueId} />
+        {/* One of the two is submitted, never both. A picked account travels as
+            an id so its address is resolved in the database — the browser is
+            never told what it is. */}
+        <input
+          type="hidden"
+          name="profileId"
+          value={chosen?.kind === "profile" ? chosen.profileId : ""}
+        />
+        <input
+          type="hidden"
+          name="email"
+          value={chosen?.kind === "email" ? chosen.email : ""}
+        />
+
         <Field data-invalid={problem ? true : undefined}>
-          <FieldLabel htmlFor={emailId}>Invite by email</FieldLabel>
+          <FieldLabel htmlFor={pickerId}>Invite someone</FieldLabel>
           <div className="flex flex-wrap items-center gap-2">
-            <Input
-              id={emailId}
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="them@example.com"
-              className="max-w-80"
-            />
-            <SubmitButton pendingLabel="Sending…" disabled={email.trim() === ""}>
+            {chosen ? (
+              <ChosenInvitee invitee={chosen} onClear={() => setChosen(null)} />
+            ) : (
+              <div className="w-full max-w-80">
+                <InviteePicker
+                  id={pickerId}
+                  leagueId={leagueId}
+                  onPick={setChosen}
+                />
+              </div>
+            )}
+            <SubmitButton pendingLabel="Sending…" disabled={chosen === null}>
               Invite
             </SubmitButton>
           </div>
+          <FieldDescription>
+            Search anyone already on The Movie Pool, or type the email address
+            of someone who is not.
+          </FieldDescription>
           {problem && <FieldError>{problem}</FieldError>}
         </Field>
       </form>
