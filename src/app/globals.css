@@ -337,10 +337,55 @@
 @utility type-micro   { font-variation-settings: var(--fvs-micro); text-transform: uppercase; letter-spacing: 0.06em; }
 @utility type-numeral { font-variation-settings: var(--fvs-numeral); font-variant-numeric: tabular-nums; }
 
+/* THE BROWSER'S AUTOFILL PAINT, TAKEN OUT OF THE FIELD.
+ *
+ * Chrome paints an autofilled control with its own opaque background —
+ * `input:-internal-autofill-selected { background-color: light-dark(rgb(232
+ * 240 254), rgb(70 90 126 / .4)) !important }` — and MDN is explicit that
+ * `background-color`, `background-image` and `color` cannot be overridden on
+ * it. Safari and Firefox do the same thing in their own colours.
+ *
+ * ON A PLAIN INPUT THAT IS MERELY OFF-PALETTE. ON A COMPOSED FIELD IT BREAKS
+ * THE FIELD IN HALF, which is what this rule exists for. `ui/input-group`
+ * builds "a button inside a field" out of a bordered, rounded wrapper holding
+ * a `rounded-none` borderless input beside an addon. The browser paints the
+ * INPUT, not the wrapper — so the fill stops dead at the reveal toggle,
+ * leaving an unfilled box around the eye, and its square corners cut across
+ * the wrapper's rounded ones. The field reads as two boxes with a seam.
+ *
+ * `background-clip: text` is the fix rather than the usual
+ * `box-shadow: inset 0 0 0 1000px <colour>`: the shadow needs an OPAQUE
+ * colour to hide what is under it, and this field has none to give — its
+ * background is `--input` at 50%, so the value that matches depends on
+ * whether the field sits on the page or on a card. Clipping the paint to the
+ * glyphs and then filling the glyphs with `-webkit-text-fill-color` (`color`
+ * is locked too) leaves NOTHING painted, so the wrapper's own background and
+ * radius are simply what shows — on any surface, in either theme. It also
+ * keeps `box-shadow` free, which is where Tailwind draws the focus ring.
+ *
+ * Two rules, not one selector list: `:autofill` is the standard spelling and
+ * `:-webkit-autofill` the alias, and a list containing a pseudo-class the
+ * browser does not know is dropped whole.
+ *
+ * The cost is Chrome's tint as a signal that the browser filled the field.
+ * That is deliberate — an autofilled field now looks exactly like a typed
+ * one, which is the trade every design system with a composed field makes.
+ */
 @layer base {
   * { @apply border-border outline-ring/50; }
   body { @apply bg-background text-foreground type-body; }
   h1 { @apply text-h1 type-h1; }
   h2 { @apply text-h2 type-h2; }
   h3 { @apply text-h3 type-h3; }
+
+  input:autofill, textarea:autofill, select:autofill {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: var(--foreground);
+  }
+  input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: var(--foreground);
+  }
 }
