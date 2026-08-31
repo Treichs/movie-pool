@@ -39,8 +39,10 @@ export default async function MemberLayout({
         id: user.id,
         // A profile row is created by a trigger on sign-up, so a missing one is
         // a real anomaly rather than a state to design for — the frame still
-        // has to render, and the email is the honest fallback for a name.
-        name: profile?.display_name ?? user.email ?? "Your account",
+        // has to render. NOT the email: it is an identifier, not a name, and it
+        // was rendering into the account button and its avatar initials, which
+        // then showed one letter of an address instead of a person's initials.
+        name: profile?.display_name ?? "Your account",
         email: user.email ?? "",
       }}
     >

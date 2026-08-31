@@ -82,7 +82,7 @@ export default async function LeaguesPage() {
             <h2>Your leagues</h2>
             <LeagueRows leagues={home.leagues} />
           </section>
-          <SidePanels email={home.email} />
+          <SidePanels email={home.email} hasLeagues={home.leagues.length > 0} />
         </div>
       )}
 
@@ -90,7 +90,7 @@ export default async function LeaguesPage() {
           no leagues there is no left column for them to sit next to. */}
       {home.leagues.length === 0 && (
         <div className="max-w-100">
-          <SidePanels email={home.email} />
+          <SidePanels email={home.email} hasLeagues={home.leagues.length > 0} />
         </div>
       )}
     </main>

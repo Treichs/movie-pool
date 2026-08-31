@@ -137,7 +137,12 @@ export async function getHome(ctx: {
   ]);
 
   return {
-    displayName: profile?.display_name ?? ctx.user.email ?? "there",
+    // NOT THE EMAIL. A missing profile row is an anomaly (a trigger creates one
+    // on sign-up), and the fallback used to be the address — which rendered as
+    // "EVENING, DEV-COMMISH@MOVIEPOOL.LOCAL" in 40px caps, the first thing on
+    // the first screen after signing in. An email is an identifier, not a name;
+    // "there" is a worse greeting and a better one to fail to.
+    displayName: profile?.display_name ?? "there",
     email: ctx.user.email ?? "",
     leagues: [...leagues].sort(byUrgency),
     invites,

@@ -63,7 +63,12 @@ export function BidHeader({ board }: { board: WeekBidBoard }) {
 }
 
 /** `weekOf` is the generated Monday of the Mon–Sun range (ADR-042) and is what
- *  players are shown; the number is the fallback when it is null. */
+ *  players are shown; the number is the fallback when it is null.
+ *
+ *  THE DATE IS LABELLED, because a week has two that matter and they can fall
+ *  in different months. This one is the Monday the week is OF; the season page
+ *  lists the Friday films open on. Unlabelled, "Week 01 · Aug 31" beside
+ *  "Fri, Sep 4" reads as one of the two being wrong. */
 function weekLabel(number: number, weekOf: string | null) {
   const n = `Week ${String(number).padStart(2, "0")}`;
   if (!weekOf) return n;
@@ -72,5 +77,5 @@ function weekLabel(number: number, weekOf: string | null) {
     day: "numeric",
     timeZone: "UTC",
   });
-  return `${n} · ${d}`;
+  return `${n} · week of ${d}`;
 }
