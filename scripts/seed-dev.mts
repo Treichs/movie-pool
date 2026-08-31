@@ -21,9 +21,9 @@
  *     Generate -> Regenerate -> Finalize flow can be driven repeatedly.
  *   - League "Dev Edge Cases" — a FOURTH league that exists only to reach the
  *     week states nothing else does: a TIE at the cut (three distinct amounts,
- *     four owners), a film REMOVED after the close with its refunds, and a
- *     SKIPPED week. Its films carry real TMDB ids, so posters and the
- *     league-scoped film page are live.
+ *     four owners), a film REMOVED after the close with its refunds, a week
+ *     that CLOSED WITH NO BIDS AT ALL, and a SKIPPED week. Its films carry
+ *     real TMDB ids, so posters and the league-scoped film page are live.
  *
  * Run:  npm run seed:dev
  * Env:  NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -883,6 +883,61 @@ async function ensureEdgeAnnouncement(leagueId: string) {
   console.log("  posted the multi-paragraph announcement");
 }
 
+/**
+ * WEEK 2: A REAL SLATE THAT EVERY PLAYER PASSED ON.
+ *
+ * The sixth week state, and the only fixture that reaches it. It is NOT the
+ * skipped week — that one never had a slate; this one had films that really
+ * opened and nobody wanted. Left at `closed` on purpose: that is the state the
+ * commissioner's one-press "Finish the week" quick action appears in, and a
+ * fixture that pressed it would put the button out of reach.
+ *
+ * `lastFriday(1)` is at least 7 days back whatever day the seed runs, so
+ * ADR-080's results gate is already open and the button is live on arrival.
+ *
+ * Split out for the same reason as `ensureEdgeAnnouncement` — it has to be
+ * able to run on a league that ALREADY EXISTS, which the seeder otherwise
+ * skips whole. On those it first moves the skipped week out a weekend, since
+ * this week needs the slot the results gate can see.
+ */
+async function ensureUnbidWeek(seasonId: string, commish: SupabaseClient) {
+  const { data } = await admin
+    .from("weeks")
+    .select("id, number, status")
+    .eq("season_id", seasonId);
+  const weeks = data ?? [];
+  if (weeks.some((w) => w.number === 3)) return;
+
+  const skipped = weeks.find((w) => w.status === "skipped");
+  if (skipped) {
+    // Re-dated BEFORE the insert below, so neither the number nor the Friday
+    // is ever held by two weeks at once.
+    const { error } = await admin
+      .from("weeks")
+      .update({ number: 3, opening_date: lastFriday(0) })
+      .eq("id", skipped.id);
+    if (error) throw new Error(`move skipped week: ${error.message}`);
+    console.log("  moved the skipped week to week 3 to make room");
+  }
+
+  const weekId = await rpc<string>(commish, "create_week", {
+    p_season_id: seasonId,
+    p_number: 2,
+    p_opening_date: lastFriday(1),
+    p_bid_deadline: null,
+  });
+  for (const title of ["Winter Ledger", "The Fourth Wall"]) {
+    await rpc(commish, "add_film", {
+      p_week_id: weekId,
+      p_title: title,
+      p_imdb_id: null,
+    });
+  }
+  await rpc(commish, "open_week", { p_week_id: weekId });
+  await rpc(commish, "close_week", { p_week_id: weekId });
+  console.log("  week 2 CLOSED WITH NO BIDS (awaiting the commissioner's one press)");
+}
+
 async function seedEdgeCases() {
   const { data: existing } = await admin
     .from("leagues")
@@ -891,11 +946,21 @@ async function seedEdgeCases() {
     .maybeSingle();
   if (existing) {
     await ensureEdgeAnnouncement(existing.id);
+    const { data: season } = await admin
+      .from("seasons")
+      .select("id")
+      .eq("league_id", existing.id)
+      .maybeSingle();
+    if (season) {
+      await ensureUnbidWeek(season.id, await signIn("dev-commish@moviepool.local"));
+    }
     console.log(`  "${EDGE_NAME}" already seeded — skipping`);
     return;
   }
 
-  console.log(`\nSeeding "${EDGE_NAME}" (tie, removal, skipped week)…`);
+  console.log(
+    `\nSeeding "${EDGE_NAME}" (tie, removal, a week nobody bid in, skipped week)…`,
+  );
 
   const c: Record<string, SupabaseClient> = {
     commish: await signIn("dev-commish@moviepool.local"),
@@ -980,17 +1045,20 @@ async function seedEdgeCases() {
   await rpc(c.commish, "finalize_week", { p_week_id: weekId });
   console.log("  week 1 final — Motor City ties at $9 (4 owners), Passenger removed");
 
-  // ---- week 2: skipped -----------------------------------------------------
+  // ---- week 2: films opened, and nobody bid on any of them ------------------
+  await ensureUnbidWeek(seasonId, c.commish);
+
+  // ---- week 3: skipped -----------------------------------------------------
   const skippedId = await rpc<string>(c.commish, "create_week", {
     p_season_id: seasonId,
-    p_number: 2,
-    p_opening_date: lastFriday(1),
+    p_number: 3,
+    p_opening_date: lastFriday(0),
     p_bid_deadline: null,
   });
   // `skip_week` refuses a week that has opened or still carries a slate, so it
   // is called on the draft the line above just made.
   await rpc(c.commish, "skip_week", { p_week_id: skippedId });
-  console.log("  week 2 SKIPPED (no releases)");
+  console.log("  week 3 SKIPPED (no releases)");
 
   await ensureEdgeAnnouncement(leagueId);
 }
