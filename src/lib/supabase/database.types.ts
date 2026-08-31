@@ -1204,10 +1204,6 @@ export type Database = {
         Args: { p_invite_id?: string; p_token?: string }
         Returns: string
       }
-      add_film: {
-        Args: { p_imdb_id?: string; p_title: string; p_week_id: string }
-        Returns: string
-      }
       add_films_from_catalog: {
         Args: {
           p_allow_create_week?: boolean
@@ -1812,4 +1808,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 0ac8f3282c9ee5e690d82c563c5e84413d3289baf323a138c8d365daafadf126
+// @migrations-sha256 06315fe1eecca3d987bf0ed86706a71d8212f491d27458b03ce534e9cb668d7f

@@ -27,7 +27,9 @@
  *
  * Run:  npm run seed:dev
  * Env:  NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
- *       SUPABASE_SECRET_KEY (.env.local)
+ *       SUPABASE_SECRET_KEY (.env.local). TMDB_READ_TOKEN too on a database
+ *       whose film_catalog has not cached the fixture films yet — every
+ *       fixture film is a REAL film, referenced by tmdb id.
  *
  * Dev-only convenience accounts on a throwaway database — do not reuse
  * this password pattern for anything real.
@@ -49,6 +51,8 @@ if (!url || !publishableKey || !secretKey) {
 
 export const DEV_PASSWORD = "dev-Passw0rd!";
 const LEAGUE_NAME = "Dev League";
+/** Week 1's slate — the two films the bidding UI is developed against. */
+const DEV_LEAGUE_FILMS = [931285, 1171145] as const;
 // SEASON_NAME is gone with ADR-099 — a season has no name of its own to give.
 // "Dev League" identifies the fixture; its one season is found by league_id.
 const USERS = [
@@ -301,11 +305,11 @@ async function main() {
     week = data;
     console.log("  created week 1 (open)");
 
-    const { error: fErr } = await admin.from("films").insert([
-      { week_id: week!.id, title: "Dev Film Alpha" },
-      { week_id: week!.id, title: "Dev Film Beta" },
-    ]);
-    if (fErr) throw new Error(`films: ${fErr.message}`);
+    // "Dev Film Alpha"/"Beta" until 2026-08-31. A film needs a catalog row now,
+    // and a made-up title has none — so the bidding fixture bids on real films.
+    for (const tmdbId of DEV_LEAGUE_FILMS) {
+      await addCatalogFilm(week!.id, tmdbId);
+    }
     console.log("  created 2 films");
   } else {
     // Re-seeding is idempotent for the week's existence, but NOT for its
@@ -363,8 +367,16 @@ const CLUB_USERS = [
 // Bidders are keyed by short name; scores follow box × tomatometer/100.
 // Designed so the five players end with DIFFERENT points vs efficiency
 // ranks (commish: points #3, efficiency #2 — the dual-rank tiles matter).
+// A FIXTURE FILM IS A REAL MOVIE PLUS INVENTED MONEY. `tmdbId` names an actual
+// TMDB title, so the poster, the film page and the cross-league identity all
+// work; `box` and `tomato` are the fixture's own numbers, written to the
+// per-league `films` row by capture_film and never to the shared catalog.
+//
+// The titles used to live here as invented strings ("Neon Harvest"). They are
+// gone: the title now comes from the catalog, so the fixture cannot assert a
+// name the film page disagrees with.
 type ClubFilm = {
-  title: string;
+  tmdbId: number;
   box: number;
   tomato: number;
   bids: Record<string, number>;
@@ -372,41 +384,41 @@ type ClubFilm = {
 const CLUB_WEEKS: { films: ClubFilm[] }[] = [
   {
     films: [
-      { title: "Neon Harvest", box: 64.2, tomato: 91,
+      { tmdbId: 1339713, box: 64.2, tomato: 91,
         bids: { grace: 18, commish: 12, hana: 8, frank: 5 } },
-      { title: "Grave Shift", box: 28.5, tomato: 44,
+      { tmdbId: 1083381, box: 28.5, tomato: 44,
         bids: { frank: 10, player: 6 } },
-      { title: "Paper Lanterns", box: 9.8, tomato: 96,
+      { tmdbId: 1212461, box: 9.8, tomato: 96,
         bids: { player: 4, hana: 3 } },
     ],
   },
   {
     films: [
-      { title: "Iron Cascade 2", box: 88.7, tomato: 58,
+      { tmdbId: 1084244, box: 88.7, tomato: 58,
         bids: { frank: 22, grace: 15, player: 10, commish: 9 } },
-      { title: "The Quiet Hour", box: 12.3, tomato: 88,
+      { tmdbId: 1290821, box: 12.3, tomato: 88,
         bids: { commish: 6, hana: 5 } },
-      { title: "Bad Directions", box: 22.1, tomato: 35,
+      { tmdbId: 1273221, box: 22.1, tomato: 35,
         bids: { hana: 2 } },
     ],
   },
   {
     films: [
-      { title: "Starlight Motel", box: 41.6, tomato: 79,
+      { tmdbId: 1275779, box: 41.6, tomato: 79,
         bids: { player: 14, grace: 11, commish: 7 } },
-      { title: "Depth Charge", box: 55.0, tomato: 62,
+      { tmdbId: 1127384, box: 55.0, tomato: 62,
         bids: { frank: 16, hana: 12, grace: 9 } },
-      { title: "The Last Matinee", box: 6.4, tomato: 93,
+      { tmdbId: 1327819, box: 6.4, tomato: 93,
         bids: { commish: 3 } },
     ],
   },
 ];
 // Week 4 stays OPEN: others have bid (the who's-in signal), dev-commish and
 // dev-player have NOT — the dashboard's action-needed state.
-const OPEN_WEEK_FILMS: { title: string; bids: Record<string, number> }[] = [
-  { title: "Crimson Tide Rising", bids: { frank: 20, hana: 10 } },
-  { title: "Whisper Network", bids: { grace: 7 } },
-  { title: "Moon Garden", bids: {} },
+const OPEN_WEEK_FILMS: { tmdbId: number; bids: Record<string, number> }[] = [
+  { tmdbId: 1081003, bids: { frank: 20, hana: 10 } },
+  { tmdbId: 1122573, bids: { grace: 7 } },
+  { tmdbId: 1301421, bids: {} },
 ];
 
 async function signIn(mail: string): Promise<SupabaseClient> {
@@ -429,6 +441,131 @@ async function rpc<T = unknown>(
   const { data, error } = await client.rpc(fn, args);
   if (error) throw new Error(`${fn}: ${error.message}`);
   return data as T;
+}
+
+// ---------------------------------------------------------------------------
+// THE CATALOG PATH (2026-08-31)
+//
+// Every fixture film carries a `tmdb_id`, and that column references
+// film_catalog — so a fixture film cannot exist without a catalog row. The
+// fixtures used to hand-type a title through `add_film` (dropped in
+// 20260831180000) and leave the link empty, which produced films with no
+// poster, no cross-league identity and NO FILM PAGE AT ALL — both film routes
+// are addressed by tmdb id, so an unlinked film is unreachable. `add_film` is
+// gone; this is what replaces it.
+//
+// ONLY REAL TMDB DATA IS WRITTEN TO film_catalog. That table is a SHARED
+// cache — the replica league's film pages read the same rows — so the
+// fixtures' invented box office and Tomatometers stay where they belong, on
+// the per-league `films` row that `capture_film` writes. It is the same
+// distinction the old header drew when it refused to invent Tomatometers.
+//
+// The fetch is here rather than imported because `src/lib/tmdb.ts` opens with
+// `import "server-only"` and resolves through the `@/` alias, neither of which
+// survives a plain `node scripts/*.mts`. This is the field set the fixtures
+// need and no more.
+// ---------------------------------------------------------------------------
+
+const TMDB_TOKEN = process.env.TMDB_READ_TOKEN;
+
+type Rec = Record<string, unknown>;
+
+/** The catalog row for `tmdbId`, fetched once if this database has not cached
+ *  it yet. Returns the real title, which is what the fixture film is called —
+ *  a fixture that named its films itself would be asserting a title the
+ *  catalog disagrees with. */
+async function ensureCatalogFilm(tmdbId: number): Promise<string> {
+  const { data: cached } = await admin
+    .from("film_catalog")
+    .select("title")
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle();
+  if (cached) return cached.title;
+
+  if (!TMDB_TOKEN) {
+    throw new Error(
+      `film_catalog has no row for tmdb ${tmdbId} and TMDB_READ_TOKEN is not set. ` +
+        `Add it to .env.local — the fixtures cannot create a film without a catalog row.`,
+    );
+  }
+
+  const res = await fetch(
+    `https://api.themoviedb.org/3/movie/${tmdbId}?append_to_response=release_dates`,
+    { headers: { Authorization: `Bearer ${TMDB_TOKEN}`, accept: "application/json" } },
+  );
+  if (!res.ok) {
+    throw new Error(`TMDB ${tmdbId}: ${res.status} ${await res.text()}`);
+  }
+  // Narrowed, never asserted — external JSON is the one place a cast is
+  // genuinely dangerous, which is the rule `src/lib/tmdb.ts` states at length.
+  const obj = (v: unknown): Rec => (typeof v === "object" && v !== null ? (v as Rec) : {});
+  const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+  const str = (v: unknown): string | null =>
+    typeof v === "string" && v.trim() !== "" ? v : null;
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+  const iso = (v: unknown): string | null =>
+    typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null;
+
+  const d = obj(await res.json());
+  const title = str(d.title);
+  if (!title) throw new Error(`TMDB ${tmdbId}: no title in the response`);
+
+  // US wide is release type 3 — the only type the pool bids on, and the same
+  // rule `src/lib/tmdb.ts` documents at length.
+  const us = obj(arr(obj(d.release_dates).results).find(
+    (r) => str(obj(r).iso_3166_1) === "US",
+  ));
+  const wide = obj(arr(us.release_dates).find((r) => num(obj(r).type) === 3));
+
+  const { error } = await admin.from("film_catalog").insert({
+    tmdb_id: tmdbId,
+    imdb_id: str(d.imdb_id),
+    title,
+    original_title: str(d.original_title),
+    release_date_us_wide: iso(wide.release_date),
+    // `release_year` is GENERATED from the dates above — writing it is rejected.
+    release_date_tmdb_raw: iso(d.release_date),
+    poster_path: str(d.poster_path),
+    backdrop_path: str(d.backdrop_path),
+    overview: str(d.overview),
+    tagline: str(d.tagline),
+    homepage: str(d.homepage),
+    certification: str(wide.certification),
+    runtime_min: num(d.runtime),
+    budget: num(d.budget),
+    original_language: str(d.original_language),
+    tmdb_vote_average: num(d.vote_average),
+    tmdb_vote_count: num(d.vote_count),
+    fetched_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(`film_catalog ${tmdbId}: ${error.message}`);
+  console.log(`  cached film_catalog ${tmdbId} — ${title}`);
+  return title;
+}
+
+/**
+ * Put a catalog film on a specific week's slate.
+ *
+ * A DIRECT INSERT, not an RPC, and that is the one place these fixtures leave
+ * the real path. The product's only film-creation path is
+ * `add_films_from_catalog`, which DERIVES its weeks from release dates; these
+ * fixtures lay out an explicit calendar of past Fridays that no real release
+ * schedule would produce. The service-role insert is the same posture the Dev
+ * League week already uses for its own films.
+ */
+async function addCatalogFilm(
+  weekId: string,
+  tmdbId: number,
+): Promise<{ id: string; title: string }> {
+  const title = await ensureCatalogFilm(tmdbId);
+  const { data, error } = await admin
+    .from("films")
+    .insert({ week_id: weekId, title, tmdb_id: tmdbId, eligible: true })
+    .select("id")
+    .single();
+  if (error) throw new Error(`film ${title}: ${error.message}`);
+  return { id: data.id, title };
 }
 
 // The most recent Friday strictly before today anchors the past weeks; the
@@ -525,25 +662,21 @@ async function seedFilmClub(ids: Record<string, string>) {
       p_opening_date: dates.past[i],
       p_bid_deadline: null,
     });
-    const filmIds: Record<string, string> = {};
+    const filmIds: Record<number, string> = {};
     for (const f of week.films) {
-      filmIds[f.title] = await rpc<string>(c.frank, "add_film", {
-        p_week_id: weekId,
-        p_title: f.title,
-        p_imdb_id: null,
-      });
+      filmIds[f.tmdbId] = (await addCatalogFilm(weekId, f.tmdbId)).id;
     }
     await rpc(c.frank, "open_week", { p_week_id: weekId });
     for (const f of week.films) {
       for (const [who, amount] of Object.entries(f.bids)) {
-        await rpc(c[who], "place_bid", { p_film_id: filmIds[f.title], p_amount: amount });
+        await rpc(c[who], "place_bid", { p_film_id: filmIds[f.tmdbId], p_amount: amount });
       }
     }
     // ADR-070: close decides winners; finalize_week ends the week afterwards.
     await rpc(c.frank, "close_week", { p_week_id: weekId });
     for (const f of week.films) {
       await rpc(c.frank, "capture_film", {
-        p_film_id: filmIds[f.title],
+        p_film_id: filmIds[f.tmdbId],
         p_box_office_m: f.box,
         p_tomatometer: f.tomato,
       });
@@ -558,18 +691,14 @@ async function seedFilmClub(ids: Record<string, string>) {
     p_opening_date: dates.next,
     p_bid_deadline: dates.deadline,
   });
-  const openFilmIds: Record<string, string> = {};
+  const openFilmIds: Record<number, string> = {};
   for (const f of OPEN_WEEK_FILMS) {
-    openFilmIds[f.title] = await rpc<string>(c.frank, "add_film", {
-      p_week_id: openWeekId,
-      p_title: f.title,
-      p_imdb_id: null,
-    });
+    openFilmIds[f.tmdbId] = (await addCatalogFilm(openWeekId, f.tmdbId)).id;
   }
   await rpc(c.frank, "open_week", { p_week_id: openWeekId });
   for (const f of OPEN_WEEK_FILMS) {
     for (const [who, amount] of Object.entries(f.bids)) {
-      await rpc(c[who], "place_bid", { p_film_id: openFilmIds[f.title], p_amount: amount });
+      await rpc(c[who], "place_bid", { p_film_id: openFilmIds[f.tmdbId], p_amount: amount });
     }
   }
   console.log(
@@ -601,35 +730,36 @@ async function seedFilmClub(ids: Record<string, string>) {
 const CREDITS_NAME = "Dev Closing Credits";
 
 // Bids are keyed by the short names in `c` below. Winners are the top 3
-// DISTINCT amounts, so some bids here deliberately lose (frank's $4 on Comet
-// Season, hana's $7 on Last Call) — a finished season should contain losses.
+// DISTINCT amounts, so some bids here deliberately lose (frank's $4 on the
+// first film, hana's $7 on the seventh) — a finished season should contain
+// losses.
 const CREDITS_WEEKS: { films: ClubFilm[] }[] = [
   {
     films: [
       // commish wins this at $5 -> 63.00/$5 = 12.6 pts/$, the season's best
       // single pick, so the efficiency prize lands on a NON-winner.
-      { title: "Comet Season", box: 70.0, tomato: 90,
+      { tmdbId: 687163, box: 70.0, tomato: 90,
         bids: { player: 15, grace: 10, hana: 10, commish: 5, frank: 4 } },
-      { title: "Night Shift", box: 20.0, tomato: 50,
+      { tmdbId: 1284465, box: 20.0, tomato: 50,
         bids: { frank: 8, commish: 3 } },
-      { title: "Tiny Gem", box: 5.0, tomato: 95,
+      { tmdbId: 1564614, box: 5.0, tomato: 95,
         bids: { grace: 1, player: 1 } },
     ],
   },
   {
     films: [
-      { title: "Iron Sky", box: 90.0, tomato: 60,
+      { tmdbId: 454639, box: 90.0, tomato: 60,
         bids: { hana: 20, player: 12, frank: 12, grace: 5 } },
-      { title: "The Quiet Room", box: 8.0, tomato: 85,
+      { tmdbId: 1297842, box: 8.0, tomato: 85,
         bids: { commish: 2 } },
     ],
   },
   {
     films: [
-      { title: "Last Call", box: 35.0, tomato: 75,
+      { tmdbId: 1280738, box: 35.0, tomato: 75,
         bids: { player: 10, grace: 9, commish: 8, hana: 7 } },
       // 3.0 box x 15% = 0.45 — the season's worst owned film -> frank's dessert.
-      { title: "Flop House", box: 3.0, tomato: 15,
+      { tmdbId: 1325734, box: 3.0, tomato: 15,
         bids: { frank: 6 } },
     ],
   },
@@ -722,24 +852,20 @@ async function seedClosingCredits() {
       p_opening_date: opening,
       p_bid_deadline: null,
     });
-    const filmIds: Record<string, string> = {};
+    const filmIds: Record<number, string> = {};
     for (const f of week.films) {
-      filmIds[f.title] = await rpc<string>(c.commish, "add_film", {
-        p_week_id: weekId,
-        p_title: f.title,
-        p_imdb_id: null,
-      });
+      filmIds[f.tmdbId] = (await addCatalogFilm(weekId, f.tmdbId)).id;
     }
     await rpc(c.commish, "open_week", { p_week_id: weekId });
     for (const f of week.films) {
       for (const [who, amount] of Object.entries(f.bids)) {
-        await rpc(c[who], "place_bid", { p_film_id: filmIds[f.title], p_amount: amount });
+        await rpc(c[who], "place_bid", { p_film_id: filmIds[f.tmdbId], p_amount: amount });
       }
     }
     await rpc(c.commish, "close_week", { p_week_id: weekId });
     for (const f of week.films) {
       await rpc(c.commish, "capture_film", {
-        p_film_id: filmIds[f.title],
+        p_film_id: filmIds[f.tmdbId],
         p_box_office_m: f.box,
         p_tomatometer: f.tomato,
       });
@@ -778,14 +904,13 @@ async function seedClosingCredits() {
 //   week 1  FINAL, and carries two of the three:
 //             · a TIE at the cut — three distinct amounts, four owners
 //             · a film REMOVED after the close, with its refunds
-//   week 2  SKIPPED
+//   week 2  CLOSED WITH NO BIDS — a real slate every player passed on
+//   week 3  SKIPPED
 //
 // FILMS CARRY REAL TMDB IDS, so the poster, the artwork and the link to
-// `/leagues/[id]/films/[tmdbId]` are all live. `add_film` has no tmdb_id
-// parameter — it takes a title and an imdb id — so the id is written after the
-// fact with the admin client, which is the same thing the Dev League week does
-// a hundred lines above. All three films are already in `film_catalog`, so
-// nothing here fetches TMDB or invents artwork.
+// `/leagues/[id]/films/[tmdbId]` are all live. Every fixture in this file does
+// now — a film cannot be created without one — but this is where it started, and
+// `addCatalogFilm` is the one path.
 //
 // WHAT THIS FIXTURE STILL CANNOT REACH: the OMDb half of a film page
 // (Tomatometer, Metacritic, IMDb). Those columns are written at PICK time by
@@ -799,9 +924,15 @@ async function seedClosingCredits() {
 
 const EDGE_NAME = "Dev Edge Cases";
 
+/** The two films of the week nobody bid in. Named so the console line and the
+ *  fixture agree without either repeating a title the catalog owns. */
+const UNBID_FILMS = [1292415, 1198994] as const;
+/** The tie at the cut, and the film pulled after the close. Referenced by id
+ *  rather than title for the same reason. */
+const EDGE_TIE = 87513;
+const EDGE_REMOVED = 1368314;
+
 type EdgeFilm = ClubFilm & {
-  /** Already in `film_catalog`, so artwork resolves with no API call. */
-  tmdbId: number;
   /** Set to remove the film after the close, with this as the reason. */
   removeBecause?: string;
 };
@@ -813,7 +944,6 @@ const EDGE_FILMS: EdgeFilm[] = [
     // bid 9, so FOUR players own it and all four earn the full score. That is
     // the sentence the reveal has to be able to say. dev-commish bids under
     // the cut on purpose, so the fixture also holds a visible loss.
-    title: "Motor City",
     tmdbId: 87513,
     box: 24.6,
     tomato: 62,
@@ -822,7 +952,6 @@ const EDGE_FILMS: EdgeFilm[] = [
   {
     // dev-commish OWNS this one, so the your-week panel and the owned row's
     // ink border have something to render.
-    title: "Desert Warrior",
     tmdbId: 898704,
     box: 41.0,
     tomato: 78,
@@ -831,7 +960,6 @@ const EDGE_FILMS: EdgeFilm[] = [
   {
     // REMOVED after bidding closed. Both bids are refunded in full, it scores
     // for nobody, and the correction says so.
-    title: "Passenger",
     tmdbId: 1368314,
     box: 0,
     tomato: 0,
@@ -926,12 +1054,8 @@ async function ensureUnbidWeek(seasonId: string, commish: SupabaseClient) {
     p_opening_date: lastFriday(1),
     p_bid_deadline: null,
   });
-  for (const title of ["Winter Ledger", "The Fourth Wall"]) {
-    await rpc(commish, "add_film", {
-      p_week_id: weekId,
-      p_title: title,
-      p_imdb_id: null,
-    });
+  for (const tmdbId of UNBID_FILMS) {
+    await addCatalogFilm(weekId, tmdbId);
   }
   await rpc(commish, "open_week", { p_week_id: weekId });
   await rpc(commish, "close_week", { p_week_id: weekId });
@@ -1001,25 +1125,19 @@ async function seedEdgeCases() {
     p_bid_deadline: null,
   });
 
-  const filmIds: Record<string, string> = {};
+  const filmIds: Record<number, string> = {};
+  const titles: Record<number, string> = {};
   for (const f of EDGE_FILMS) {
-    filmIds[f.title] = await rpc<string>(c.commish, "add_film", {
-      p_week_id: weekId,
-      p_title: f.title,
-      p_imdb_id: null,
-    });
-    const { error } = await admin
-      .from("films")
-      .update({ tmdb_id: f.tmdbId })
-      .eq("id", filmIds[f.title]);
-    if (error) throw new Error(`tmdb_id on ${f.title}: ${error.message}`);
+    const added = await addCatalogFilm(weekId, f.tmdbId);
+    filmIds[f.tmdbId] = added.id;
+    titles[f.tmdbId] = added.title;
   }
 
   await rpc(c.commish, "open_week", { p_week_id: weekId });
   for (const f of EDGE_FILMS) {
     for (const [who, amount] of Object.entries(f.bids)) {
       await rpc(c[who], "place_bid", {
-        p_film_id: filmIds[f.title],
+        p_film_id: filmIds[f.tmdbId],
         p_amount: amount,
       });
     }
@@ -1031,19 +1149,22 @@ async function seedEdgeCases() {
   for (const f of EDGE_FILMS) {
     if (f.removeBecause) {
       await rpc(c.commish, "remove_film", {
-        p_film_id: filmIds[f.title],
+        p_film_id: filmIds[f.tmdbId],
         p_reason: f.removeBecause,
       });
       continue;
     }
     await rpc(c.commish, "capture_film", {
-      p_film_id: filmIds[f.title],
+      p_film_id: filmIds[f.tmdbId],
       p_box_office_m: f.box,
       p_tomatometer: f.tomato,
     });
   }
   await rpc(c.commish, "finalize_week", { p_week_id: weekId });
-  console.log("  week 1 final — Motor City ties at $9 (4 owners), Passenger removed");
+  console.log(
+    `  week 1 final — ${titles[EDGE_TIE]} ties at $9 (4 owners), ` +
+      `${titles[EDGE_REMOVED]} removed`,
+  );
 
   // ---- week 2: films opened, and nobody bid on any of them ------------------
   await ensureUnbidWeek(seasonId, c.commish);
