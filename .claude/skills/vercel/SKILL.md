@@ -14,19 +14,22 @@ it ships MCP tools (deployments, logs, projects, protection) and a `vercel-cli`
 skill that is documentation. Neither can read or write environment variables.
 Only the CLI can.
 
-## There are TWO Vercel projects and only one is real
+## The project is `movie-pool-app`, and the name is a trap
 
-| project | what it is |
-| --- | --- |
-| `movie-pool-app` | **the live one.** Serves `https://www.moviepool.app`. |
-| `movie-pool` | an empty decoy created 2026-08-30 by a careless `vercel link`. |
+It serves `https://www.moviepool.app`. The repo is `Treichs/movie-pool` and the
+project is `movie-pool-app` — **they do not match, and reaching for the repo's
+name is how the accident below happens.**
 
 **`vercel link --yes --project <name>` CREATES the project when the name does
-not exist.** It does not fail, it does not warn, and the next `env ls` then
-truthfully reports "No Environment Variables found" for a project that has never
-served anything. That reads exactly like "production has no env vars", which is
-the wrong conclusion and the expensive one. Verify with `vercel project ls`
-first — the real project is the row with a Latest Production URL.
+not exist.** It does not fail and it does not warn. On 2026-08-30 a
+`--project movie-pool` created an empty second project; the next `env ls` then
+truthfully reported "No Environment Variables found" — which reads exactly like
+"production has no env vars", the wrong conclusion and the expensive one. The
+decoy also built on every pull request and sorted ABOVE the real project in the
+deployments API. It was deleted 2026-08-31.
+
+**Run `vercel project ls` before linking.** The real project is the row with a
+Latest Production URL.
 
 ## `vercel ls --prod` will roll production back if you trust it
 
@@ -40,8 +43,40 @@ build; redeploying it aliased ~10 minutes of stale code onto `www.moviepool.app`
 `list_deployments` (it returns `meta.githubCommitSha`, `githubCommitRef`,
 `githubCommitRepo` and `created`) and match the SHA you intend to ship.
 
+The same rule holds for GitHub's own deployments API, which is the cheapest way
+to answer "what is live": `gh api repos/Treichs/movie-pool/deployments` returns
+rows for **every** environment, so `.[0]` can be a preview or — while the decoy
+project existed — another project entirely. Always filter:
+
+```bash
+gh api repos/Treichs/movie-pool/deployments \
+  --jq '.[] | select(.environment=="Production – movie-pool-app") | {sha: .sha[0:7], created: .created_at}'
+```
+
 Production deploys from **`master` of `Treichs/movie-pool`**. Anything whose
 `githubCommitRepo` is `movie_pool_app` is history and must never be promoted.
+
+## One branch per change, cut off master
+
+Merges here are **squash** merges, so master gets one new commit whose SHA the
+branch has never seen. A branch kept alive across several of those diverges
+from master *textually* while holding nothing master lacks — and then every new
+PR from it conflicts, and its three-dot diff overstates wildly (52 files for a
+5-file change, on 2026-08-31).
+
+`frontend/rebuild-ground` lived through three squash merges before it was
+deleted. **Do not resurrect a long-lived branch.** Cut a new one off master per
+change and let the merge delete it:
+
+```bash
+git fetch origin && git checkout -b fix/<thing> origin/master
+gh pr merge <n> --squash --delete-branch
+```
+
+If a branch has already diverged this way, the fix is a fresh branch off master
+with the wanted commits cherry-picked — **not** a force-push. Check first that
+nothing is lost: an empty `git diff origin/master origin/<branch>` means the
+trees are identical and the branch is safe to delete.
 
 ## Environment variables do not reach a running deployment
 
