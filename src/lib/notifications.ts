@@ -90,7 +90,44 @@ export async function getClosedWeeks(
     .select("id, season_id, number, season:v_seasons(name)")
     .eq("status", "closed")
     .gte("opening_date", openedOnOrAfter);
-  return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
+  const weeks = ((data ?? []) as unknown as WeekRow[]).map(toWeek);
+  if (weeks.length === 0) return weeks;
+
+  // A WEEK NOBODY BID IN HAS NOTHING TO REVEAL, so nobody is told it does.
+  //
+  // `revealEmail` says "the sealed sheet is open… who bid what, who owns each
+  // film, and who missed by a dollar". On a week the whole league passed on,
+  // every one of those clauses is false — and the recipients are precisely the
+  // people who know it, because they are the ones who did not bid. Mailing it
+  // is how a real notification learns to be ignored.
+  //
+  // The scores email is a separate sweep and has the same hole by construction:
+  // a week with no owners cannot reach `final` with anything to report. It is
+  // filtered the same way, in `getScoredWeeks`.
+  return withOwners(admin, weeks);
+}
+
+/** Keeps only the weeks that produced at least one owning bid. One query for
+ *  the whole batch — a sweep runs over every league at once, so this must not
+ *  become a read per week. */
+async function withOwners(
+  admin: SupabaseClient,
+  weeks: NotifiableWeek[]
+): Promise<NotifiableWeek[]> {
+  const { data } = await admin
+    .from("bids")
+    .select("film:films!inner(week_id)")
+    .eq("is_winning", true)
+    .in(
+      "film.week_id",
+      weeks.map((w) => w.id)
+    );
+  const owned = new Set(
+    ((data ?? []) as unknown as { film: { week_id: string } | null }[])
+      .map((r) => r.film?.week_id)
+      .filter((id): id is string => id !== undefined)
+  );
+  return weeks.filter((w) => owned.has(w.id));
 }
 
 /**
@@ -108,7 +145,11 @@ export async function getScoredWeeks(
     .select("id, season_id, number, season:v_seasons(name)")
     .eq("status", "final")
     .gte("opening_date", openedOnOrAfter);
-  return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
+  const weeks = ((data ?? []) as unknown as WeekRow[]).map(toWeek);
+  if (weeks.length === 0) return weeks;
+  // Same filter as the reveal: "the scores are in" is not worth an email about
+  // a week where nobody owned anything to score. See `withOwners`.
+  return withOwners(admin, weeks);
 }
 
 /**

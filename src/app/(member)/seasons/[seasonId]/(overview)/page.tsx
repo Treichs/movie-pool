@@ -123,6 +123,7 @@ export default async function SeasonPage({
             seasonId={seasonId}
             weeks={home.hub.weeks}
             myFilms={home.hub.myFilms}
+            unbidWeekIds={home.hub.unbidWeekIds}
           />
         }
         leaderboard={<LeaderboardTab data={home.leaderboard} />}

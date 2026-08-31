@@ -51,6 +51,16 @@ export type WeekBoardView = {
   scoredAt: string | null;
   /** How many people bid at more than $0 anywhere in the week. */
   bidderCount: number;
+  /** How many owning bids the week produced, across every film still on the
+   *  slate. Zero on a SETTLED week is its own state — films opened, everybody
+   *  passed, nothing can score — and `weekStatusDisplay` names it rather than
+   *  letting the page claim "bids settled" over a board of dashes.
+   *
+   *  Derived from `is_winning` rather than from `bidderCount`, because the two
+   *  can disagree: a real bid on a film later ruled ineligible is a bidder who
+   *  owns nothing. What the page is about to say concerns OWNERSHIP, so it is
+   *  ownership that has to be counted. */
+  ownerCount: number;
   /** `season_settings.top_n_distinct` — how many DISTINCT amounts take a film.
    *  Read off a film's own detail rather than fetched again: `getWeekBoard`
    *  already resolved the season's settings to build it. */
@@ -138,6 +148,13 @@ export async function getWeekBoardView(
     removed,
     scoredAt: captured.at(-1) ?? null,
     bidderCount: bidders.size,
+    // Removed films excluded: their bids were refunded and they score for
+    // nobody, so a week whose only owners were on a pulled film is a week with
+    // no owners left — which is what the reader is looking at.
+    ownerCount: sheet.reduce(
+      (n, film) => n + film.rows.filter((r) => r.isWinning).length,
+      0
+    ),
     topNDistinct:
       board.slate[0]?.detail.topNDistinct ??
       board.removed[0]?.detail.topNDistinct ??

@@ -25,6 +25,12 @@ const STATUS: Record<Week["status"], { label: string; open?: boolean }> = {
   skipped: { label: "Skipped" },
 };
 
+/** A settled week nobody bid in. NOT "Skipped" — a skipped week never had a
+ *  slate, this one had films that opened and were passed over — and not "Bids
+ *  in, owners settling", which is false twice. Same words the week board and
+ *  `weekStatusDisplay` use, so the two surfaces agree. */
+const NOBODY_BID = "Nobody bid";
+
 /**
  * WEEKS — the tab that leads, because it is the only one with a deadline in it.
  *
@@ -41,10 +47,12 @@ export function WeeksTab({
   seasonId,
   weeks,
   myFilms,
+  unbidWeekIds,
 }: {
   seasonId: string;
   weeks: Week[];
   myFilms: HubFilm[];
+  unbidWeekIds: Set<string>;
 }) {
   const mine = new Map<number, number>();
   for (const film of myFilms) {
@@ -57,6 +65,7 @@ export function WeeksTab({
     <ItemGroup className="gap-2.5">
       {weeks.map((week) => {
         const status = STATUS[week.status];
+        const label = unbidWeekIds.has(week.id) ? NOBODY_BID : status.label;
         const score = mine.get(week.number);
         // A DRAFT WEEK IS NOT A DESTINATION. It has no slate and no bids, and
         // linking to one lands on a page with nothing on it.
@@ -84,7 +93,7 @@ export function WeeksTab({
               <ItemTitle className="type-h3 text-h3">
                 {formatDate(week.opening_date)}
               </ItemTitle>
-              <ItemDescription>{status.label}</ItemDescription>
+              <ItemDescription>{label}</ItemDescription>
             </ItemContent>
             <ItemActions className="gap-4">
               {status.open && <Badge>Open</Badge>}
