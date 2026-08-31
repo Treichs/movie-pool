@@ -16,8 +16,15 @@ import type { WeekStatus } from "@/lib/commish";
 // inlining a label, because a five-way naming rule spread across six files is
 // exactly how buildRank drifted.
 //
-// PURE — no React, no Supabase, no clock. Unit-tested in
-// scripts/unit/week-status.test.mts.
+// PURE — no React, no Supabase, no clock, so it is the easiest module here to
+// test and the most worth testing: a wrong label is not a crash, it is a page
+// telling a player something untrue.
+//
+// It claimed to be "unit-tested in scripts/unit/week-status.test.mts" until
+// 2026-08-31. That file has never existed and this repo has no test runner —
+// the claim was checked when a sixth state was added and nothing ran. Left
+// stated plainly rather than quietly deleted, because the mapping deserves the
+// test the comment imagined.
 
 /** The Badge `tone` values this module hands out (a subset of the tone axis). */
 export type WeekStatusTone = "neutral" | "success" | "warning" | "accent";
@@ -111,11 +118,40 @@ const CLOSING: WeekStatusDisplay = {
  * here: this module is pure and unit-tested, and a `new Date()` inside it would
  * make it neither. Callers that have no deadline to compare simply omit it.
  */
+/**
+ * A CLOSED WEEK NOBODY BID IN — the sixth state, added 2026-08-31.
+ *
+ * It is NOT a skipped week and must never borrow that word. A skipped week
+ * never had a slate; this one had films, they opened, they were there to be
+ * bid on, and every player passed. That is a result, and a league will argue
+ * about it — so the app says what happened rather than tidying it away.
+ *
+ * It is not `closed` either, whose three sentences are all false here: nothing
+ * settled, no owner was set, no bid was paid, and no points are pending because
+ * nobody can earn any. Reusing that copy is what made the board claim "bids
+ * settled" over two films with a dash in every column.
+ *
+ * `live: false` — nothing is owed by a player. What the COMMISSIONER still
+ * owes is one press to finish it, which the week board offers directly; there
+ * is nothing to capture, because a score nobody owns changes nothing.
+ */
+const NO_OWNERS: WeekStatusDisplay = {
+  label: "nobody bid",
+  tone: "neutral",
+  blurb:
+    "The films opened and every player passed. Nobody owns anything this week, so there is nothing to score.",
+  live: false,
+};
+
 export function weekStatusDisplay(
   status: WeekStatus,
   deadlinePassed = false,
+  /** True when a settled week ended with no winning bids at all. Only ever
+   *  meaningful for `closed` and `final`; ignored elsewhere. */
+  noOwners = false,
 ): WeekStatusDisplay {
   if (status === "open" && deadlinePassed) return CLOSING;
+  if (noOwners && (status === "closed" || status === "final")) return NO_OWNERS;
   return DISPLAY[status];
 }
 

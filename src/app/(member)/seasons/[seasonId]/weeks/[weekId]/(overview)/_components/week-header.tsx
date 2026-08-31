@@ -29,7 +29,9 @@ import type { WeekBoardView } from "@/lib/week-board-view";
  */
 export function WeekHeader({ view }: { view: WeekBoardView }) {
   const { week, season, league, status, biddable, sheet, removed } = view;
-  const display = weekStatusDisplay(status, status === "open" && !biddable);
+  const settled = status === "closed" || status === "final";
+  const noOwners = settled && view.ownerCount === 0;
+  const display = weekStatusDisplay(status, status === "open" && !biddable, noOwners);
 
   const films = sheet.length + removed.length;
   // TENSE, NOT DECORATION. A pending week has not opened yet and a skipped one
@@ -47,9 +49,14 @@ export function WeekHeader({ view }: { view: WeekBoardView }) {
     opening,
     view.scoredAt ? `scored ${formatDate(view.scoredAt.slice(0, 10))}` : null,
     `${numberWord(films)} film${films === 1 ? "" : "s"}`,
+    // THE ABSENCE IS SAID OUT LOUD ON A SETTLED WEEK. The bidder clause used to
+    // drop silently at zero, so the one fact worth reporting — that the whole
+    // league passed — was the only one the line never carried.
     view.bidderCount > 0
       ? `${numberWord(view.bidderCount)} bidder${view.bidderCount === 1 ? "" : "s"}`
-      : null,
+      : settled
+        ? "no bids"
+        : null,
   ].filter((p): p is string => p !== null);
 
   return (

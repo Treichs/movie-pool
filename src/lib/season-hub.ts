@@ -84,6 +84,15 @@ export type SeasonHub = {
   minBid: number;
   remaining: number | null;
   weeks: Week[];
+  /** Ids of SETTLED weeks that produced no owning bid — films opened and the
+   *  whole league passed. Its own state (see `weekStatusDisplay`), and the week
+   *  list has to know so it stops labelling those rows "Bids in, owners
+   *  settling", which is false twice over.
+   *
+   *  Derived from `revealed`, which this composer already holds: no extra
+   *  round trip, and it cannot disagree with the reveal on the week board
+   *  because it counts the same `is_winning` flags. */
+  unbidWeekIds: Set<string>;
   /** The EARLIEST still-open week. "Current week" means this, app-wide. */
   openWeek: Week | null;
   /** The open week's films, with my bid on each already attached. */
@@ -305,6 +314,18 @@ export async function getSeasonHub(
     minBid: config?.min_bid ?? 1,
     remaining,
     weeks,
+    unbidWeekIds: (() => {
+      const weekByFilm = new Map(films.map((f) => [f.id, f.weekId]));
+      const owned = new Set(
+        revealed.filter((b) => b.is_winning).map((b) => weekByFilm.get(b.film_id))
+      );
+      return new Set(
+        weeks
+          .filter((w) => w.status === "closed" || w.status === "final")
+          .filter((w) => !owned.has(w.id))
+          .map((w) => w.id)
+      );
+    })(),
     openWeek,
     slate: openWeek ? withBids.filter((f) => f.weekId === openWeek.id) : [],
     myFilms: withBids
