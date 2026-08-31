@@ -54,9 +54,7 @@ export type HouseRulesRow = {
   bids_due_tz: string;
   league_type: string;
   default_season_length: number;
-  include_limited_releases: boolean;
   side_bets_enabled: boolean;
-  box_office_days: number[];
 };
 
 export type LeagueSettingsPage = {
@@ -96,7 +94,11 @@ export async function getLeagueSettingsPage(
     supabase
       .from("league_settings")
       .select(
-        "fake_bankroll, top_n_distinct, min_bid, buy_in, payout_structure, bids_due_dow, bids_due_time, bids_due_tz, league_type, default_season_length, include_limited_releases, side_bets_enabled, box_office_days"
+        // `include_limited_releases` and `box_office_days` came off this list on
+        // 2026-08-31, ahead of the Phase 2 migration that drops the columns.
+        // Code stops reading them first, then the schema loses them — the same
+        // order Phase 1 used in reverse, and the reason this is two deploys.
+        "fake_bankroll, top_n_distinct, min_bid, buy_in, payout_structure, bids_due_dow, bids_due_time, bids_due_tz, league_type, default_season_length, side_bets_enabled"
       )
       .eq("league_id", leagueId)
       .maybeSingle(),

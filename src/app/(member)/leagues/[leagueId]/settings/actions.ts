@@ -24,8 +24,8 @@ import { createClient } from "@/lib/supabase/server";
  * from the one that counts.
  *
  * ── THE HOUSE-RULES WRITE REPLACES THE WHOLE ROW ───────────────────────
- * `update_league_settings` takes all fourteen columns, so the three fields the
- * board edits are sent alongside the eleven the page never showed. Reading
+ * `update_league_settings` replaces every column it takes, so the two fields
+ * the board edits are sent alongside the ten the page never showed. Reading
  * them on the server and posting them back is what stops a form that edits a
  * bankroll from silently resetting a payout structure to a default.
  *
@@ -83,17 +83,18 @@ export async function updateHouseRules(
     return fail("A season needs at least one winning tier.", "topNDistinct");
   }
 
-  // The twelve fields this form does not show, carried through the browser and
+  // The ten fields this form does not show, carried through the browser and
   // posted back. They came off the server on the same render, so they are the
   // row as it stood when the form was drawn.
   //
-  // `include_limited_releases` JOINED THEM on 2026-08-31, when its switch was
-  // removed for controlling nothing (see house-rules-section). It is carried
-  // rather than defaulted on purpose: the RPC replaces the whole row and its
-  // parameter defaults to false, so omitting it would silently rewrite the
-  // stored value of every league whose commissioner had ever turned it on.
-  // Nothing reads the column, so that would break nothing — and it would still
-  // be this form quietly editing a field it no longer shows.
+  // `include_limited_releases` and `box_office_days` are NO LONGER AMONG THEM.
+  // They were carried for one commit, after the limited-releases switch came
+  // off; both columns are dropped by the Phase 2 migration that follows this
+  // deploy, so the code stops naming them FIRST. Passing them here would break
+  // the moment the columns went, and omitting them is safe today because both
+  // RPC parameters carry defaults — this call resolves against the current
+  // fourteen-parameter function and against the twelve-parameter one that
+  // replaces it. That overlap is what makes the two deploys independent.
   let row: HouseRulesRow;
   try {
     row = JSON.parse(rest) as HouseRulesRow;
@@ -106,7 +107,6 @@ export async function updateHouseRules(
     p_league_id: leagueId,
     p_fake_bankroll: bankroll,
     p_top_n_distinct: tiers,
-    p_include_limited_releases: row.include_limited_releases,
     p_min_bid: row.min_bid,
     p_buy_in: row.buy_in,
     // The generated RPC type wants `Json`; the row carries it opaque because
@@ -118,7 +118,6 @@ export async function updateHouseRules(
     p_league_type: row.league_type,
     p_default_season_length: row.default_season_length,
     p_side_bets_enabled: row.side_bets_enabled,
-    p_box_office_days: row.box_office_days,
   });
   if (error) return fail(error.message);
 
