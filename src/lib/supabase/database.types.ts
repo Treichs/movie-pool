@@ -638,13 +638,11 @@ export type Database = {
           bids_due_dow: number
           bids_due_time: string
           bids_due_tz: string
-          box_office_days: number[]
           buy_in: number
           created_at: string
           default_season_length: number
           fake_bankroll: number
           id: string
-          include_limited_releases: boolean
           league_id: string
           league_type: string
           min_bid: number
@@ -656,13 +654,11 @@ export type Database = {
           bids_due_dow?: number
           bids_due_time?: string
           bids_due_tz?: string
-          box_office_days?: number[]
           buy_in?: number
           created_at?: string
           default_season_length?: number
           fake_bankroll?: number
           id?: string
-          include_limited_releases?: boolean
           league_id: string
           league_type?: string
           min_bid?: number
@@ -674,13 +670,11 @@ export type Database = {
           bids_due_dow?: number
           bids_due_time?: string
           bids_due_tz?: string
-          box_office_days?: number[]
           buy_in?: number
           created_at?: string
           default_season_length?: number
           fake_bankroll?: number
           id?: string
-          include_limited_releases?: boolean
           league_id?: string
           league_type?: string
           min_bid?: number
@@ -808,12 +802,10 @@ export type Database = {
           bids_due_dow: number
           bids_due_time: string
           bids_due_tz: string
-          box_office_days: number[]
           buy_in: number
           created_at: string
           default_season_length: number
           fake_bankroll: number
-          include_limited_releases: boolean
           league_type: string
           min_bid: number
           payout_structure: Json
@@ -825,12 +817,10 @@ export type Database = {
           bids_due_dow?: number
           bids_due_time?: string
           bids_due_tz?: string
-          box_office_days?: number[]
           buy_in?: number
           created_at?: string
           default_season_length?: number
           fake_bankroll?: number
-          include_limited_releases?: boolean
           league_type?: string
           min_bid?: number
           payout_structure?: Json
@@ -842,12 +832,10 @@ export type Database = {
           bids_due_dow?: number
           bids_due_time?: string
           bids_due_tz?: string
-          box_office_days?: number[]
           buy_in?: number
           created_at?: string
           default_season_length?: number
           fake_bankroll?: number
-          include_limited_releases?: boolean
           league_type?: string
           min_bid?: number
           payout_structure?: Json
@@ -1061,7 +1049,6 @@ export type Database = {
         Row: {
           bid_deadline: string | null
           bid_deadline_override: string | null
-          bids_open_at: string | null
           calendar_week_id: number | null
           created_at: string
           id: string
@@ -1074,7 +1061,6 @@ export type Database = {
         Insert: {
           bid_deadline?: string | null
           bid_deadline_override?: string | null
-          bids_open_at?: string | null
           calendar_week_id?: number | null
           created_at?: string
           id?: string
@@ -1087,7 +1073,6 @@ export type Database = {
         Update: {
           bid_deadline?: string | null
           bid_deadline_override?: string | null
-          bids_open_at?: string | null
           calendar_week_id?: number | null
           created_at?: string
           id?: string
@@ -1580,13 +1565,11 @@ export type Database = {
           bids_due_dow: number
           bids_due_time: string
           bids_due_tz: string
-          box_office_days: number[]
           buy_in: number
           created_at: string
           default_season_length: number
           fake_bankroll: number
           id: string
-          include_limited_releases: boolean
           league_id: string
           league_type: string
           min_bid: number
@@ -1636,11 +1619,9 @@ export type Database = {
           p_bids_due_dow: number
           p_bids_due_time: string
           p_bids_due_tz: string
-          p_box_office_days?: number[]
           p_buy_in: number
           p_default_season_length?: number
           p_fake_bankroll: number
-          p_include_limited_releases?: boolean
           p_league_id: string
           p_league_type?: string
           p_min_bid: number
@@ -1656,11 +1637,9 @@ export type Database = {
           p_bids_due_dow: number
           p_bids_due_time: string
           p_bids_due_tz: string
-          p_box_office_days?: number[]
           p_buy_in: number
           p_default_season_length?: number
           p_fake_bankroll: number
-          p_include_limited_releases?: boolean
           p_league_type?: string
           p_min_bid: number
           p_payout_structure: Json
@@ -1684,10 +1663,6 @@ export type Database = {
           p_week_id: string
         }
         Returns: undefined
-      }
-      week_bids_open_at: {
-        Args: { p_opening_date: string; p_tz: string }
-        Returns: string
       }
       week_of: { Args: { p_date: string }; Returns: string }
     }
@@ -1837,4 +1812,4 @@ export const Constants = {
   },
 } as const
 
-// @migrations-sha256 ebfab409218f877c9aa21a1278c2b6ea4f84b68aeeb8cf42a39ec860b900e475
+// @migrations-sha256 ee5eea682a354402279932b675ba6824e7a15e5743d99c550170af4cdf815907
