@@ -194,7 +194,13 @@ export function BidForm({
             Bid on as many films as you like. Leave one blank to pass on it.
           </FieldDescription>
           <FieldGroup>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5">
+            {/* THE SUMMARY BAR IS STICKY AND OVERLAYS THIS GRID, so the grid
+                has to reserve room for it. Without this padding a short slate
+                on a 900px viewport put the bar straight across the poster row
+                and pushed the inputs — the only reason the page exists — under
+                it and below the fold. The reserve is the bar's height plus its
+                `bottom-4` offset. */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5 pb-28">
               {films.map((film) => (
                 <FilmBidField
                   key={film.id}

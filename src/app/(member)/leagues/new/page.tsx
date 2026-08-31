@@ -54,8 +54,8 @@ export default async function NewLeaguePage() {
       <div className="flex flex-col gap-1.5">
         <h1>Start a league</h1>
         <p className="text-muted-foreground">
-          You will be its commissioner. Everything here can be changed later
-          except the name.
+          You will be its commissioner. Everything here can be changed later in
+          league settings.
         </p>
       </div>
 

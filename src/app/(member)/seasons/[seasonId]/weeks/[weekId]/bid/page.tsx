@@ -8,6 +8,8 @@ import { BidHeader } from "./_components/bid-header";
 import { CommissionerStrip } from "./_components/commissioner-strip";
 import { WeekStatusBar } from "./_components/week-status-bar";
 
+export const metadata = { title: "Place your bids" };
+
 /**
  * THE BID PAGE — the open week, and the only place bidding happens (ADR-108).
  *
@@ -46,7 +48,6 @@ export default async function BidPage({
     <main className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <BidHeader board={board} />
       <WeekStatusBar board={board} />
-      {ctx.role === "commissioner" && <CommissionerStrip board={board} />}
       <BidForm
         seasonId={seasonId}
         weekId={weekId}
@@ -68,6 +69,12 @@ export default async function BidPage({
           tmdbId: film.tmdbId,
         }))}
       />
+      {/* AFTER THE SLATE, deliberately. Closing bidding is irreversible and
+          league-wide; the player's own bidding is the reason this page exists.
+          Placing the consequential control above the routine one is NN/g's
+          documented proximity mistake — users slip into automaticity, and the
+          remedy is spatial separation rather than a heavier dialog. */}
+      {ctx.role === "commissioner" && <CommissionerStrip board={board} />}
     </main>
   );
 }

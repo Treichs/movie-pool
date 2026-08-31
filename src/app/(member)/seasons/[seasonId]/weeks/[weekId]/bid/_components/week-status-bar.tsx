@@ -33,15 +33,27 @@ export function WeekStatusBar({ board }: { board: WeekBidBoard }) {
             hero figure on a surface — here that is the COUNTDOWN, not the
             bankroll. Applied to this tile it made the money shout louder than
             the clock it sits beside. */}
+        {/* NAMED, because the sticky summary below carries a second "$X of $Y"
+            about THIS WEEK'S BASKET. Two unlabelled pairs of the same shape,
+            counting opposite things, were being read against each other. */}
+        <span className="type-eyebrow text-eyebrow text-muted-foreground">Bankroll left</span>
         <span className="type-numeral text-numeral">${remaining}</span>
         <span className="type-eyebrow text-eyebrow text-muted-foreground">
-          {bankroll === null ? "Still free" : `Of $${bankroll}`}
+          {bankroll === null ? "Still free" : `of $${bankroll} for the season`}
         </span>
       </div>
     </Card>
   );
 }
 
+/** THE TIMEZONE IS NAMED, and midnight is never written as 12:00 AM.
+ *
+ *  GOV.UK's style guide is explicit about both: "midnight is the first minute
+ *  of the day, not the last", so a deadline written `Monday, Aug 31, 12:49 AM`
+ *  is read as the end of Monday about as often as the start of it. Spelling the
+ *  zone out removes the second ambiguity — a blind bid closes at one instant
+ *  for everyone, and a player in another zone has no way to infer whose clock
+ *  this is. */
 function formatDeadline(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
     weekday: "long",
@@ -49,5 +61,6 @@ function formatDeadline(iso: string) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "short",
   });
 }

@@ -124,7 +124,9 @@ export function CreateLeagueWizard() {
             key={label}
             step={i + 1}
             // NOTHING PAST THE NAME UNTIL THERE IS A NAME. It is the only value
-            // with no default and the only one that cannot be changed later.
+            // with no default. It IS renameable afterwards — league settings
+            // carries `update_league_identity` — and the copy said the opposite
+            // in two places until 2026-08-30.
             disabled={i > 0 && !named}
             className="relative items-start not-last:flex-1"
           >
@@ -162,8 +164,8 @@ export function CreateLeagueWizard() {
                 required
               />
               <FieldDescription>
-                What everyone will call it. This is the one thing you cannot
-                change later.
+                What everyone will call it. You can rename it later in league
+                settings.
               </FieldDescription>
             </Field>
           </FieldGroup>
