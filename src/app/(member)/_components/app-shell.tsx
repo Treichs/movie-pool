@@ -21,6 +21,7 @@ import { LeagueSwitcher } from "./league-switcher";
 import { MobileDrawer } from "./mobile-drawer";
 import { isCurrent, leagueLinks, seasonLinks, type NavLink } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
+import { SearchCommand } from "./search-command";
 
 /**
  * THE SIGNED-IN FRAME — two bands, and the split between them is the point.
@@ -73,6 +74,7 @@ export function AppShell({
           </Link>
 
           <div className="ml-auto flex items-center gap-1">
+            <SearchCommand />
             <NotificationBell alerts={alerts} />
             <AccountMenu name={profile.name} email={profile.email} profileId={profile.id} />
           </div>
