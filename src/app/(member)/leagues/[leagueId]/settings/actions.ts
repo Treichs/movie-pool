@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { inviteToLeague } from "@/lib/actions/invite";
+import { getLeague } from "@/lib/league";
 import type { HouseRulesRow } from "@/lib/league-settings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -201,15 +203,35 @@ export async function createInvite(
   if (!email) return fail("An invitation needs an address.", "email");
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("create_league_invite", {
-    p_league_id: leagueId,
-    p_email: email,
-    p_profile_id: null,
+
+  const [league, { data: me }] = await Promise.all([
+    getLeague(supabase, leagueId),
+    supabase.auth.getUser(),
+  ]);
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", me.user?.id ?? "")
+    .maybeSingle();
+
+  const res = await inviteToLeague(supabase, {
+    leagueId,
+    leagueName: league?.name ?? "a league",
+    invitedBy: myProfile?.display_name ?? "A commissioner",
+    email,
   });
-  if (error) return fail(error.message);
+  if (!res.ok) return fail(res.error ?? "The invitation was not created.");
 
   surfaces(leagueId);
-  return ok(undefined, `Invitation created for ${email}.`);
+  // The row is the invitation and the email is delivery, so a bounce is said
+  // out loud rather than hidden behind a success: the link is still copyable
+  // from the list below, and the commissioner is the only one who can pass it on.
+  return res.outcome?.sent
+    ? ok(undefined, `Invitation emailed to ${email}.`)
+    : ok(
+        undefined,
+        `Invitation created for ${email}, but the email did not send. Copy the link from the list below.`
+      );
 }
 
 export async function revokeInvite(

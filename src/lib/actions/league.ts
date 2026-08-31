@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { ok, fail, type ActionResult } from "@/lib/action-result";
+import { inviteToLeague } from "@/lib/actions/invite";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -152,13 +153,28 @@ export async function createLeague(
     );
   }
 
+  // The inviter's own name goes in the subject line, so it is read once rather
+  // than per address.
+  const { data: me } = await supabase.auth.getUser();
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", me.user?.id ?? "")
+    .maybeSingle();
+  const invitedBy = myProfile?.display_name ?? "A commissioner";
+
   const failedInvites: string[] = [];
   for (const email of input.inviteEmails) {
-    const { error } = await supabase.rpc("create_league_invite", {
-      p_league_id: leagueId as string,
-      p_email: email,
+    const res = await inviteToLeague(supabase, {
+      leagueId: leagueId as string,
+      leagueName: input.name,
+      invitedBy,
+      email,
     });
-    if (error) failedInvites.push(email);
+    // A created invitation whose EMAIL bounced is still a failure worth naming:
+    // the commissioner is the only person who can retry it, and the invited
+    // player has no other way of learning the link exists.
+    if (!res.ok || !res.outcome?.sent) failedInvites.push(email);
   }
 
   revalidateMembershipSurfaces();

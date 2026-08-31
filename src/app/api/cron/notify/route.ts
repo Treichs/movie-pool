@@ -5,23 +5,14 @@ import {
   MAX_SENDS_PER_RUN,
   getAlreadyEmailed,
   getClosedWeeks,
-  getMembersWhoBid,
-  getOpenWeeks,
   getScoredWeeks,
   getSeasonRecipients,
-  getWeekFilmTitles,
-  getWeeksWithDeadlineWithin,
   notifyIdempotencyKey,
   recordEmail,
   resultsWindowStart,
 } from "@/lib/notifications";
 import type { NotifyKind } from "@/lib/notifications";
-import {
-  deadlineNearEmail,
-  mondayScoresEmail,
-  revealEmail,
-  slateUpEmail,
-} from "@/lib/email-templates";
+import { mondayScoresEmail, revealEmail } from "@/lib/email-templates";
 import {
   SITE_URL,
   emailMode,
@@ -29,13 +20,18 @@ import {
   sendEmail,
 } from "@/lib/email";
 
-// Scheduled notifications (build plan §7), run daily by Vercel Cron (see
-// vercel.json). Four sweeps, all deduped through email_log and all
-// time-bounded by the results window:
-//   1. slate_up          — a week opened: the slate and the bidding link.
-//   2. deadline_reminder — bid_deadline inside 24h: everyone who hasn't bid.
-//   3. bids_revealed     — a week closed: the sealed sheet is open.
-//   4. results_up        — a week reached final: the scores are real.
+// Scheduled notifications, run by Vercel Cron (see vercel.json) and by the
+// pg_cron job `notify-sweep`. TWO sweeps, both deduped through email_log and
+// both time-bounded by the results window:
+//   1. bids_revealed — a week closed: the sealed sheet is open.
+//   2. results_up    — a week reached final: the scores are real.
+//
+// WAS FOUR (2026-08-30). `slate_up` and `deadline_reminder` were retired: both
+// announced something a player can already see on the board, and together they
+// turned a weekly game into a weekly nagging. Their queries, templates and
+// preference toggles went with them; `email_log.kind` still allows both values
+// because the rows already written are true.
+//
 // The payouts statement (kind payouts_final) deliberately does NOT sweep:
 // finalize is a human act and the finalize action sends it directly. A sweep
 // anchored on any settlement timestamp would have mailed every ingested
@@ -50,9 +46,10 @@ import {
 // sends nothing rather than the first N of a mistake.
 //
 // CADENCE, honestly: Vercel Hobby rejects sub-daily crons (which is why the
-// bidding automation lives in pg_cron, ADR-052), so slate-up and reveal mail
-// can land up to a day after the moment they describe. The templates are
-// written to survive that — they say what is true, not "just now".
+// bidding automation lives in pg_cron, ADR-052), so reveal mail can land up to
+// an hour after the moment it describes — the pg_cron sweep runs hourly, which
+// is the tighter of the two. The templates are written to survive that: they
+// say what is true, not "just now".
 //
 // TWO SCHEDULERS, not one. vercel.json calls this daily, and the pg_cron job
 // `notify-sweep` (20260816170000) calls it HOURLY with the production URL
@@ -95,8 +92,6 @@ export async function GET(request: Request) {
   const sending = emailSendingEnabled("automatic");
 
   const summary = {
-    slates: 0,
-    reminders: 0,
     reveals: 0,
     results: 0,
     failed: 0,
@@ -119,76 +114,7 @@ export async function GET(request: Request) {
   const now = new Date();
   const windowStart = resultsWindowStart(now);
 
-  const deadlineText = (iso: string) =>
-    `${new Date(iso).toLocaleString("en-US", {
-      timeZone: "America/New_York",
-      dateStyle: "full",
-      timeStyle: "short",
-    })} (ET)`;
-
-  // ---- 1. Slate up ----------------------------------------------------------
-  for (const week of await getOpenWeeks(admin, windowStart)) {
-    const [members, sent, titles] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId, "slate_up"),
-      getAlreadyEmailed(admin, week.id, "slate_up"),
-      getWeekFilmTitles(admin, week.id),
-    ]);
-    // An open week with an empty slate is a commissioner mid-build (rulebook
-    // §3 allows late additions) — nothing to announce yet, and the window
-    // gives the sweep days to catch it once films land.
-    if (titles.length === 0) continue;
-    const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}`;
-
-    for (const { profile } of members) {
-      if (sent.has(profile.id)) continue;
-      const mail = slateUpEmail({
-        name: profile.display_name,
-        seasonName: week.seasonName,
-        weekNumber: week.number,
-        filmTitles: titles,
-        deadline: week.bidDeadline ? deadlineText(week.bidDeadline) : null,
-        link,
-      });
-      jobs.push({
-        kind: "slate_up",
-        weekId: week.id,
-        profileId: profile.id,
-        email: profile.email,
-        ...mail,
-      });
-    }
-  }
-
-  // ---- 2. Deadline reminders ------------------------------------------------
-  const windowEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  for (const week of await getWeeksWithDeadlineWithin(admin, now, windowEnd)) {
-    const [members, hasBid, sent] = await Promise.all([
-      getSeasonRecipients(admin, week.seasonId, "deadline_reminder"),
-      getMembersWhoBid(admin, week.id),
-      getAlreadyEmailed(admin, week.id, "deadline_reminder"),
-    ]);
-    const link = `${SITE_URL}/seasons/${week.seasonId}/weeks/${week.id}/bid`;
-
-    for (const { seasonMemberId, profile } of members) {
-      if (hasBid.has(seasonMemberId) || sent.has(profile.id)) continue;
-      const mail = deadlineNearEmail({
-        name: profile.display_name,
-        seasonName: week.seasonName,
-        weekNumber: week.number,
-        deadline: deadlineText(week.bidDeadline!),
-        link,
-      });
-      jobs.push({
-        kind: "deadline_reminder",
-        weekId: week.id,
-        profileId: profile.id,
-        email: profile.email,
-        ...mail,
-      });
-    }
-  }
-
-  // ---- 3. The reveal --------------------------------------------------------
+  // ---- 1. The reveal --------------------------------------------------------
   for (const week of await getClosedWeeks(admin, windowStart)) {
     const [members, sent] = await Promise.all([
       getSeasonRecipients(admin, week.seasonId, "bids_revealed"),
@@ -203,6 +129,7 @@ export async function GET(request: Request) {
         seasonName: week.seasonName,
         weekNumber: week.number,
         link,
+        siteUrl: SITE_URL,
       });
       jobs.push({
         kind: "bids_revealed",
@@ -214,7 +141,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // ---- 4. Monday scores -----------------------------------------------------
+  // ---- 2. Monday scores -----------------------------------------------------
   for (const week of await getScoredWeeks(admin, windowStart)) {
     const [members, sent] = await Promise.all([
       getSeasonRecipients(admin, week.seasonId, "results_up"),
@@ -232,6 +159,7 @@ export async function GET(request: Request) {
         seasonName: week.seasonName,
         weekNumber: week.number,
         link,
+        siteUrl: SITE_URL,
       });
       jobs.push({
         kind: "results_up",
@@ -243,7 +171,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // ---- 5. The breaker, then the sends ---------------------------------------
+  // ---- 3. The breaker, then the sends ---------------------------------------
   // The breaker guards against a mass SEND. With EMAIL_MODE off nothing reaches
   // Resend, so the risk it exists for is absent — and aborting here would skip
   // the ledger writes below, leaving the backlog unmarked and re-arming the
@@ -274,8 +202,6 @@ export async function GET(request: Request) {
   }
 
   const tally: Record<Kind, keyof typeof summary> = {
-    slate_up: "slates",
-    deadline_reminder: "reminders",
     bids_revealed: "reveals",
     results_up: "results",
   };

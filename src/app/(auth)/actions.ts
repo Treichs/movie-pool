@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { emailLinkTarget, landingPathForCurrentUser, safeNextPath } from "@/lib/landing";
 import { SITE_URL, sendEmail } from "@/lib/email";
+import { passwordResetEmail } from "@/lib/email-templates";
 
 // WHERE TO GO AFTER AUTHENTICATING. An explicit, validated `next` wins over the
 // ordinary landing rule — it means the visitor asked for a specific page and was
@@ -279,15 +280,8 @@ export async function completePasswordReset(
   // them. Best-effort: the password is already changed, and a mail failure must
   // not be reported as a failed reset.
   if (user.email) {
-    await sendEmail(
-      user.email,
-      "Your Movie Pool password was reset",
-      `<p>Your Movie Pool password was just reset using a link sent to this
-         address, and every other signed-in device was signed out.</p>
-       <p><strong>If this was you, there is nothing to do.</strong></p>
-       <p>If it was not, reset it again straight away at
-         <a href="${SITE_URL}/forgot-password">${SITE_URL}/forgot-password</a>.</p>`
-    );
+    const mail = passwordResetEmail(SITE_URL);
+    await sendEmail(user.email, mail.subject, mail.html);
   }
 
   // NOTE ON THE AUTO-SIGN-IN. OWASP would rather we did not — it prefers

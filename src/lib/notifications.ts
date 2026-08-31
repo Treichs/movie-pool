@@ -40,32 +40,32 @@ export type Recipient = {
 };
 
 /**
- * The four automatic emails, and the single source of their names.
+ * The two automatic emails, and the single source of their names.
  *
  * These strings are three things at once: the `kind` written to `email_log`,
  * the suffix of the `profiles.notify_*` column that gates each one, and the
  * discriminator the cron sweeps switch on. Keeping one definition is what lets
  * the recipient query derive its filter instead of carrying a second mapping.
+ *
+ * WAS FOUR (2026-08-30). `slate_up` and `deadline_reminder` were retired: a
+ * slate going up and a deadline approaching are both things a player can see
+ * on the board, and mailing them turned a weekly game into a weekly nagging.
+ * `email_log.kind` still ALLOWS both, because the ledger is history and the
+ * rows it already holds are true.
  */
-export type NotifyKind =
-  | "slate_up"
-  | "deadline_reminder"
-  | "bids_revealed"
-  | "results_up";
+export type NotifyKind = "bids_revealed" | "results_up";
 
 export type NotifiableWeek = {
   id: string;
   seasonId: string;
   number: number;
   seasonName: string;
-  bidDeadline: string | null;
 };
 
 type WeekRow = {
   id: string;
   season_id: string;
   number: number;
-  bid_deadline?: string | null;
   season: { name: string } | null;
 };
 
@@ -74,25 +74,7 @@ const toWeek = (w: WeekRow): NotifiableWeek => ({
   seasonId: w.season_id,
   number: w.number,
   seasonName: w.season?.name ?? "your season",
-  bidDeadline: w.bid_deadline ?? null,
 });
-
-/**
- * Open weeks that opened recently — the slate-up sweep. Window-bounded on
- * opening_date exactly like the results sweep, and for the same reason: an
- * ingested season's weeks must never read as breaking news.
- */
-export async function getOpenWeeks(
-  admin: SupabaseClient,
-  openedOnOrAfter: string
-): Promise<NotifiableWeek[]> {
-  const { data } = await admin
-    .from("weeks")
-    .select("id, season_id, number, bid_deadline, season:v_seasons(name)")
-    .eq("status", "open")
-    .gte("opening_date", openedOnOrAfter);
-  return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
-}
 
 /**
  * Closed weeks — bidding done, sheet revealed, not yet scored. The reveal
@@ -108,36 +90,6 @@ export async function getClosedWeeks(
     .select("id, season_id, number, season:v_seasons(name)")
     .eq("status", "closed")
     .gte("opening_date", openedOnOrAfter);
-  return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
-}
-
-/** A week's active slate, titles only — what the slate-up email lists. */
-export async function getWeekFilmTitles(
-  admin: SupabaseClient,
-  weekId: string
-): Promise<string[]> {
-  const { data } = await admin
-    .from("films")
-    .select("title")
-    .eq("week_id", weekId)
-    .eq("status", "active")
-    .order("title");
-  return (data ?? []).map((f) => f.title as string);
-}
-
-/** Open weeks whose deadline lands inside the window — the reminder sweep. */
-export async function getWeeksWithDeadlineWithin(
-  admin: SupabaseClient,
-  from: Date,
-  to: Date
-): Promise<NotifiableWeek[]> {
-  const { data } = await admin
-    .from("weeks")
-    .select("id, season_id, number, bid_deadline, season:v_seasons(name)")
-    .eq("status", "open")
-    .not("bid_deadline", "is", null)
-    .gte("bid_deadline", from.toISOString())
-    .lte("bid_deadline", to.toISOString());
   return ((data ?? []) as unknown as WeekRow[]).map(toWeek);
 }
 
@@ -163,7 +115,7 @@ export async function getScoredWeeks(
  * A season's members who want THIS kind of email, with the fields one needs.
  *
  * ── THE FILTER COLUMN IS BUILT FROM THE KIND ──────────────────────────────
- * `profiles.notify_<kind>` exists for each of the four kinds, named for them
+ * `profiles.notify_<kind>` exists for each of the two kinds, named for them
  * deliberately (migration `20260829030000`). Deriving the column name here
  * rather than keeping a kind→column map means a renamed kind fails loudly at
  * the database instead of quietly mailing everyone.
@@ -198,25 +150,6 @@ export async function getSeasonRecipients(
   }[])
     .filter((m) => m.profile !== null)
     .map((m) => ({ seasonMemberId: m.id, profile: m.profile! }));
-}
-
-/**
- * Season members who have already bid on a week's ACTIVE films.
- *
- * Reads amounts' rows but not amounts — only `season_member_id` — so the
- * reminder sweep never has to touch a sealed bid value to know who to leave
- * alone (ADR-022).
- */
-export async function getMembersWhoBid(
-  admin: SupabaseClient,
-  weekId: string
-): Promise<Set<string>> {
-  const { data } = await admin
-    .from("bids")
-    .select("season_member_id, film:films!inner(week_id, status)")
-    .eq("film.week_id", weekId)
-    .eq("film.status", "active");
-  return new Set((data ?? []).map((b) => b.season_member_id as string));
 }
 
 /** Profile ids already emailed for this (week, kind) — the dedupe ledger. */

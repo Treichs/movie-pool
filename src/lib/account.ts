@@ -29,31 +29,22 @@ export type AccountPage = {
 };
 
 /**
- * The four toggles, and the order they are drawn in.
+ * The two toggles, and the order they are drawn in.
  *
- * The ORDER IS THE WEEK'S ORDER, not the alphabet: a slate goes up, the
- * deadline nears, bids are revealed, the scores land. Someone reading down the
- * list is reading the shape of a week, which is why it is worth fixing here
- * rather than leaving to whatever order the columns come back in.
+ * The ORDER IS THE WEEK'S ORDER, not the alphabet: bids are revealed, then the
+ * scores land. Someone reading down the list is reading the shape of a week,
+ * which is why it is worth fixing here rather than leaving to whatever order
+ * the columns come back in.
+ *
+ * It was four until 2026-08-30. `slate_up` and `deadline_reminder` announced
+ * things a player can already see on the board; retiring them took the columns
+ * with them.
  */
-export const NOTIFY_KINDS: NotifyKind[] = [
-  "slate_up",
-  "deadline_reminder",
-  "bids_revealed",
-  "results_up",
-];
+export const NOTIFY_KINDS: NotifyKind[] = ["bids_revealed", "results_up"];
 
 /** The copy for each, taken from board 4.10 rather than invented. */
 export const NOTIFY_COPY: Record<NotifyKind, { title: string; detail: string }> =
   {
-    slate_up: {
-      title: "A slate goes up",
-      detail: "The week's films are ready to bid on.",
-    },
-    deadline_reminder: {
-      title: "The deadline is near",
-      detail: "Before bidding closes, if you have not bid.",
-    },
     bids_revealed: {
       title: "Bids are revealed",
       detail: "Who won what, the moment the week closes.",
@@ -80,7 +71,7 @@ export async function getAccountPage(
     supabase
       .from("profiles")
       .select(
-        "id, display_name, email, bio, notify_slate_up, notify_deadline_reminder, notify_bids_revealed, notify_results_up"
+        "id, display_name, email, bio, notify_bids_revealed, notify_results_up"
       )
       .eq("id", userId)
       .maybeSingle(),
@@ -102,8 +93,6 @@ export async function getAccountPage(
     emailConfirmed: Boolean(user?.email_confirmed_at),
     providers,
     preferences: {
-      slate_up: profile.notify_slate_up,
-      deadline_reminder: profile.notify_deadline_reminder,
       bids_revealed: profile.notify_bids_revealed,
       results_up: profile.notify_results_up,
     },

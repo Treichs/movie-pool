@@ -78,9 +78,9 @@ export default async function AnnouncementsPage({
           <h1>Announcements</h1>
           {/* THE BOARD'S DEK SAYS "everyone gets an email". NOTHING EMAILS AN
               ANNOUNCEMENT. `post_league_announcement` writes a row and an audit
-              entry and stops; the notify cron's four kinds are slate_up,
-              deadline_reminder, bids_revealed and results_up, and there is no
-              template for a fifth. Shipped with the board's wording on
+              entry and stops; the notify cron's kinds are bids_revealed and
+              results_up, and there is no template for a third. Shipped with the
+              board's wording on
               2026-08-29 and corrected the next day — a commissioner deciding
               whether to post would have been told their message goes to
               everyone's inbox, and it does not. */}
