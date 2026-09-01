@@ -85,6 +85,33 @@ with the wanted commits cherry-picked — **not** a force-push. Check first that
 nothing is lost: an empty `git diff origin/master origin/<branch>` means the
 trees are identical and the branch is safe to delete.
 
+### Squash is also what triggers the production deploy
+
+The new SHA is not merely tidy history — it is the deploy. `--rebase` and
+`--merge` replay a branch whose tree Vercel has **already built as the preview**,
+and a push carrying a tree it has seen produces no production deployment. Nothing
+fails: the PR merges, master advances, GitHub shows green, and production quietly
+goes on serving the previous commit.
+
+`gh pr merge 14 --rebase --delete-branch` on 2026-08-31 did exactly this.
+Production stayed on `d56c82f` for fifteen minutes while master sat at `a4ba9a9`,
+and the only build holding the new code was the branch preview with
+`target: null`. It was caught by fetching the live CSS chunk and finding the old
+type roles still in it — the deployments list alone would not have said so,
+because it truthfully showed a READY deployment of the right commit.
+
+**Always `--squash`.** If a merge has already landed another way, the recovery is
+an explicit deploy of master, and it needs the scope flag — a bare
+`vercel --prod` returns `Not authorized` here:
+
+```bash
+npx --yes vercel@latest --prod --yes --scope treichs1
+```
+
+That deploys the **local working tree**, so check `git status --porcelain
+--untracked-files=no` is empty first and expect `gitDirty: 1` in the deployment
+meta if anything untracked is lying around.
+
 ## Environment variables do not reach a running deployment
 
 A variable added today does nothing to the deployment serving traffic. It is
@@ -114,6 +141,25 @@ curl -s -H "Authorization: Bearer $SECRET" https://www.moviepool.app/api/cron/no
 its live `mode`, so one call tells you which build is serving *and* whether mail
 is on. Also worth a look every time: `/` is 200 and `/leagues` is **307** — the
 app gates itself, which is why this deployment needs no Vercel Authentication.
+
+**When the secret is out of reach, diff the CSS.** That probe reads
+`CRON_SECRET` out of `.env.local` and puts it in a header, which an agent
+permission prompt can refuse — and a refused probe is no proof at all. The
+stylesheet is public, immutable, and content-hashed, so it answers "which build
+is serving" on its own:
+
+```bash
+curl -s https://www.moviepool.app/ | grep -oE '/_next/static/[^"]*\.css'
+```
+
+A changed hash means new CSS shipped; fetch the chunk and grep for a declaration
+this release added or removed. On 2026-08-31 the old chunk still held twenty
+`font-variation-settings` from the previous type roles, which is how a silently
+skipped production deploy was caught. It proves nothing about server code, so
+pair it with the cron probe whenever the secret *is* available.
+
+A bad `Authorization` header needs no secret and is always worth sending: it must
+come back **401**.
 
 ## Crons
 
