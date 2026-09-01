@@ -1,6 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import { TriangleAlertIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +37,10 @@ import { PosterCard } from "./poster-card";
  *  keys off identity, so building this inline would make the first real result
  *  indistinguishable from the mount. */
 const INITIAL: ActionResult = ok(undefined);
+
+/** The draft store never notifies: this component is its only writer, and it
+ *  already holds the same values in React state. */
+const NEVER_CHANGES = () => () => {};
 
 export type BidFilm = {
   id: string;
@@ -100,6 +112,62 @@ export function BidForm({
     setAmounts(Object.fromEntries(films.map((f) => [f.id, f.myBid])));
   }
 
+  // THE TYPED SLATE OUTLIVES THE PAGE.
+  //
+  // `beforeunload` only fires on a reload or a close, which is the one way a
+  // player rarely leaves this screen. What they actually do is tap a poster to
+  // look at the film they are about to spend money on — a link covering most of
+  // the card, with the bid field sitting inside it — or hit a nav tab. Both are
+  // client navigations, both were silent, and both returned an empty slate to
+  // someone who had been typing minutes before a deadline.
+  //
+  // Keyed by week so two weeks cannot inherit each other's draft, and wrapped
+  // because Safari's private mode throws on `localStorage` rather than no-oping.
+  //
+  // `useSyncExternalStore` rather than a mount effect, because localStorage is
+  // a store React does not own and this is the primitive that reads one without
+  // a hydration mismatch. TWO THINGS ABOUT IT ARE EASY TO GET WRONG, and both
+  // cost a slate here before they were understood:
+  //
+  // The snapshot is READ ONCE AND CACHED. React calls `getSnapshot` on every
+  // render and re-renders when the value changes, so reading live storage would
+  // make each keystroke — which rewrites the key below — trigger an extra pass.
+  // The draft only matters as it was when the page opened.
+  //
+  // DURING HYDRATION REACT USES `getServerSnapshot`, which is null. A one-shot
+  // "have I applied it yet" flag therefore burns on the hydration pass, before
+  // the real value ever arrives, and the draft is never applied. Tracking the
+  // string that was applied instead means the apply happens on the pass where
+  // the value actually shows up.
+  const draftKey = `movie-pool:bid-draft:${weekId}`;
+  const cachedDraft = useRef<string | null | undefined>(undefined);
+  const readDraft = useCallback(() => {
+    if (cachedDraft.current === undefined) {
+      try {
+        cachedDraft.current = window.localStorage.getItem(draftKey);
+      } catch {
+        cachedDraft.current = null;
+      }
+    }
+    return cachedDraft.current;
+  }, [draftKey]);
+  const draftRaw = useSyncExternalStore(NEVER_CHANGES, readDraft, () => null);
+
+  const [appliedDraft, setAppliedDraft] = useState<string | null>(null);
+  if (draftRaw !== null && appliedDraft === null) {
+    setAppliedDraft(draftRaw);
+    try {
+      const draft = JSON.parse(draftRaw) as Record<string, number | null>;
+      setAmounts((current) => {
+        const next = { ...current };
+        for (const f of films) if (f.id in draft) next[f.id] = draft[f.id];
+        return next;
+      });
+    } catch {
+      // A corrupt draft is not worth a broken form; the saved slate stands.
+    }
+  }
+
   const [state, formAction, pending] = useActionState<ActionResult, FormData>(
     placeBids,
     INITIAL
@@ -116,7 +184,16 @@ export function BidForm({
     if (state === lastResult.current) return;
     lastResult.current = state;
     if (isOk(state) && state.notice) toast.success(state.notice);
-  }, [state]);
+    // The saved slate is now the server's, so the draft has nothing left to
+    // protect and would otherwise be restored over a later visit.
+    if (isOk(state)) {
+      try {
+        window.localStorage.removeItem(draftKey);
+      } catch {
+        // Nothing to retire if storage is unavailable.
+      }
+    }
+  }, [state, draftKey]);
 
   // A REFUSAL IS ABOUT THE SLATE THAT WAS SENT, not the one on screen. Editing
   // any amount is what makes it stale. Keyed on the RESULT OBJECT because
@@ -136,7 +213,41 @@ export function BidForm({
   const total = biddable.reduce((sum, f) => sum + norm(amounts[f.id]), 0);
   const filmsIn = biddable.filter((f) => norm(amounts[f.id]) > 0).length;
   const committedPct = remaining > 0 ? Math.round((total / remaining) * 100) : 0;
-  const dirty = biddable.some((f) => norm(amounts[f.id]) !== norm(f.myBid));
+  // WHETHER A SLATE WAS EVER SAVED IS NOT THE SAME QUESTION AS WHETHER THIS ONE
+  // IS DIRTY. A player who has never bid has a clean form, and the control
+  // beside it used to answer that with "Saved" — a claim about their money that
+  // was not true. `myBid` is null until a row exists, and $0 is a saved bid.
+  const hasSavedSlate = biddable.some((f) => f.myBid !== null);
+
+  // EDITED AND SUBMITTABLE ARE TWO QUESTIONS, and they were one variable.
+  //
+  // `edited` is "these amounts differ from the ones on the server" — what the
+  // "Unsaved" flag and the leave-the-page guard are actually about.
+  //
+  // `submittable` also allows the first save on a slate that has no rows yet.
+  // `norm` reads a missing bid and a $0 bid as the same number, so a player who
+  // had never bid and typed 0 into every field measured as unchanged, and the
+  // button stayed dead on the one move the rules single out: a $0 slate is
+  // legal, never wins, and is how someone who has spent their bankroll stays in
+  // the week rather than vanishing from it. Submitting writes a row for every
+  // eligible film (ADR-109), so where there are no rows there is always
+  // something to write.
+  const edited = biddable.some((f) => norm(amounts[f.id]) !== norm(f.myBid));
+  const submittable = edited || !hasSavedSlate;
+
+  // WRITE ONLY; THE CLEAR BELONGS TO A SAVE. Clearing here whenever the slate
+  // matched the server looked tidier and destroyed the draft on arrival: the
+  // hydration pass reads no draft, so `edited` is false on the very first
+  // effect run, and the key was deleted a moment before it could be restored.
+  // A save is a real event, so that is where the draft is retired.
+  useEffect(() => {
+    if (!edited) return;
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify(amounts));
+    } catch {
+      // A slate that cannot be cached is still a slate that can be submitted.
+    }
+  }, [amounts, edited, draftKey]);
 
   // WHAT THE CLIENT CAN PROVE, THE CLIENT BLOCKS ON; what only the server knows,
   // it SHOWS and lets you retry. Folding the server's verdict in here is
@@ -180,11 +291,11 @@ export function BidForm({
   // a slate of typed amounts is the most expensive state in the app to lose —
   // the deadline may be minutes away.
   useEffect(() => {
-    if (!dirty) return;
+    if (!edited) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [edited]);
 
   // A failure naming a film on this slate is already shown against that film.
   // One naming a film that is NOT here would otherwise be swallowed entirely,
@@ -196,10 +307,11 @@ export function BidForm({
 
   return (
     <form action={formAction}>
-      {/* THE PADDING IS THE STICKY BAR'S FOOTPRINT, not decoration: the bar is
-          ~80px and sits at bottom-4, so with no allowance the last row of
-          inputs sits underneath it at scroll 0. */}
-      <div className="flex flex-col gap-6 pb-24">
+      {/* NO TRAILING RESERVE. The bar is the last child of this column, so in
+          flow it already sits below the slate and can never cover it. Padding
+          here only lengthens the document, and a document longer than the
+          viewport is exactly what pins the bar over the inputs it follows. */}
+      <div className="flex flex-col gap-6">
         <input type="hidden" name="season_id" value={seasonId} />
         <input type="hidden" name="week_id" value={weekId} />
         {/* EVERY eligible film, $0 where blank (ADR-109). Submitting the whole
@@ -214,18 +326,14 @@ export function BidForm({
         />
 
         <FieldSet>
+          {/* NO DESCRIPTION. "Leave one blank to pass on it" is the same fact
+              every empty field already carries as "Blank passes", at the moment
+              it is needed rather than a screen above it — the reasoning that
+              removed the minimum-bid tile from the status card. On a phone this
+              paragraph was 40px of restatement directly above the posters. */}
           <FieldLegend variant="label">This week&apos;s slate</FieldLegend>
-          <FieldDescription>
-            Bid on as many films as you like. Leave one blank to pass on it.
-          </FieldDescription>
           <FieldGroup>
-            {/* THE SUMMARY BAR IS STICKY AND OVERLAYS THIS GRID, so the grid
-                has to reserve room for it. Without this padding a short slate
-                on a 900px viewport put the bar straight across the poster row
-                and pushed the inputs — the only reason the page exists — under
-                it and below the fold. The reserve is the bar's height plus its
-                `bottom-4` offset. */}
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5 pb-28">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-5">
               {films.map((film) => (
                 <FilmBidField
                   key={film.id}
@@ -254,34 +362,38 @@ export function BidForm({
         )}
 
         {/* THE MONEY STAYS ON SCREEN, and so does the reason the button is dead.
-            A disabled control and its reason have to be the same object. */}
-        <div className="sticky bottom-4 z-20 rounded-lg border bg-card/95 p-4 shadow-lg backdrop-blur">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p>
-                <span
-                  className={cn("type-numeral text-numeral", overBudget && "text-destructive")}
-                >
-                  ${total}
-                </span>
-                <span className="type-ui text-ui ml-2 text-muted-foreground">
-                  of ${remaining} available
-                </span>
-              </p>
-              {/* EXPOSURE AS A SHARE, not only as a sum. "$15 of $56" is the
-                  arithmetic; "27% committed" is the judgement the player is
-                  actually making — a bankroll is spent once per season and
-                  never replenished. Rounded for display, never for maths. */}
-              <p className="type-micro text-micro mt-1 text-muted-foreground">
-                {filmsIn === 0
-                  ? "In on nothing — saving a slate of $0 sits the week out"
-                  : `In on ${filmsIn} of ${biddable.length} · ${committedPct}% committed · $${Math.max(remaining - total, 0)} would stay free`}
-              </p>
-            </div>
+            A disabled control and its reason have to be the same object.
 
-            <div className="flex items-center gap-4">
-              {dirty && !closed && (
-                <span className="type-eyebrow text-eyebrow text-muted-foreground">Unsaved</span>
+            THE OFFSET CLEARS THE BOTTOM NAV, which is 56px and sticky at
+            `bottom-0` below `md`. At `bottom-4` the submit button lands
+            underneath it and a thumb aiming for Save navigates away instead,
+            losing the typed slate. 72px is that 56 plus the same 16px gutter
+            the desktop offset uses. */}
+        <div className="sticky bottom-18 z-20 flex flex-col gap-2 rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur md:bottom-4 md:p-4">
+          {/* THE SUM AND THE CONTROL SHARE THE FIRST LINE, and the reading of
+              them takes the second. Wrapped, this bar stood 146px tall on a
+              390px phone — a sixth of the viewport, permanently, over the
+              posters it summarises. Splitting the share onto its own full-width
+              line lets the money and the button sit on one row at any width. */}
+          <div className="flex flex-nowrap items-center justify-between gap-4">
+            <p className="min-w-0">
+              <span className={cn("type-numeral text-numeral", overBudget && "text-destructive")}>
+                ${total}
+              </span>
+              <span className="type-ui text-ui ml-2 text-muted-foreground">
+                of ${remaining} available
+              </span>
+            </p>
+
+            <div className="flex shrink-0 items-center gap-4">
+              {/* THE STATE IS THE LABEL'S NEIGHBOUR, NOT THE LABEL. A button
+                  says what pressing it will do; it cannot also be the readout
+                  of what has already happened, and when it tried it told a
+                  player who had never bid that their bids were "Saved". */}
+              {!closed && (
+                <span className="type-eyebrow text-eyebrow text-muted-foreground">
+                  {edited ? "Unsaved" : hasSavedSlate ? "Saved" : "No bids yet"}
+                </span>
               )}
               {/* THE CONTROL IS REPLACED, NOT GREYED OUT. GOV.UK: "disabled
                   buttons have poor contrast and can confuse some users, so
@@ -299,24 +411,34 @@ export function BidForm({
               ) : (
                 /* INK, NOT THE ACCENT. The budget is already spent on the clock
                    and on the films the player has money on. */
-                <Button type="submit" variant="ink" disabled={pending || blocked || !dirty}>
-                  {pending ? "Saving…" : dirty ? "Save your bids" : "Saved"}
+                <Button type="submit" variant="ink" disabled={pending || blocked || !submittable}>
+                  {pending ? "Saving…" : "Save your bids"}
                 </Button>
               )}
             </div>
           </div>
 
+          {/* EXPOSURE AS A SHARE, not only as a sum. "$15 of $56" is the
+              arithmetic; "27% committed" is the judgement the player is
+              actually making — a bankroll is spent once per season and
+              never replenished. Rounded for display, never for maths. */}
+          <p className="type-micro text-micro text-muted-foreground">
+            {filmsIn === 0
+              ? "In on nothing — saving a slate of $0 sits the week out"
+              : `In on ${filmsIn} of ${biddable.length} · ${committedPct}% committed · $${Math.max(remaining - total, 0)} would stay free`}
+          </p>
+
           {/* role="alert" so the close is spoken once when it happens, which is
               the same Level AA duty the countdown itself carries. */}
           {closed ? (
-            <p role="alert" className="mt-3 text-sm text-destructive">
-              {dirty
+            <p role="alert" className="text-sm text-destructive">
+              {edited
                 ? "Bidding closed before these changes were saved, so they will not count. The bids you saved earlier are the ones that stand."
                 : "Bidding is closed. Your saved bids are in and the sheet is sealed."}
             </p>
           ) : (
             blocked && (
-              <p role="alert" className="mt-3 text-sm text-destructive">
+              <p role="alert" className="text-sm text-destructive">
                 {overBudget
                   ? `That's $${total - remaining} more than you have. Lower a bid to save.`
                   : "Fix the amount marked above to save."}
@@ -349,6 +471,14 @@ function FilmBidField({
   const isIn = (value ?? 0) > 0;
   const invalid = film.eligible && problem !== null;
 
+  // "YOURS" IS A SAVED POSITION, NOT A KEYSTROKE. The badge and the vermilion
+  // edge used to follow the typed value, so they fired on an amount that was
+  // unsaved, over budget, or sitting in a field marked invalid. Vermilion means
+  // *live and yours* in this system; spending it on "you typed something" left
+  // nothing to mark an actual holding with. What the player is proposing is
+  // carried by the field's own helper text and by the bar's "Unsaved".
+  const isYours = (film.myBid ?? 0) > 0;
+
   return (
     <Field data-invalid={invalid || undefined} className="h-full">
       <PosterCard
@@ -366,12 +496,12 @@ function FilmBidField({
         }
         meta={film.releaseDate ? formatReleaseDate(film.releaseDate) : null}
         tomatometer={film.tomatometer}
-        selected={isIn}
+        selected={isYours}
         disabled={!film.eligible}
         badge={
           !film.eligible ? (
             <Badge variant="secondary">Not eligible</Badge>
-          ) : isIn ? (
+          ) : isYours ? (
             <Badge>Yours</Badge>
           ) : undefined
         }

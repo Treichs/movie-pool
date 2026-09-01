@@ -15,17 +15,28 @@ export function WeekStatusBar({ board }: { board: WeekBidBoard }) {
   const { week, remaining, bankroll } = board;
 
   return (
-    <Card variant="flat" className="flex-row flex-wrap items-center justify-between gap-6">
+    // TWO ROWS ON A PHONE, not three. Stacked, the groups kept the alignments
+    // they had in the desktop row — left, centre, right — and read as three
+    // separate panels 265px tall, which pushed the slate off the screen.
+    //
+    // The countdown spans the card because it is the one figure this screen is
+    // about, and at 72px it cannot share a 285px row with anything; the date
+    // and the bankroll take the row beneath it. DOM order is render order at
+    // every width, so nothing is placed out of sequence to get this layout.
+    <Card
+      variant="flat"
+      className="grid grid-cols-2 items-center gap-x-6 gap-y-4 md:flex md:flex-row md:flex-wrap md:shrink-0 md:justify-between md:gap-6"
+    >
+      {week.bidDeadline && (
+        <div className="col-span-2 flex flex-col items-center gap-1 md:col-auto">
+          <span className="type-eyebrow text-eyebrow text-muted-foreground">Closes in</span>
+          <DeadlineCountdown target={week.bidDeadline} />
+        </div>
+      )}
       {week.bidDeadline && (
         <div className="flex flex-col gap-1">
           <span className="type-eyebrow text-eyebrow text-muted-foreground">Bids due</span>
           <span className="text-sm font-semibold">{formatDeadline(week.bidDeadline)}</span>
-        </div>
-      )}
-      {week.bidDeadline && (
-        <div className="flex flex-col items-center gap-1">
-          <span className="type-eyebrow text-eyebrow text-muted-foreground">Closes in</span>
-          <DeadlineCountdown target={week.bidDeadline} />
         </div>
       )}
       <div className="flex flex-col items-end gap-1">
