@@ -22,7 +22,7 @@ const PERFORATIONS = 6;
  * ── THE HEADLINE IS THE LARGEST TYPE IN THE APP ───────────────────────────
  * `text-display lg:text-display-lg` — 64px, stepping to the board's 96px once
  * there is room. `--text-display-lg` is a SIZE STEP of the display role, added
- * to `globals.css` with this screen; it shares `--fvs-display`, so nothing new
+ * to `globals.css` with this screen; it shares the display role's axes, so nothing new
  * was invented about how the app sets type.
  *
  * ── VERMILION BUDGET ON THIS SURFACE ──────────────────────────────────────
