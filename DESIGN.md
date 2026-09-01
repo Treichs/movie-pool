@@ -287,11 +287,17 @@ default (65ch), wide (80ch) — and the fourth, page (72rem), bounds the page fr
 is bounded in `ch` because that is what a line of text is measured in; a page is bounded
 in `rem` because it is not text. A page and its loading skeleton must cite the same one.
 
-**The signed-in frame is two bands.** An ink band 56px tall carries the wordmark, search,
-notifications and the account menu; a paper nav band 52px tall carries navigation and the
-league switcher below it. The split is deliberate — navigation reads as part of the page
-rather than as a second black slab, and signing in does not change what the top of the
-app looks like.
+**The signed-in frame is two bands, and they are deliberately unequal.** An ink masthead
+76px tall on desktop (56px on a phone) carries the wordmark, search, notifications and the
+account menu; a sheet section strip 44px tall carries navigation and the league switcher
+below it. **Near-equal bands read as two slabs** — a trade paper's masthead has mass and
+its section strip is thin underneath it, and that proportion is what makes the frame read
+as a masthead rather than as chrome. The split is deliberate —
+navigation reads as part of the page rather than as a second black slab, and signing in
+does not change what the top of the app looks like. **The band takes `--card`, never
+`--background`:** the page ground and the band ground would be the same value, leaving a
+1px rule as the only thing saying a frame exists. Ink, then sheet, then the paper page —
+and the bottom nav takes the same sheet, so the chrome is one tone at both ends.
 
 **Responsive is a change of structure, not a reflow.** Below `md` the desktop nav band is
 removed entirely and replaced by a bottom nav plus a drawer, and by a 48px strip naming
@@ -387,11 +393,28 @@ Confident and physical: the one control in the system allowed to respond to touc
   keeps `box-shadow` free for the focus ring.
 
 ### Navigation
-- **Ink band:** wordmark in eyebrow type, vermilion on ink, at the left; search,
-  notifications and account at the right. Sticky, 56px.
-- **Paper band:** UI-type nav items with dropdown groups, league switcher at the right
-  end. Desktop only.
-- **Mobile:** bottom nav plus a drawer. The desktop band is removed, not collapsed.
+- **Ink masthead:** the wordmark spelled out — `The Movie Pool` at the **h2 scale**
+  (wdth 70 / wght 800 / 30px), vermilion on ink, at the left; search, notifications and
+  account at the right. Sticky, 76px on desktop. The three-letter mark at eyebrow scale
+  survives only below `md`, where the drawer button and three controls have already taken
+  the width and the band stays at 56px.
+  **The masthead's left edge sits on the same 32px as the nav item below it** — the link's
+  own padding is dropped at `md` so the two align rather than staggering by 8px.
+  **`PublicHeader` carries the identical height and masthead scale.** Signing in does not
+  change what the top of the app looks like; change one and you must change the other.
+- **Sheet band — the section strip:** eyebrow-type nav items at UI size, full band height
+  (44px), with dropdown groups and the league switcher at the right end. Desktop only.
+  **League precedes Season**, because a league is a season's parent: a season belongs to
+  one league and ends, the league outlives it. The mobile drawer lists the same two groups
+  in the same order.
+  **No pills.** The current section is marked by a 2px ink rule drawn as an inset shadow
+  on the band's bottom edge, so it lands on the band's own border rather than adding a
+  second line, and an item's height never changes between states. Resting items are
+  `--muted-foreground` and darken to ink on hover.
+- **Mobile:** bottom nav plus a drawer. The desktop band is removed, not collapsed. The
+  bottom nav draws the identical 2px rule from the opposite edge — a bar under your thumb
+  marks from the top, a bar over the page marks from the bottom. The two navigations are
+  one design, not two.
 
 ### Signature: the perforated edge
 A column of perforations absolutely positioned 28px inside each edge of a full-width ink

@@ -33,8 +33,17 @@ import { SearchCommand } from "./search-command";
  * text (`--nav-primary` at 5.59:1), which is why the wordmark lives there and
  * why nothing else in the frame is red.
  *
- * BAND 2 IS PAPER, so navigation reads as part of the page rather than as a
- * second black slab, and the league switcher holds its right end.
+ * BAND 2 IS SHEET, not paper. It used to be `--background`, which is the exact
+ * value the page behind it also paints, so the band had no ground at all and a
+ * 1px rule was the only thing saying a frame existed. Sheet gives the chrome
+ * its own tone: ink, then sheet, then the paper page. The bottom nav takes the
+ * same sheet for the same reason.
+ *
+ * BAND 2 IS A SECTION STRIP, not a row of pills. The old current-item chip was
+ * `--muted` on `--background` — a measured 1.06:1, which is not a marker. A
+ * section is marked the way this app's own phone nav already marks one: a 2px
+ * ink rule on the band's edge, with the label set in the narrow uppercase the
+ * rest of the app shouts its headings in. The two navigations now agree.
  *
  * THIS COMPONENT RENDERS NO `<main>`. Every page owns its own landmark; two
  * would fail the accessibility pass on every screen at once.
@@ -65,14 +74,30 @@ export function AppShell({
       <header className="sticky top-0 z-40">
         <SkipLink />
 
-        <div className="flex h-14 items-center gap-1 bg-nav px-2 text-nav-foreground md:px-8">
+        <div className="flex h-14 items-center gap-1 bg-nav px-2 text-nav-foreground md:h-19 md:px-8">
           <MobileDrawer leagues={leagues} focused={focused} pathname={pathname} />
 
+          {/* THE MASTHEAD, and on a desktop it is set at the h2 scale, not at
+              the eyebrow's. Two bands of near-equal height read as two slabs; a
+              trade paper's masthead has mass and its section strip is thin
+              underneath it. So the ink band grows to 76px, the strip drops to
+              44px, and the name is finally the largest thing on the band rather
+              than the smallest.
+
+              THE ABBREVIATION SURVIVES BELOW `md`, where the drawer button and
+              three controls have already taken the width and the band stays at
+              56px. Both spans are decorative; the `sr-only` name is what any
+              screen reader announces at either width. */}
           <Link
             href="/leagues"
-            className="type-eyebrow text-ui rounded-lg px-2 py-1 text-nav-primary outline-none focus-visible:ring-3 focus-visible:ring-nav-foreground/30"
+            className="type-eyebrow text-ui md:type-h2 md:text-h2 rounded-lg px-2 py-1 text-nav-primary md:px-0 outline-none focus-visible:ring-3 focus-visible:ring-nav-foreground/30"
           >
-            <span aria-hidden>TMP</span>
+            <span aria-hidden className="hidden md:inline">
+              The Movie Pool
+            </span>
+            <span aria-hidden className="md:hidden">
+              TMP
+            </span>
             <span className="sr-only">The Movie Pool — home</span>
           </Link>
 
@@ -94,12 +119,15 @@ export function AppShell({
             ever exposed, and which one depends on the viewport. */}
         <nav
           aria-label="Primary"
-          className="hidden h-13 items-center gap-1 border-b bg-background px-8 md:flex"
+          className="hidden h-11 items-stretch gap-7 border-b bg-card px-8 md:flex"
         >
+          {/* LEAGUE BEFORE SEASON, because a league is a season's parent: a
+              season belongs to one league and ends, the league outlives it. The
+              drawer lists the same two groups in the same order. */}
           <NavItem href="/leagues" label="Home" current={isCurrent(pathname, "/leagues", true)} />
-          <NavGroup label="Season" links={season} pathname={pathname} />
           <NavGroup label="League" links={league} pathname={pathname} />
-          <div className="ml-auto">
+          <NavGroup label="Season" links={season} pathname={pathname} />
+          <div className="ml-auto flex items-center">
             <LeagueSwitcher leagues={leagues} focused={focused} />
           </div>
         </nav>
@@ -108,7 +136,7 @@ export function AppShell({
             there: without it nothing on screen says which league you are
             looking at, and a member can belong to several. */}
         {focused && (
-          <div className="flex h-12 items-center gap-2 border-b bg-background px-4 md:hidden">
+          <div className="flex h-12 items-center gap-2 border-b bg-card px-4 md:hidden">
             <LeagueMark
               id={focused.id}
               name={focused.name}
@@ -126,6 +154,20 @@ export function AppShell({
   );
 }
 
+/**
+ * THE SECTION RULE — the shared look of every item on the strip.
+ *
+ * The rule is drawn as an inset shadow rather than a border so it lands ON the
+ * band's own bottom border instead of adding a second line above it, and so an
+ * item's height never changes between states. `BottomNav` draws the identical
+ * 2px from the opposite edge; a bar under your thumb marks from the top, a bar
+ * over the page marks from the bottom.
+ */
+const NAV_ITEM =
+  "type-eyebrow text-ui flex items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/30";
+const NAV_CURRENT = "text-foreground shadow-[inset_0_-2px_0_0_var(--foreground)]";
+const NAV_RESTING = "text-muted-foreground hover:text-foreground";
+
 function NavItem({
   href,
   label,
@@ -139,9 +181,7 @@ function NavItem({
     <Link
       href={href}
       aria-current={current ? "page" : undefined}
-      className={`type-ui text-ui flex h-8 items-center rounded-4xl px-3 ${
-        current ? "bg-accent" : "hover:bg-muted"
-      }`}
+      className={`${NAV_ITEM} ${current ? NAV_CURRENT : NAV_RESTING}`}
     >
       {label}
     </Link>
@@ -168,15 +208,10 @@ function NavGroup({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`type-ui text-ui flex h-8 items-center gap-1.5 rounded-4xl px-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/30 ${
-          active ? "bg-accent" : "hover:bg-muted"
-        }`}
+        className={`${NAV_ITEM} gap-1.5 ${active ? NAV_CURRENT : NAV_RESTING}`}
       >
         {label}
-        <ChevronDownIcon
-          className={`size-3 ${active ? "text-foreground" : "text-muted-foreground"}`}
-          aria-hidden
-        />
+        <ChevronDownIcon className="size-3" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         {links.map((link) => (

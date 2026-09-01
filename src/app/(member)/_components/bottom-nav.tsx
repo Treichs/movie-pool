@@ -38,7 +38,7 @@ export function BottomNav({
   return (
     <nav
       aria-label="Primary"
-      className="sticky bottom-0 z-30 grid grid-cols-4 border-t bg-background md:hidden"
+      className="sticky bottom-0 z-30 grid grid-cols-4 border-t bg-card md:hidden"
     >
       {tabs.map(({ label, href, match, exact, Icon }) => {
         const current = isCurrent(pathname, match, exact);
