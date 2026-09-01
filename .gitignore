@@ -42,3 +42,6 @@ next-env.d.ts
 
 # playwright mcp artifacts
 .playwright-mcp/
+
+# impeccable artifacts — critique snapshots and review screenshots
+.impeccable/
