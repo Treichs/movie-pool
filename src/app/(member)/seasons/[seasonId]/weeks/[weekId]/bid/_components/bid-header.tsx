@@ -54,9 +54,12 @@ export function BidHeader({ board }: { board: WeekBidBoard }) {
       </Breadcrumb>
 
       <h1 className="mt-4">Place your bids</h1>
-      <p className="type-dek text-dek mt-3 max-w-[52ch] text-muted-foreground">
-        Blind and sealed until the week closes — change a bid any time before the
-        deadline.
+      {/* ONE LINE ON A PHONE. At 24px on a 343px column every extra clause is
+          another 32px band between the player and the slate, and this dek is
+          read once in week one and then every week forever after. The four
+          facts that earn their place are: blind, sealed, changeable, deadline. */}
+      <p className="type-dek text-dek mt-3 max-w-measure-tight text-muted-foreground">
+        Blind and sealed — change a bid until the deadline.
       </p>
     </div>
   );

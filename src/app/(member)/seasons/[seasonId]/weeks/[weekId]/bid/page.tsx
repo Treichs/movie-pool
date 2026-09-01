@@ -46,8 +46,16 @@ export default async function BidPage({
 
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
-      <BidHeader board={board} />
-      <WeekStatusBar board={board} />
+      {/* THE MASTHEAD AND THE STANDING FIGURES SHARE A LINE, the way a trade
+          paper sets them. Stacked, the trail, title, dek and status card spent
+          320px before the first film — which pushed the slate off a 390px
+          phone entirely, and made the page taller than a 900px laptop so the
+          summary bar pinned itself over the only inputs on the screen. Side by
+          side they cost the height of the taller column instead of the sum. */}
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between md:gap-8">
+        <BidHeader board={board} />
+        <WeekStatusBar board={board} />
+      </div>
       <BidForm
         seasonId={seasonId}
         weekId={weekId}
