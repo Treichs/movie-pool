@@ -407,6 +407,8 @@ const NOT_A_GROUND_WASH = {
   scrim: "a modal overlay — the dialog sits ABOVE it on --popover, never on it",
   input: "a field's fill; the value inside it is --foreground and a state colour never lands there",
   border: "a separator rule and a menu divider; nothing sits on it",
+  "muted-foreground":
+    "the reveal ladder's losing-bid bar. It is a FILL, not a ground: the row is aria-hidden, nothing renders on top of it, and the amount it encodes is printed in full beside it — so the bar is a second rendering of a stated number rather than a graphic anything depends on. What it does need is to stay distinct from its own --muted track, which 40% of --muted-foreground clears comfortably.",
 };
 
 const MAX_GROUND_DEPTH = 2;

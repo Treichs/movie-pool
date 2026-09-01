@@ -19,8 +19,9 @@ import { requireUser } from "@/lib/auth";
 import { numberWord, sentenceCase } from "@/lib/format";
 import { getLeagueRecordsPage } from "@/lib/league";
 
+import { RecordCard } from "@/components/record-card";
+
 import { CareerTable } from "./_components/career-table";
-import { RecordCard } from "./_components/record-card";
 
 export const metadata = { title: "Record book" };
 
@@ -52,6 +53,13 @@ export default async function LeagueRecordsPage({
   if (!page) notFound();
 
   const { league, book } = page;
+  // Null rather than zero when there is no book at all — an empty league has
+  // no records to hold none of.
+  const total = book?.records.length ?? 0;
+  const mine =
+    book === null || total === 0
+      ? null
+      : book.records.filter((r) => r.entry.isMe).length;
 
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
@@ -85,6 +93,25 @@ export default async function LeagueRecordsPage({
           {book === null
             ? "Nothing to record yet."
             : `${sentenceCase(numberWord(book.seasonsCounted))} season${book.seasonsCounted === 1 ? "" : "s"}, ${numberWord(book.aggregates.filmsScored)} film${book.aggregates.filmsScored === 1 ? "" : "s"} scored.`}
+          {/* YOUR OWN STAKE IN IT. A record book is a page about other people
+              until it says which of them are yours, and the count is the
+              cheapest way to say it — a third hero block, after the season
+              leaderboard's and League Home's, would be a template rather than
+              a design. Said honestly at zero: "none of them yet" is a standing
+              a league can improve on, and it is the true one for most members
+              of most leagues. */}
+          {mine !== null && (
+            <>
+              {" "}
+              You hold{" "}
+              <span className="text-foreground">
+                {mine === 0
+                  ? "none of them yet"
+                  : `${numberWord(mine)} of ${numberWord(total)}`}
+              </span>
+              .
+            </>
+          )}
         </p>
       </div>
 

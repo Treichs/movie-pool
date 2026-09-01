@@ -1,10 +1,17 @@
 import "server-only";
 
 import type { SeasonContext } from "@/lib/auth";
-import { getOverdueWeeks, getSeasonLeague, type OverdueWeek } from "@/lib/commish";
+import {
+  getOverdueWeeks,
+  getSeasonLeague,
+  getSettingsForSeason,
+  type OverdueWeek,
+} from "@/lib/commish";
 import { getLeaderboard, type LeaderboardData } from "@/lib/leaderboard";
+import { seasonLadder, type PayoutLadder } from "@/lib/payout";
 import { getSeasonHub, type SeasonHub } from "@/lib/season-hub";
 import { getSeasonOptions, type SeasonOption } from "@/lib/season-schedule";
+import { buildSeasonStory, type SeasonStory } from "@/lib/season-story";
 
 /**
  * SEASON HOME — the composer for `/seasons/[seasonId]`, the largest read screen
@@ -29,6 +36,14 @@ import { getSeasonOptions, type SeasonOption } from "@/lib/season-schedule";
  * counts** — that combination is a deadline that did not fire, and surfacing it
  * is the whole point.
  *
+ * ── THE PRIZE LADDER WAS WRITTEN AND NEVER WIRED ──────────────────────────
+ * `seasonLadder` has sat in `payout.ts` with zero consumers, under a comment
+ * saying it "lived inline on the leaderboard page" — the same species of
+ * composer-without-a-UI as the queue below it. It answers the question the
+ * leaderboard is actually asked every Monday: not what did I score, but am I
+ * in the money. It is a PROJECTION and nothing is stored; a practice league
+ * gets null and no money register at all.
+ *
  * ── THE ROLE GATE IS A READ GATE, NOT A RENDER GATE ───────────────────────
  * A player never fetches the queue at all. Hiding it in the component would
  * still have shipped the rows to the browser.
@@ -41,6 +56,12 @@ export type SeasonHome = {
   seasonOptions: SeasonOption[];
   hub: SeasonHub;
   leaderboard: LeaderboardData;
+  /** Position, movement, rivalry and the money — derived from `leaderboard`,
+   *  querying nothing of its own. */
+  story: SeasonStory;
+  /** What the places are worth while the season runs. Null for a practice
+   *  league, which is playing for nothing. */
+  ladder: PayoutLadder | null;
   /** Commissioner only. Empty for a player, because a player never asked. */
   overdue: OverdueWeek[];
   isCommissioner: boolean;
@@ -50,11 +71,15 @@ export async function getSeasonHome(ctx: SeasonContext): Promise<SeasonHome> {
   const { db, seasonId, memberId, role } = ctx;
   const isCommissioner = role === "commissioner";
 
-  const [hub, leaderboard, league] = await Promise.all([
+  const [hub, leaderboard, league, settings] = await Promise.all([
     getSeasonHub(db, seasonId, memberId),
     getLeaderboard(db, seasonId, memberId),
     getSeasonLeague(db, seasonId),
+    getSettingsForSeason(db, seasonId),
   ]);
+
+  const ladder = seasonLadder(settings, leaderboard.playerCount);
+  const story = buildSeasonStory(leaderboard, memberId, ladder);
 
   const [seasonOptions, overdue] = await Promise.all([
     league ? getSeasonOptions(db, league.id) : Promise.resolve([]),
@@ -73,6 +98,8 @@ export async function getSeasonHome(ctx: SeasonContext): Promise<SeasonHome> {
     seasonOptions,
     hub,
     leaderboard,
+    story,
+    ladder,
     overdue,
     isCommissioner,
   };

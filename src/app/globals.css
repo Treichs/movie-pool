@@ -497,3 +497,56 @@
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   THE REVEAL'S ONE AUTHORED MOMENT
+
+   A sealed auction is opened by drawing the bids, so the reveal draws them:
+   every bidder's bar grows from nothing, film after film, and the cut rule
+   lands under the last one that got in. It is the only orchestrated motion in
+   the app, and it is orchestrated rather than scattered — one easing, one
+   stagger, one direction.
+
+   TRANSFORM, NOT WIDTH. The resting width is the real number, set inline from
+   the bid; the animation only scales that box from zero, so the browser
+   composites it and a sheet of forty bars does not lay out forty times.
+
+   `backwards` fill is load-bearing: without it every bar paints at full length
+   for the duration of its own delay and then snaps to zero to start, which is
+   the animation running backwards in front of the reader.
+
+   REDUCED MOTION NEEDS NOTHING HERE. The global rule above already collapses
+   animation-duration and animation-delay to ~0, so the whole cascade lands in
+   one frame with the numbers exactly where they belong — the app's stated way
+   of honouring the preference, rather than removing the animation and leaving
+   a `backwards` fill holding every bar at zero.
+--------------------------------------------------------------------------- */
+@keyframes reveal-bar {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+}
+
+@utility reveal-bar {
+  transform-origin: left center;
+  animation: reveal-bar 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@utility reveal-rise {
+  animation: reveal-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* The re-rank's travel. A class rather than an inline style so the
+   reduced-motion rule above can reach it: `transition-duration: 1ms` collapses
+   the journey while the films still arrive in their new order, which is the
+   only part of a reorder that carries meaning. */
+@utility reveal-flip {
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}

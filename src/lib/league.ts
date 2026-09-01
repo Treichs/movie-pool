@@ -5,6 +5,7 @@ import {
   type LeagueAggregates,
   type LeagueRecordBook,
 } from "@/lib/league-records";
+import { buildLeagueStory, type LeagueStory } from "@/lib/league-story";
 import type { SupabaseClient } from "@/lib/supabase";
 
 // League data helpers (phase 11 / ADR-016). RLS scopes every read to
@@ -564,7 +565,15 @@ export type LeagueHome = {
   /** The earliest week still taking bids, which is what the thread counts to. */
   openWeek: LeagueWeek | null;
   career: CareerRow[];
+  /**
+   * The record book's own marquee flags, which its type has always said "lead
+   * League Home" — and which this composer discarded until 2026-09-01. The
+   * page's read was already paying for them.
+   */
+  records: LeagueRecordBook["records"];
   aggregates: LeagueAggregates | null;
+  /** Career position and rivalries, derived from the same record book. */
+  story: LeagueStory;
   announcements: LeagueAnnouncement[];
 };
 
@@ -611,7 +620,13 @@ export async function getLeagueHome(
     current,
     openWeek,
     career,
+    records: book?.records ?? [],
     aggregates: book?.aggregates ?? null,
+    story: buildLeagueStory(
+      career,
+      book?.placements ?? new Map(),
+      user.id,
+    ),
     announcements,
   };
 }
