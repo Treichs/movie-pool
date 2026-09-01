@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { Tomatometer } from "@/components/tomatometer";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -108,7 +109,7 @@ export function PosterCard({
               {meta}
             </span>
             {tomatometer != null && (
-              <span className="type-numeral shrink-0 text-sm">{tomatometer}%</span>
+              <Tomatometer value={tomatometer} size="sm" className="shrink-0" />
             )}
           </div>
         )}

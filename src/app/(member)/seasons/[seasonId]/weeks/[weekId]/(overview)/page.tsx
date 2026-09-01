@@ -7,11 +7,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { requireSeasonMember } from "@/lib/auth";
+import { buildRevealStory, rankFilmsByScore, weekTopBid } from "@/lib/reveal";
 import { getWeekBoardView } from "@/lib/week-board-view";
 import { resultsAreOpen, weekStatusDisplay } from "@/lib/week-status";
 
 import { Corrections } from "./_components/corrections";
+import { RevealBriefStrip } from "./_components/reveal-brief";
 import { RevealFilmRow } from "./_components/reveal-film";
+import { RevealSheet } from "./_components/reveal-sheet";
+import { WeekendWatch } from "./_components/weekend-watch";
 import { FinishUnbidWeek } from "./_components/finish-unbid-week";
 import { WeekHeader } from "./_components/week-header";
 import { YourWeek } from "./_components/your-week";
@@ -31,6 +35,26 @@ export const metadata = { title: "Week" };
  *
  * **This redirect is in the page, not in `next.config.ts`.** Reading the config
  * will not reveal it.
+ *
+ * ── THE CEREMONY, ADDED 2026-09-01 ──────────────────────────────────────
+ * A reveal is the most intense minute of the week and this page used to report
+ * it like a results table: your own panel, then a list of winners. The two
+ * things it was missing were both already computed. `film.rows` carries EVERY
+ * bid, not only the winning ones, so the sheet can draw the ladder and the cut
+ * that decided it; and `weekTopBid`, `rowEfficiency` and `weekTopEfficiency`
+ * sat exported with no consumer at all, which is exactly what the briefs are
+ * built from.
+ *
+ * The motion is one authored moment rather than an effect per section: the
+ * bars grow, film after film, and the cut lands under the last bid that got
+ * in. `globals.css` carries the keyframes and the reasoning.
+ *
+ * ── THE WEEKEND IS A STATE, NOT A SCREEN ────────────────────────────────
+ * There is no route for "the weekend" and there should not be: the route set
+ * is settled, and the weekend IS this page in `closed` — owners decided, points
+ * not yet landed. `week-status.ts` already calls it "the most interesting state
+ * in the game, not a transient one", and until 2026-09-01 the page spent it
+ * showing a dash where a score would go.
  *
  * ── THE PAGE IS DRAWN SETTLED BECAUSE THAT IS THE HALF NOBODY HAS SEEN ──
  * Every other week state is reachable here too, and each one says what it is:
@@ -62,12 +86,36 @@ export default async function WeekBoardPage({
     status === "open" && !view.biddable,
     noOwners
   );
+  // ONE SCALE FOR THE WHOLE SHEET, removed films included: they were bid on
+  // with the same money, and rescaling the survivors when a film is withdrawn
+  // would redraw every bar on the page for a reason unrelated to the bidding.
+  const weekTop = weekTopBid([...sheet, ...removed]);
+  const story = settled ? buildRevealStory(sheet) : { nearMiss: null, briefs: [] };
+  // THE SECOND ORDER, computed only when there is one. `rankFilmsByScore` has
+  // existed since the Monday storyboard was locked with no caller at all; the
+  // sheet component decides whether the two orders actually differ enough to
+  // offer the step between them.
+  const scoredOrder = scored
+    ? rankFilmsByScore(sheet).map((f) => f.filmId)
+    : null;
 
   return (
     <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-measure-page flex-col gap-6 p-6 md:p-8">
       <WeekHeader view={view} />
 
-      {view.mine && <YourWeek mine={view.mine} scored={scored} />}
+      {/* ONE PANEL, NOT TWO. `YourWeek` is the SCORED conclusion — its hero
+          figure is the week's points and its last figure is points per dollar,
+          and on an unscored week both are dashes sitting directly above a band
+          that says "1 film, $15 paid, results land Sunday" properly. The
+          weekend band supersedes it outright for the days it covers rather
+          than being stacked under it. */}
+      {view.weekend ? (
+        <WeekendWatch watch={view.weekend} />
+      ) : (
+        view.mine && <YourWeek mine={view.mine} scored={scored} />
+      )}
+
+      <RevealBriefStrip briefs={story.briefs} nearMiss={story.nearMiss} />
 
       {/* THE ONE PRESS THAT CLOSES AN UNBID WEEK OUT. Offered only when every
           condition `finalize_week` checks is already met, so the button is
@@ -107,13 +155,12 @@ export default async function WeekBoardPage({
             </EmptyHeader>
           </Empty>
         ) : (
-          sheet.map((film) => (
-            <RevealFilmRow
-              key={film.filmId}
-              film={film}
-              leagueId={league?.id ?? null}
-            />
-          ))
+          <RevealSheet
+            films={sheet}
+            scoredOrder={scoredOrder}
+            weekTop={weekTop}
+            leagueId={league?.id ?? null}
+          />
         )}
       </section>
 
@@ -134,6 +181,7 @@ export default async function WeekBoardPage({
             <RevealFilmRow
               key={film.filmId}
               film={film}
+              weekTop={weekTop}
               leagueId={league?.id ?? null}
             />
           ))}

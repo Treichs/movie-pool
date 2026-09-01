@@ -46,7 +46,7 @@ export function LeagueSwitcher({
     return (
       <Link
         href="/leagues/new"
-        className="type-ui text-ui flex h-8 items-center gap-2 rounded-4xl border border-edge px-3 hover:bg-muted"
+        className="type-ui text-ui flex h-8 items-center gap-2 rounded-4xl border border-edge bg-background px-3 hover:bg-muted"
       >
         <PlusIcon className="size-4" aria-hidden />
         Start a league
@@ -57,7 +57,7 @@ export function LeagueSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="type-ui text-ui flex h-8 max-w-66 items-center gap-2 rounded-4xl border border-edge bg-card px-2.5 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
+        className="type-ui text-ui flex h-8 max-w-66 items-center gap-2 rounded-4xl border border-edge bg-background px-2.5 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30"
         aria-label={`League — ${focused.name}`}
       >
         <LeagueMark id={focused.id} name={focused.name} className="size-5.5" />

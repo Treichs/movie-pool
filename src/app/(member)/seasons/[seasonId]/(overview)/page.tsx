@@ -126,7 +126,13 @@ export default async function SeasonPage({
             unbidWeekIds={home.hub.unbidWeekIds}
           />
         }
-        leaderboard={<LeaderboardTab data={home.leaderboard} />}
+        leaderboard={
+          <LeaderboardTab
+            data={home.leaderboard}
+            story={home.story}
+            ladder={home.ladder}
+          />
+        }
         you={<YouTab films={home.hub.myFilms} deltas={home.hub.myDeltas} />}
       />
     </main>

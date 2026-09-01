@@ -227,3 +227,170 @@ export function rankFilmsByScore(sheet: readonly RevealFilm[]): RevealFilm[] {
     return bs - as || a.title.localeCompare(b.title);
   });
 }
+
+// ————— The ceremony's own copy (2026-09-01) —————
+
+/** One player named in a brief, and whether they are the reader. */
+export type RevealName = { name: string; isMine: boolean };
+
+/**
+ * The closest film the reader lost — the sentence a reveal exists to deliver.
+ *
+ * "You were outbid on Kraven by $1" is the whole drama of a sealed auction,
+ * and every number in it was already on the sheet: the reader's own row and
+ * the film's cut. Null when they won everything they bid on, or bid on
+ * nothing, or lost only films that were never close.
+ */
+export type NearMiss = { title: string; mine: number; cut: number; short: number };
+
+export type RevealBrief = {
+  kind: "top" | "contested" | "narrowest" | "overpaid" | "value";
+  label: string;
+  names: RevealName[];
+  film: string;
+  figure: string;
+  detail: string;
+};
+
+export type RevealStory = {
+  nearMiss: NearMiss | null;
+  briefs: RevealBrief[];
+};
+
+const nameOf = (r: RevealRow): RevealName => ({ name: r.isMe ? "You" : r.name, isMine: r.isMe });
+
+/**
+ * WHO BID WELL AND WHO BID POORLY — the half of a reveal that is about other
+ * people, and the half this page never showed.
+ *
+ * Everything is read off the sheet the page already has. The four bid briefs
+ * need no scores, so they land the moment a week closes — which is the moment
+ * anybody cares — and the fifth appears on Monday once the films are captured.
+ *
+ * REMOVED FILMS ARE EXCLUDED. They score for nobody and their bids were
+ * refunded, so naming somebody the week's biggest bid on a film that was
+ * withdrawn would be a headline about money nobody spent.
+ */
+export function buildRevealStory(sheet: readonly RevealFilm[]): RevealStory {
+  const live = sheet.filter((f) => !f.removed && f.rows.length > 0);
+  const briefs: RevealBrief[] = [];
+
+  // ---- The biggest bid anyone put in --------------------------------------
+  const top = weekTopBid(live);
+  if (top > 0) {
+    const holders = live.flatMap((f) =>
+      f.rows.filter((r) => r.amount === top).map((r) => ({ row: r, film: f }))
+    );
+    if (holders.length > 0) {
+      briefs.push({
+        kind: "top",
+        label: "Biggest bid",
+        names: holders.map((h) => nameOf(h.row)),
+        film: [...new Set(holders.map((h) => h.film.title))].join(", "),
+        figure: `$${top}`,
+        detail: holders[0].row.isWinning ? "and it won" : "and it still lost",
+      });
+    }
+  }
+
+  // ---- The film that drew the most people ---------------------------------
+  const contested = [...live].sort(
+    (a, b) => b.rows.length - a.rows.length || a.title.localeCompare(b.title)
+  )[0];
+  if (contested && contested.rows.length > 1) {
+    briefs.push({
+      kind: "contested",
+      label: "Most contested",
+      names: [],
+      // The only brief whose figure is a COUNT rather than a sum of money, so
+      // the title has to sit inside the sentence rather than in front of it:
+      // "Project Hail Mary — bidders" is not English.
+      film: "",
+      figure: String(contested.rows.length),
+      detail: `bidders on ${contested.title}${
+        contested.everyoneElse > 0 ? `, ${contested.everyoneElse} passed` : ""
+      }`,
+    });
+  }
+
+  // ---- The narrowest miss anywhere on the sheet ---------------------------
+  //
+  // The smallest gap between the lowest winning bid and the highest losing one.
+  // It is the week's cruelty, and it is what people remember: a dollar decided
+  // it. Only films where somebody actually lost can produce one.
+  let narrowest: { film: RevealFilm; row: RevealRow; short: number } | null = null;
+  for (const f of live) {
+    if (f.cut === null) continue;
+    const losers = f.rows.filter((r) => !r.isWinning);
+    if (losers.length === 0) continue;
+    // Rows are sorted descending, so the first loser is the highest one.
+    const closest = losers[0];
+    const short = f.cut - closest.amount;
+    if (short > 0 && (narrowest === null || short < narrowest.short)) {
+      narrowest = { film: f, row: closest, short };
+    }
+  }
+  if (narrowest) {
+    briefs.push({
+      kind: "narrowest",
+      label: "Narrowest miss",
+      names: [nameOf(narrowest.row)],
+      film: narrowest.film.title,
+      figure: `$${narrowest.short}`,
+      detail: `short of the cut at $${narrowest.film.cut}`,
+    });
+  }
+
+  // ---- The widest spread: paying far more than it took to get in ----------
+  //
+  // `spread` is the film's own top-minus-cut, which ADR-096 already ranks the
+  // sheet on. As a brief it names the person who paid the premium rather than
+  // the film that produced it — "who bid poorly" is a person, not a title.
+  const widest = [...live].sort((a, b) => b.spread - a.spread)[0];
+  if (widest && widest.spread > 0 && widest.cut !== null) {
+    briefs.push({
+      kind: "overpaid",
+      label: "Paid the most over",
+      names: widest.rows
+        .filter((r) => r.amount === widest.rows[0].amount)
+        .map(nameOf),
+      film: widest.title,
+      figure: `$${widest.spread}`,
+      detail: `more than the $${widest.cut} it took to get in`,
+    });
+  }
+
+  // ---- Monday only: the best points per dollar in the week ----------------
+  const bestRate = weekTopEfficiency(live);
+  if (bestRate > 0) {
+    const winners = live.flatMap((f) =>
+      f.rows
+        .filter((r) => Math.abs(rowEfficiency(r, f.score) - bestRate) < 0.005)
+        .map((r) => ({ row: r, film: f }))
+    );
+    if (winners.length > 0) {
+      briefs.push({
+        kind: "value",
+        label: "Best value",
+        names: winners.map((w) => nameOf(w.row)),
+        film: [...new Set(winners.map((w) => w.film.title))].join(", "),
+        figure: bestRate.toFixed(2),
+        detail: `points per dollar at $${winners[0].row.amount}`,
+      });
+    }
+  }
+
+  // ---- The reader's own near miss ----------------------------------------
+  let nearMiss: NearMiss | null = null;
+  for (const f of live) {
+    if (f.cut === null) continue;
+    const mine = f.rows.find((r) => r.isMe);
+    if (!mine || mine.isWinning) continue;
+    const short = f.cut - mine.amount;
+    if (short > 0 && (nearMiss === null || short < nearMiss.short)) {
+      nearMiss = { title: f.title, mine: mine.amount, cut: f.cut, short };
+    }
+  }
+
+  return { nearMiss, briefs };
+}

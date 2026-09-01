@@ -64,6 +64,20 @@ export type RecordEntry = {
   value: string;
   detail: string;
   /**
+   * How far clear this record stands, already worded — "12.40 pts clear of Dev
+   * Grace", "Level with Dev Grace", "0.12 pts/$ worse than Dev Frank".
+   *
+   * A record with no runner-up is a fact; a record with one is an argument,
+   * and the argument is the reason anybody opens a record book. Null when
+   * there is genuinely nothing to compare against — a league whose first
+   * scored film set every record it has.
+   *
+   * Worded here rather than in the card because the unit and the direction
+   * both belong to the record: "clear of" for a best, "worse than" for a
+   * worst, and points, points-per-dollar or films depending on the axis.
+   */
+  margin: string | null;
+  /**
    * The film the record is about — present on the three FILM records and
    * deliberately absent on "Best season", which is a person and a season and
    * has no single film to show. Consumers must handle the null rather than
@@ -110,7 +124,14 @@ export type LeagueRecordBook = {
   aggregates: LeagueAggregates;
   /** Marquee records lead League Home; the records page shows the full shelf. */
   records: { label: string; entry: RecordEntry; marquee: boolean }[];
+  /** Where each account finished in each COMPLETED season, keyed by profile.
+   *  The raw material for a career rivalry, which `buildCareerTable` computes
+   *  and then throws away in favour of a title count. */
+  placements: Map<string, SeasonPlacement[]>;
 };
+
+/** One account's finishing place in one completed season. */
+export type SeasonPlacement = { seasonId: string; rank: number };
 
 type FilmRow = {
   id: string;
@@ -121,6 +142,53 @@ type FilmRow = {
   catalog: { poster_path: string | null } | null;
   week: { season_id: string; number: number } | null;
 };
+
+/**
+ * HOW FAR CLEAR A RECORD STANDS.
+ *
+ * `kind` is the direction the axis runs: a best is "clear of" the next best, a
+ * worst is "worse than" the next worst. Getting that backwards would praise
+ * somebody for the priciest whiff in league history.
+ *
+ * A DEAD HEAT IS REPORTED AS ONE, AND COUNTED. Ties are honoured everywhere in
+ * this game, and a contested film genuinely gives every owner the same score —
+ * so "Biggest single film" can be level with three other people at once.
+ * Naming only the next row in sort order would pick an arbitrary name out of a
+ * tie, which is the one thing this file refuses to do anywhere else. So the
+ * whole tail is passed in: one level name is named, several are counted.
+ *
+ * This is also the only signal the shelf gives that a record is shared at all —
+ * each card still names a single holder.
+ *
+ * The epsilon is half a hundredth because every figure here is rendered to two
+ * decimals: a gap that rounds to 0.00 must not be printed as "0.00 pts clear".
+ *
+ * @param rest everything below the record, in the SAME order the record was
+ *             taken from — `ranking.slice(1)`.
+ */
+function marginText(
+  best: number,
+  rest: { value: number; holder: string; isSelf: boolean }[],
+  unit: (n: number) => string,
+  kind: "best" | "worst" = "best"
+): string | null {
+  if (rest.length === 0) return null;
+
+  const level = rest.filter((r) => Math.abs(best - r.value) < 0.005);
+  if (level.length === 1) {
+    return `Level with ${level[0].isSelf ? "their own next best" : level[0].holder}`;
+  }
+  if (level.length > 1) return `Level with ${level.length} others`;
+
+  const next = rest[0];
+  const gap = Math.abs(best - next.value);
+  const who = next.isSelf ? "their own next best" : next.holder;
+  return `${unit(gap)} ${kind === "best" ? "clear of" : "worse than"} ${who}`;
+}
+
+const inPoints = (n: number) => `${n.toFixed(2)} pts`;
+const inRatio = (n: number) => `${n.toFixed(2)} pts/$`;
+const inFilms = (n: number) => `${n} film${n === 1 ? "" : "s"}`;
 
 /** The film half of a record entry, from the row the record was found on. */
 const filmOf = (f: FilmRow): RecordEntry["film"] => ({
@@ -242,12 +310,74 @@ export function buildCareerTable(
 }
 
 /**
+ * WHERE EVERYONE FINISHED, SEASON BY SEASON.
+ *
+ * `buildCareerTable` walks exactly this and keeps only the count of firsts and
+ * the best of them, which is enough for a career line and not enough for a
+ * rivalry — "you have finished above Grace in four of seven shared seasons"
+ * needs both placings side by side, season by season.
+ *
+ * COMPLETED SEASONS ONLY, for the same reason titles are: a placing in a live
+ * season is a position, not a finish, and a rivalry record that swung every
+ * Monday would be worth nothing to argue with.
+ *
+ * It ranks through the shared `rankBy` on the same sort `buildCareerTable`
+ * uses, which is what keeps the two from disagreeing about who came second.
+ * Pure and exported so a unit test can hold them to it.
+ */
+export function buildPlacements(
+  standings: StandingsRow[],
+  profileOf: Map<string, string>,
+  completedSeasonIds: Set<string>
+): Map<string, SeasonPlacement[]> {
+  const bySeason = new Map<string, StandingsRow[]>();
+  for (const r of standings) {
+    if (!completedSeasonIds.has(r.season_id)) continue;
+    const rows = bySeason.get(r.season_id) ?? [];
+    rows.push(r);
+    bySeason.set(r.season_id, rows);
+  }
+
+  const out = new Map<string, SeasonPlacement[]>();
+  for (const [seasonId, rows] of bySeason) {
+    const ranked = rankBy(
+      [...rows].sort((a, b) => Number(b.points) - Number(a.points)),
+      (r) => Number(r.points)
+    );
+    for (const [rank, r] of ranked) {
+      const profileId = profileOf.get(r.season_member_id);
+      // A membership with no account behind it is skipped, exactly as
+      // buildCareerTable skips it — a career cannot be grouped on a name.
+      if (!profileId) continue;
+      const list = out.get(profileId) ?? [];
+      list.push({ seasonId, rank });
+      out.set(profileId, list);
+    }
+  }
+  return out;
+}
+
+/**
  * THE BEST SINGLE WEEK — one member's haul across every film they owned in one
  * week. Pure and exported for the unit test: the aggregation key is the part
  * that goes wrong silently (member alone sums a career; member+week without
  * the season collides week 3 of every season into one number).
  */
-export function bestWeekHaul(
+export type WeekHaul = {
+  memberId: string;
+  seasonId: string;
+  weekNumber: number;
+  total: number;
+  /** The largest film in the haul — the card's artwork. */
+  topFilmId: string;
+};
+
+/**
+ * EVERY week-haul, biggest first — the ranking `bestWeekHaul` takes the head
+ * of, exposed so the record can also say what it beat. Splitting it this way
+ * keeps `bestWeekHaul`'s signature and its unit test exactly as they were.
+ */
+export function rankWeekHauls(
   rows: {
     memberId: string;
     seasonId: string;
@@ -255,14 +385,7 @@ export function bestWeekHaul(
     filmId: string;
     score: number;
   }[]
-): {
-  memberId: string;
-  seasonId: string;
-  weekNumber: number;
-  total: number;
-  /** The largest film in the haul — the card's artwork. */
-  topFilmId: string;
-} | null {
+): WeekHaul[] {
   const hauls = new Map<
     string,
     { memberId: string; seasonId: string; weekNumber: number; total: number; topFilmId: string; topScore: number }
@@ -286,8 +409,15 @@ export function bestWeekHaul(
     }
     hauls.set(k, h);
   }
-  const best = [...hauls.values()].sort((a, b) => b.total - a.total)[0];
-  return best && best.total > 0 ? best : null;
+  return [...hauls.values()]
+    .filter((h) => h.total > 0)
+    .sort((a, b) => b.total - a.total);
+}
+
+export function bestWeekHaul(
+  rows: Parameters<typeof rankWeekHauls>[0]
+): WeekHaul | null {
+  return rankWeekHauls(rows)[0] ?? null;
 }
 
 /**
@@ -299,11 +429,18 @@ export function bestWeekHaul(
  * A founding cohort all debuts in season one, and that is honest: the record
  * starts as "best founder" and gets harder to take as the league ages.
  */
-export function bestRookieSeason(
-  rows: { profileId: string; seasonId: string; points: number }[],
+export type RookieSeason = { profileId: string; seasonId: string; points: number };
+
+/**
+ * EVERY member's debut season, strongest first. `bestRookieSeason` is its head
+ * — split for the same reason `rankWeekHauls` is, and with the same promise
+ * that the single-result export keeps its shape.
+ */
+export function rankRookieSeasons(
+  rows: RookieSeason[],
   /** Season ids in PLAY order, earliest first. */
   seasonOrder: string[]
-): { profileId: string; seasonId: string; points: number } | null {
+): RookieSeason[] {
   const order = new Map(seasonOrder.map((id, i) => [id, i]));
   const debut = new Map<string, { seasonId: string; points: number; idx: number }>();
   for (const r of rows) {
@@ -314,13 +451,17 @@ export function bestRookieSeason(
       debut.set(r.profileId, { seasonId: r.seasonId, points: r.points, idx });
     }
   }
-  let best: { profileId: string; seasonId: string; points: number } | null = null;
-  for (const [profileId, d] of debut) {
-    if (d.points > 0 && (!best || d.points > best.points)) {
-      best = { profileId, seasonId: d.seasonId, points: d.points };
-    }
-  }
-  return best;
+  return [...debut.entries()]
+    .filter(([, d]) => d.points > 0)
+    .map(([profileId, d]) => ({ profileId, seasonId: d.seasonId, points: d.points }))
+    .sort((a, b) => b.points - a.points);
+}
+
+export function bestRookieSeason(
+  rows: RookieSeason[],
+  seasonOrder: string[]
+): RookieSeason | null {
+  return rankRookieSeasons(rows, seasonOrder)[0] ?? null;
 }
 
 /** What getLeagueRecordBook needs to know about a season — getLeagueSeasons'
@@ -405,12 +546,9 @@ export async function getLeagueRecordBook(
     : { data: [] };
   const winningBids = (bidsData ?? []) as WinningBid[];
 
-  const career = buildCareerTable(
-    standings,
-    profileOf,
-    myMemberIds,
-    new Set(completedSeasonIds)
-  );
+  const completedSet = new Set(completedSeasonIds);
+  const career = buildCareerTable(standings, profileOf, myMemberIds, completedSet);
+  const placements = buildPlacements(standings, profileOf, completedSet);
   const memberName = new Map(
     standings.map((r) => [r.season_member_id, r.display_name])
   );
@@ -453,9 +591,10 @@ export async function getLeagueRecordBook(
   // live seasons it renders on day one, and "Best season — 0.00 pts on $0
   // spent" is not a record, it is the absence of one. The other three are
   // already self-suppressing because they need a captured film to exist.
-  const bestSeason = [...standings]
+  const seasonRanking = [...standings]
     .sort((a, b) => Number(b.points) - Number(a.points))
-    .filter((r) => Number(r.points) > 0)[0];
+    .filter((r) => Number(r.points) > 0);
+  const bestSeason = seasonRanking[0];
   if (bestSeason) {
     records.push({
       marquee: true,
@@ -466,6 +605,20 @@ export async function getLeagueRecordBook(
         isMe: myMemberIds.has(bestSeason.season_member_id),
         value: `${Number(bestSeason.points).toFixed(2)} pts`,
         detail: `on $${Number(bestSeason.spent)} spent`,
+        // A per-season record, so the next best can be the SAME person's other
+        // season. `isSelf` is compared on the account, never the name — this
+        // file's own warning about name collisions applies here too.
+        margin: marginText(
+          Number(bestSeason.points),
+          seasonRanking.slice(1).map((r) => ({
+            value: Number(r.points),
+            holder: r.display_name,
+            isSelf:
+              profileFor(r.season_member_id) ===
+              profileFor(bestSeason.season_member_id),
+          })),
+          inPoints
+        ),
         // A season, not a film. Null on purpose — see RecordEntry.film.
         film: null,
       },
@@ -476,9 +629,10 @@ export async function getLeagueRecordBook(
   const scoredBids = winningBids
     .map((b) => ({ bid: b, film: filmById.get(b.film_id) }))
     .filter((x): x is { bid: WinningBid; film: FilmRow } => Boolean(x.film));
-  const topFilm = [...scoredBids].sort(
+  const filmRanking = [...scoredBids].sort(
     (a, b) => Number(b.film.score) - Number(a.film.score)
-  )[0];
+  );
+  const topFilm = filmRanking[0];
   if (topFilm) {
     records.push({
       marquee: true,
@@ -490,17 +644,31 @@ export async function getLeagueRecordBook(
         film: filmOf(topFilm.film),
         value: `${Number(topFilm.film.score).toFixed(2)} pts`,
         detail: `${topFilm.film.title} · won at $${topFilm.bid.amount}`,
+        // The runner-up is the next BID, which on a contested film is the same
+        // film owned by somebody else — a zero gap, reported as "Level with".
+        // That is correct: ownership is never divided, so two owners of one
+        // film genuinely share its score.
+        margin: marginText(
+          Number(topFilm.film.score),
+          filmRanking.slice(1).map((x) => ({
+            value: Number(x.film.score),
+            holder: nameOf(x.bid.season_member_id),
+            isSelf: x.bid.season_member_id === topFilm.bid.season_member_id,
+          })),
+          inPoints
+        ),
       },
     });
   }
 
   // Steal of the century — best points-per-dollar single pick.
-  const steal = [...scoredBids]
+  const stealRanking = [...scoredBids]
     .filter((x) => x.bid.amount > 0 && Number(x.film.score) > 0)
     .sort(
       (a, b) =>
         Number(b.film.score) / b.bid.amount - Number(a.film.score) / a.bid.amount
-    )[0];
+    );
+  const steal = stealRanking[0];
   if (steal) {
     records.push({
       marquee: true,
@@ -512,18 +680,32 @@ export async function getLeagueRecordBook(
         film: filmOf(steal.film),
         value: `${(Number(steal.film.score) / steal.bid.amount).toFixed(2)} pts/$`,
         detail: `${steal.film.title} for $${steal.bid.amount}`,
+        margin: marginText(
+          Number(steal.film.score) / steal.bid.amount,
+          stealRanking.slice(1).map((x) => ({
+            value: Number(x.film.score) / x.bid.amount,
+            holder: nameOf(x.bid.season_member_id),
+            isSelf: x.bid.season_member_id === steal.bid.season_member_id,
+          })),
+          inRatio
+        ),
       },
     });
   }
 
   // Priciest whiff — the most dollars ever paid per point.
-  const whiff = [...scoredBids]
-    .filter((x) => x.bid.amount >= 5) // a $1 flyer that flops is not a whiff
+  // FILTERED TO ACTUAL WHIFFS FIRST, then ranked. The old form sorted every
+  // bid ascending and tested the head — identical result, because a $0 bid
+  // divides to Infinity and sorts last, but it left no ranking to draw a
+  // runner-up from and no guard if the rulebook ever allowed a winning $0 bid.
+  const whiffRanking = [...scoredBids]
+    .filter((x) => x.bid.amount > 0 && Number(x.film.score) / x.bid.amount < 1)
     .sort(
       (a, b) =>
         Number(a.film.score) / a.bid.amount - Number(b.film.score) / b.bid.amount
-    )[0];
-  if (whiff && Number(whiff.film.score) / whiff.bid.amount < 1) {
+    );
+  const whiff = whiffRanking[0];
+  if (whiff) {
     records.push({
       marquee: true,
       label: "Priciest whiff",
@@ -534,6 +716,18 @@ export async function getLeagueRecordBook(
         film: filmOf(whiff.film),
         value: `$${whiff.bid.amount} → ${Number(whiff.film.score).toFixed(2)} pts`,
         detail: whiff.film.title,
+        // "worst": the axis runs the other way, and calling the priciest whiff
+        // in league history "clear of" the runner-up would read as praise.
+        margin: marginText(
+          Number(whiff.film.score) / whiff.bid.amount,
+          whiffRanking.slice(1).map((x) => ({
+            value: Number(x.film.score) / x.bid.amount,
+            holder: nameOf(x.bid.season_member_id),
+            isSelf: x.bid.season_member_id === whiff.bid.season_member_id,
+          })),
+          inRatio,
+          "worst"
+        ),
       },
     });
   }
@@ -542,7 +736,7 @@ export async function getLeagueRecordBook(
   const seasonName = new Map(seasons.map((s) => [s.id, s.name]));
 
   // Best single week — the biggest one-weekend haul anyone ever had.
-  const haul = bestWeekHaul(
+  const haulRanking = rankWeekHauls(
     scoredBids
       .filter((x) => x.film.week !== null)
       .map((x) => ({
@@ -553,6 +747,7 @@ export async function getLeagueRecordBook(
         score: Number(x.film.score),
       }))
   );
+  const haul = haulRanking[0];
   if (haul) {
     const topFilm = filmById.get(haul.topFilmId);
     records.push({
@@ -565,14 +760,26 @@ export async function getLeagueRecordBook(
         film: topFilm ? filmOf(topFilm) : null,
         value: `${haul.total.toFixed(2)} pts`,
         detail: `${seasonName.get(haul.seasonId) ?? "a season"} week ${haul.weekNumber}`,
+        margin: marginText(
+          haul.total,
+          haulRanking.slice(1).map((h) => ({
+            value: h.total,
+            holder: nameOf(h.memberId),
+            // Memberships, not accounts: the same person across two seasons
+            // holds two of them, so this compares the profiles.
+            isSelf: profileFor(h.memberId) === profileFor(haul.memberId),
+          })),
+          inPoints
+        ),
       },
     });
   }
 
   // Most films in one season — the widest portfolio anyone ever ran.
-  const widest = [...standings]
+  const widestRanking = [...standings]
     .filter((r) => Number(r.films_owned) > 0)
-    .sort((a, b) => Number(b.films_owned) - Number(a.films_owned))[0];
+    .sort((a, b) => Number(b.films_owned) - Number(a.films_owned));
+  const widest = widestRanking[0];
   if (widest) {
     records.push({
       marquee: false,
@@ -584,6 +791,16 @@ export async function getLeagueRecordBook(
         film: null,
         value: `${widest.films_owned} films`,
         detail: `in ${seasonName.get(widest.season_id) ?? "one season"}`,
+        margin: marginText(
+          Number(widest.films_owned),
+          widestRanking.slice(1).map((r) => ({
+            value: Number(r.films_owned),
+            holder: r.display_name,
+            isSelf:
+              profileFor(r.season_member_id) === profileFor(widest.season_member_id),
+          })),
+          inFilms
+        ),
       },
     });
   }
@@ -594,7 +811,7 @@ export async function getLeagueRecordBook(
   const playOrder = [...seasons]
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
     .map((s) => s.id);
-  const rookie = bestRookieSeason(
+  const rookieRanking = rankRookieSeasons(
     standings
       .map((r) => ({
         profileId: profileOf.get(r.season_member_id),
@@ -606,6 +823,7 @@ export async function getLeagueRecordBook(
       ),
     playOrder
   );
+  const rookie = rookieRanking[0];
   if (rookie) {
     const holderRow = standings.find(
       (r) =>
@@ -623,6 +841,21 @@ export async function getLeagueRecordBook(
           film: null,
           value: `${rookie.points.toFixed(2)} pts`,
           detail: `debut, ${seasonName.get(rookie.seasonId) ?? "their first season"}`,
+          // Every account has exactly one debut, so the runner-up is always a
+          // different person — `isSelf` cannot be true here.
+          margin: marginText(
+            rookie.points,
+            rookieRanking.slice(1).map((r) => ({
+              value: r.points,
+              holder:
+                career.find((c) => c.profileId === r.profileId)?.name ??
+                "Unknown player",
+              // Every account has exactly one debut, so a runner-up here is
+              // always a different person.
+              isSelf: false,
+            })),
+            inPoints
+          ),
         },
       });
     }
@@ -633,5 +866,6 @@ export async function getLeagueRecordBook(
     seasonsCounted: seasonIds.length,
     career,
     records,
+    placements,
   };
 }

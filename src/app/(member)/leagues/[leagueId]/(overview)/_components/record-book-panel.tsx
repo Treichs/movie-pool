@@ -45,8 +45,13 @@ export function RecordBookPanel({
   return (
     <Card variant="flat" size="sm" className="gap-3.5">
       <div className="flex items-baseline justify-between gap-4">
+        {/* "League averages", not "Record book": the marquee records now lead
+            this page under that heading, and two panels with one name is the
+            reader's problem, not the composer's. This one has never held a
+            record — every figure in it is an average over the whole league,
+            with no member in any of them (ADR-085). */}
         <h2 className="type-eyebrow text-eyebrow text-muted-foreground">
-          Record book
+          League averages
         </h2>
         <TextLink href={`/leagues/${leagueId}/records`} size="micro">
           Open

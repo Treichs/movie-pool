@@ -12,11 +12,25 @@ import { cn } from "@/lib/utils";
 /**
  * ONE RECORD — board 4.3's shelf.
  *
+ * ── IT LIVES HERE BECAUSE TWO ROUTES DRAW IT ─────────────────────────────
+ * It began route-private to `/leagues/[leagueId]/records` and moved on
+ * 2026-09-01, when League Home started leading with the marquee records the
+ * record book had always flagged for it. Two routes, one file: the shelf and
+ * the command centre cannot drift apart.
+ *
  * ── MARQUEE IS THE COMPOSER'S FLAG, NOT A COUNT KEPT HERE ────────────────
  * `getLeagueRecordBook` decides which records lead, and the shelf renders in
  * the order it returns. Hard-coding "the first three are heavy" would go wrong
  * the day a record is suppressed for want of data — and every one of them
  * self-suppresses, so the shelf's length genuinely varies by league.
+ *
+ * ── THE MARGIN IS THE ARGUMENT ───────────────────────────────────────────
+ * A record with a number and a name is a fact. A record that also says what it
+ * beat, and by how much, is the thing people open a record book for — and it
+ * tells you which records are about to fall. It sits directly under the value
+ * in ink rather than with the muted detail line, because it is part of the
+ * claim, not a footnote to it. Null when the league has nothing to compare
+ * against yet.
  *
  * ── A RECORD ABOUT A FILM SHOWS THE FILM ─────────────────────────────────
  * Three of them are about a film and three are about a season or a career, and
@@ -106,6 +120,12 @@ export function RecordCard({
           </div>
         )}
       </div>
+
+      {entry.margin && (
+        <span className="type-micro text-micro text-foreground">
+          {entry.margin}
+        </span>
+      )}
 
       <div className="flex items-center gap-2">
         {/* A record holder is not always a linked account, so the seed

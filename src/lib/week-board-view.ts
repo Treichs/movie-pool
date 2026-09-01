@@ -2,6 +2,9 @@ import type { SeasonContext } from "@/lib/auth";
 import type { WeekOverride } from "@/lib/week-board";
 import { getWeekBoard } from "@/lib/week-board";
 import { buildRevealSheet, type RevealFilm } from "@/lib/reveal";
+import { getStandings } from "@/lib/pool";
+import { buildWeekendWatch, type WeekendWatch } from "@/lib/weekend";
+import { resultsOpenOn } from "@/lib/week-status";
 import { buildSeasonTrend, getScoredData } from "@/lib/season-trend";
 import type { WeekStatus } from "@/lib/commish";
 
@@ -67,6 +70,12 @@ export type WeekBoardView = {
   topNDistinct: number;
   /** The viewer's own week. Null while nothing has been revealed. */
   mine: MyWeek | null;
+  /**
+   * The weekend window — only on a `closed` week, which is the only state that
+   * has one. Null everywhere else, including on a closed week the reader owns
+   * nothing in: there is nothing to watch.
+   */
+  weekend: WeekendWatch | null;
   /** ADR-060 commissioner corrections, newest first. */
   overrides: WeekOverride[];
 };
@@ -164,6 +173,21 @@ export async function getWeekBoardView(
     mine: mine && board.week.status === "final"
       ? { ...mine, ...(await myRank(ctx, board.week.number)) }
       : mine,
+    // THE WEEKEND PAYS FOR ITS OWN READ, and only in the one state that uses
+    // it. The rank line above is about MOVEMENT, which an unscored week has
+    // none of; this is about POSITION, which is the whole of what a weekend
+    // puts at stake. `week_of` is required to know when results open, and a
+    // week without one cannot say when the wait ends.
+    weekend:
+      board.week.status === "closed" && board.week.week_of !== null
+        ? buildWeekendWatch(
+            sheet,
+            await getStandings(ctx.db, ctx.seasonId),
+            ctx.memberId,
+            board.week.week_of,
+            resultsOpenOn(board.week.week_of),
+          )
+        : null,
     overrides: board.overrides,
   };
 }

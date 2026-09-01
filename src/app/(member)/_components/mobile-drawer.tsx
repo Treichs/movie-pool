@@ -87,17 +87,17 @@ export function MobileDrawer({
             Start a league
           </Link>
 
-          {season.length > 0 && (
-            <>
-              <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">Season</span>
-              {season.map(item)}
-            </>
-          )}
-
           {league.length > 0 && (
             <>
               <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">League</span>
               {league.map(item)}
+            </>
+          )}
+
+          {season.length > 0 && (
+            <>
+              <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">Season</span>
+              {season.map(item)}
             </>
           )}
         </div>

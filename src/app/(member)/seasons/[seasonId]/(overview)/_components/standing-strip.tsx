@@ -4,18 +4,26 @@ import { DeadlineCountdown } from "@/components/deadline-countdown";
 import { Figure } from "@/components/figure";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ordinal } from "@/lib/format";
 import type { HubRank } from "@/lib/season-hub";
 import type { Week } from "@/lib/commish";
 
-
-
 /**
- * YOUR STANDING — the viewer's own four numbers, and the deadline beside them.
+ * WHAT YOU HAVE LEFT, AND WHAT YOU HAVE TO DO — the strip above the tabs.
  *
- * The four are `HubRank`'s, which the hub has already computed. `pointsRank` is
- * null before anything scores — every rank would otherwise read "1st" on an
- * empty season — and renders as a dash rather than as a position nobody holds.
+ * ── IT USED TO SAY WHERE YOU STAND, AND NO LONGER DOES ────────────────────
+ * This carried your rank and your season points until 2026-08-31, when the
+ * Leaderboard tab grew a position block that says the same thing with the
+ * movement, the rivals and the money attached. Two readouts of one rank in one
+ * viewport is the duplication the redesign existed to remove, and the strip is
+ * the one that gives it up: it sits above all three tabs, so its job is the
+ * part that is true whichever tab you are on.
+ *
+ * What is left is the ACTION register — the bankroll that governs what you can
+ * bid, what you already hold, the deadline, and the way in. Position belongs to
+ * the screen that analyses it.
+ *
+ * `me` is still the source for films owned, and is null before a season has any
+ * standing at all.
  */
 export function StandingStrip({
   me,
@@ -34,27 +42,14 @@ export function StandingStrip({
     <Card
       variant="flat"
       role="region"
-      aria-label="Your standing"
+      aria-label="Your bankroll and the open week"
       className="flex-row flex-wrap items-end justify-between gap-6"
     >
       <div className="flex flex-wrap items-end gap-8">
-        <div className="flex flex-col gap-0.5">
-          <span className="type-eyebrow text-eyebrow text-muted-foreground">
-            Your standing
-          </span>
-          <span className="type-numeral text-h1 leading-none">
-            {me?.pointsRank ? ordinal(me.pointsRank) : "—"}
-            {me && me.playerCount > 0 && (
-              <span className="type-body ml-2 text-ui text-muted-foreground">
-                of {me.playerCount}
-              </span>
-            )}
-          </span>
-        </div>
-        <Figure label="Points" value={me ? me.points.toFixed(2) : "—"} />
         <Figure
           label="Bankroll left"
           value={bankrollLeft === null ? "—" : `$${bankrollLeft}`}
+          size="lg"
         />
         <Figure label="Films owned" value={me ? String(me.filmsOwned) : "—"} />
       </div>

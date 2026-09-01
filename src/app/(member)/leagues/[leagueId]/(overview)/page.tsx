@@ -17,8 +17,10 @@ import { formatMonthYear } from "@/lib/format";
 import { getLeagueHome } from "@/lib/league";
 
 import { AnnouncementsPanel } from "./_components/announcements-panel";
+import { CareerPositionBlock } from "./_components/career-position";
 import { MemberRoster } from "./_components/member-roster";
 import { RecordBookPanel } from "./_components/record-book-panel";
+import { RecordShelf } from "./_components/record-shelf";
 import { SeasonThread } from "./_components/season-thread";
 import { SeasonsTable } from "./_components/seasons-table";
 
@@ -44,6 +46,19 @@ export const metadata = { title: "League" };
  * Board 4.2 puts a caret in the heading and makes it a league switcher. The app
  * shell already carries one in the paper band a few inches above. One switcher
  * per screen; the H1 goes back to naming the thing you are looking at.
+ *
+ * ── THE COMMAND CENTRE, IN THREE REGISTERS ────────────────────────────────
+ * The STANDING/RECORD split above is still the spine; what changed on
+ * 2026-09-01 is that RECORD stopped being a rail of averages. The page now
+ * reads: what is live (the thread), where you stand all-time (the career
+ * block), what this league is famous for (the marquee records), and only then
+ * the archive. Bragging rights lead, because a league page nobody enjoys
+ * opening is a directory.
+ *
+ * Both new bands are DERIVED FROM READS THIS PAGE ALREADY MADE. The record
+ * book was being built here for its career table alone, and its marquee
+ * records — flagged, by their own type, as the ones that "lead League Home" —
+ * were thrown away every render.
  *
  * ── DUES IS NOT HERE, AND CANNOT BE ───────────────────────────────────────
  * The board draws a dues panel and the plan carries a screen for it (Task 21),
@@ -143,6 +158,15 @@ export default async function LeaguePage({
           ).length
         }
       />
+
+      {home.story.position && (
+        <CareerPositionBlock
+          position={home.story.position}
+          nearest={home.story.nearest}
+        />
+      )}
+
+      <RecordShelf records={home.records} leagueId={leagueId} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-6">
