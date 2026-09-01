@@ -282,21 +282,32 @@
   --font-heading: var(--font-archivo-heading);
   --font-numeric: var(--font-archivo-numeric);
 
-  --fvs-display: "wdth" 62, "wght" 800;
-  --fvs-h1: "wdth" 64, "wght" 800;
-  --fvs-h2: "wdth" 70, "wght" 800;
-  --fvs-h3: "wdth" 100, "wght" 700;
-  --fvs-eyebrow: "wdth" 62, "wght" 800;
-  --fvs-dek: "wdth" 100, "wght" 300;
-  --fvs-body: "wdth" 100, "wght" 400;
-  --fvs-ui: "wdth" 100, "wght" 500;
-  --fvs-button: "wdth" 100, "wght" 700;
-  --fvs-micro: "wdth" 100, "wght" 600;
-  --fvs-numeral: "wdth" 78, "wght" 800;
+  --wdth-display: 62%;
+  --wght-display: 800;
+  --wdth-h1: 64%;
+  --wght-h1: 800;
+  --wdth-h2: 70%;
+  --wght-h2: 800;
+  --wdth-h3: 100%;
+  --wght-h3: 700;
+  --wdth-eyebrow: 62%;
+  --wght-eyebrow: 800;
+  --wdth-dek: 100%;
+  --wght-dek: 300;
+  --wdth-body: 100%;
+  --wght-body: 400;
+  --wdth-ui: 100%;
+  --wght-ui: 500;
+  --wdth-button: 100%;
+  --wght-button: 700;
+  --wdth-micro: 100%;
+  --wght-micro: 600;
+  --wdth-numeral: 78%;
+  --wght-numeral: 800;
 
   --text-display: 4rem;
   --text-display--line-height: 0.86;
-  /* A SIZE STEP OF `display`, NOT A NEW ROLE. Same axes (--fvs-display), one
+  /* A SIZE STEP OF `display`, NOT A NEW ROLE. Same axes (--wdth/--wght-display), one
      size up, and it exists for exactly one thing: the landing hero's headline,
      which is the largest type the app ever sets. It is applied as
      `text-display lg:text-display-lg` so the promise still fits a phone. */
@@ -324,18 +335,27 @@
   --text-numeral--line-height: 1.1;
 }
 
-/* The type roles. Each pairs a size from @theme with its width/weight axis. */
-@utility type-display { font-variation-settings: var(--fvs-display); text-transform: uppercase; }
-@utility type-h1      { font-variation-settings: var(--fvs-h1); text-transform: uppercase; }
-@utility type-h2      { font-variation-settings: var(--fvs-h2); text-transform: uppercase; }
-@utility type-h3      { font-variation-settings: var(--fvs-h3); }
-@utility type-eyebrow { font-variation-settings: var(--fvs-eyebrow); text-transform: uppercase; letter-spacing: 0.08em; }
-@utility type-dek     { font-variation-settings: var(--fvs-dek); }
-@utility type-body    { font-variation-settings: var(--fvs-body); }
-@utility type-ui      { font-variation-settings: var(--fvs-ui); }
-@utility type-button  { font-variation-settings: var(--fvs-button); text-transform: uppercase; letter-spacing: 0.06em; }
-@utility type-micro   { font-variation-settings: var(--fvs-micro); text-transform: uppercase; letter-spacing: 0.06em; }
-@utility type-numeral { font-variation-settings: var(--fvs-numeral); font-variant-numeric: tabular-nums; }
+/* The type roles. Each pairs a size from @theme with its width/weight axis.
+ *
+ * SET AS `font-stretch` AND `font-weight`, NOT `font-variation-settings`. The
+ * low-level property beats both of the high-level ones on a variable font and
+ * it inherits, so `body { type-body }` pinned "wght" 400 on the whole document
+ * and every `font-semibold` below it rendered at 400 — silently, because the
+ * declaration was still there and nothing errored. The high-level properties
+ * map to the same `wdth` and `wght` axes and take part in the cascade, so a
+ * role sets the default and an element can still override the weight. Naming
+ * `axes: ["wdth"]` in the font loader stays load-bearing either way. */
+@utility type-display { font-stretch: var(--wdth-display); font-weight: var(--wght-display); text-transform: uppercase; }
+@utility type-h1      { font-stretch: var(--wdth-h1); font-weight: var(--wght-h1); text-transform: uppercase; }
+@utility type-h2      { font-stretch: var(--wdth-h2); font-weight: var(--wght-h2); text-transform: uppercase; }
+@utility type-h3      { font-stretch: var(--wdth-h3); font-weight: var(--wght-h3); }
+@utility type-eyebrow { font-stretch: var(--wdth-eyebrow); font-weight: var(--wght-eyebrow); text-transform: uppercase; letter-spacing: 0.08em; }
+@utility type-dek     { font-stretch: var(--wdth-dek); font-weight: var(--wght-dek); }
+@utility type-body    { font-stretch: var(--wdth-body); font-weight: var(--wght-body); }
+@utility type-ui      { font-stretch: var(--wdth-ui); font-weight: var(--wght-ui); }
+@utility type-button  { font-stretch: var(--wdth-button); font-weight: var(--wght-button); text-transform: uppercase; letter-spacing: 0.06em; }
+@utility type-micro   { font-stretch: var(--wdth-micro); font-weight: var(--wght-micro); text-transform: uppercase; letter-spacing: 0.06em; }
+@utility type-numeral { font-stretch: var(--wdth-numeral); font-weight: var(--wght-numeral); font-variant-numeric: tabular-nums; }
 
 /* A TAP AREA WIDER THAN THE THING YOU CAN SEE — for the two controls whose
  * drawn size is fixed by what they sit in. The password toggle is 24px because
