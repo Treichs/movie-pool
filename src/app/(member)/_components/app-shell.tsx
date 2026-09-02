@@ -60,16 +60,18 @@ export function AppShell({
   const pathname = usePathname();
   const focused = resolveFocusedLeague(leagues, pathname);
 
-  // NO SECTIONS ON THE ACCOUNT HOME. `/leagues` is tier one — it is about the
-  // viewer across every league — and `resolveFocusedLeague` still has to name
-  // one for the switcher, so the strip would otherwise offer Season, Payouts
-  // and Dues for a league the reader has not opened while a list of four sits
-  // below it. Caught in the drive: signed in, landed here, and the band was
-  // pointing at whichever league sorted first. An organisation's tabs do not
-  // appear on the account dashboard for the same reason.
-  const onAccountHome = isCurrent(pathname, "/leagues", true);
-  const sections = onAccountHome ? [] : sectionLinks(focused);
-  const settings = onAccountHome ? null : settingsLink(focused);
+  // NOTHING LEAGUE-SHAPED WITHOUT A LEAGUE. `/leagues`, `/account` and
+  // `/leagues/new` name none, so `focused` is null there and all three of these
+  // come back empty on their own — including the SWITCHER, which is the control
+  // that says which league you are looking through and has nothing to say when
+  // you are not looking through one.
+  //
+  // This needed a `/leagues`-only special case until 2026-09-02, because focus
+  // fell back to whichever league sorted first and the strip would otherwise
+  // offer that league's Season and Dues while a list of four sat below it. The
+  // fallback is gone (see `league-focus.ts`), and the special case went with it.
+  const sections = sectionLinks(focused);
+  const settings = settingsLink(focused);
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -155,7 +157,7 @@ export function AppShell({
                 current={isCurrent(pathname, settings.match, settings.exact)}
               />
             )}
-            <LeagueSwitcher leagues={leagues} focused={focused} />
+            {focused && <LeagueSwitcher leagues={leagues} focused={focused} />}
           </div>
         </nav>
 

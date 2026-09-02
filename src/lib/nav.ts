@@ -156,26 +156,23 @@ export async function getNavLeagues(
 }
 
 /**
- * THE LEAGUE FRONT DOOR (ADR-443). The season a league's own links point at, or
- * null when there is nothing live and League Home is the destination.
+ * A LEAGUE'S LIVE SEASON — the one being played, or null when nothing is.
  *
- * This is ADR-104's ordered rule, relocated. It stopped being the SIGN-IN rule —
- * sign-in lands on `/leagues` and does not guess — and became the rule the
- * command centre's league cards and the nav band's Season item follow. It is
- * the only landing rule left; the arrangement it replaced had two that resolved
- * differently for the same league on the same day.
+ * ── THERE IS NO LONGER A FRONT-DOOR RULE, AND THAT IS THE POINT ───────────
+ * This was ADR-104's ordered landing rule, relocated twice: it stopped being
+ * the SIGN-IN rule under ADR-443, and became the rule that sent the command
+ * centre's league cards past League Home and straight into `/seasons/[live]`.
+ * On 2026-09-02 it stopped being a landing rule at all. Opening a league opens
+ * THE LEAGUE — a league is now something you select, and what you get when you
+ * select one should be the thing you named, not a place the app inferred from
+ * it. `leagueFrontDoor` is deleted rather than moved a third time; the Season
+ * nav item is how you reach the season, and it says so on its face.
  *
- * PURE, AND OVER A LEAGUE THE CALLER ALREADY HOLDS. It briefly existed as an
- * async lookup keyed on a league id, for a redirect on `/leagues/[leagueId]`
- * that was reverted the same day. Every caller now has a `NavLeague` in hand,
- * so a second query would be a second definition of "live" waiting to disagree
- * with this one — which is the exact condition ADR-443 exists to end.
- *
- * A COMPLETED SEASON IS NOT A FRONT DOOR, and `currentSeason` can be one:
- * `pickCurrentSeason` below answers a different question (which season does the
- * nav NAME) and must not be read as this one. A finished season is frozen
- * standings with nothing to act on, and at the start of a new year it can
- * momentarily read as the current one.
+ * WHAT IS LEFT IS A SCOPE, NOT A DESTINATION. `lib/home.ts` reads it to decide
+ * which season a row's "you are 3rd of 9" is counted in, and that is its only
+ * caller. It is a different question from `pickCurrentSeason` below, which
+ * answers which season the nav NAMES: a completed season is a season the nav
+ * still names, and it is not a season anyone is placed in.
  */
 export function liveSeason(
   league: Pick<NavLeague, "currentSeason">
@@ -185,14 +182,8 @@ export function liveSeason(
   return s.status === "active" || s.status === "draft" ? s : null;
 }
 
-/** Where a league's own links go: its live season, else the league itself. */
-export function leagueFrontDoor(league: Pick<NavLeague, "id" | "currentSeason">): string {
-  const live = liveSeason(league);
-  return live ? `/seasons/${live.id}` : `/leagues/${league.id}`;
-}
-
-// "Current" is the season the nav NAMES. It is NOT the front-door rule —
-// `liveSeasonId` above is, and it deliberately stops at active-or-draft.
+// "Current" is the season the nav NAMES. It is NOT `liveSeason` above, which
+// deliberately stops at active-or-draft.
 //
 // THE RULE CHANGED 2026-08-17. It used to be `active ?? draft ?? null`, with
 // the note "finished seasons live in the archive", and that null was a real

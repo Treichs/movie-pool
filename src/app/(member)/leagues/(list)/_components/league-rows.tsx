@@ -96,18 +96,19 @@ export function LeagueRows({ leagues }: { leagues: HomeLeague[] }) {
         <Item
           key={league.id}
           variant="outline"
-          // THE ROW GOES WHERE THE WORK IS. When this league is waiting on your
-          // bid, the door is the bid form; otherwise it is the league's FRONT
-          // DOOR — its live season, or the league itself when nothing is
-          // running (ADR-443, `leagueFrontDoor`). The badge and the "you have
-          // not bid" line beside it say which, so the destination is never a
-          // surprise.
+          // THE ROW GOES TO THE LEAGUE. One destination, every row, every
+          // state: selecting a league is what this page is for, and League Home
+          // is the league.
+          //
+          // It used to be two destinations — the bid form when a bid was owed,
+          // the live season otherwise (ADR-443, `leagueFrontDoor`). Both are
+          // gone as of 2026-09-02. A row that lands somewhere different
+          // depending on the week is a control you cannot learn, and the
+          // season and the open week are one tap further on from here.
           //
           // Not a second link inside the row: `Item` already renders as one,
           // and an <a> inside an <a> is invalid HTML that fails hydration.
-          render={
-            <Link href={league.awaitingYourBid && league.bidHref ? league.bidHref : league.frontDoor} />
-          }
+          render={<Link href={`/leagues/${league.id}`} />}
           className="hover:bg-muted"
         >
           <ItemMedia>

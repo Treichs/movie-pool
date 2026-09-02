@@ -4,10 +4,20 @@ import type { NavLeague } from "@/lib/nav";
 //
 // Lifted out of app-sidebar so the top nav can read it without importing a
 // client component — and so the rule has one home now that TWO shells have
-// existed. The URL decides; on league-free pages (Home, Account) the first
-// league stands in. A remembered-league cookie preference once sat between
-// those two rules, but its write side was never built — the read plumbing was
-// removed 2026-08-09 rather than left looking load-bearing.
+// existed. THE ADDRESS IS THE ONLY ANSWER. A remembered-league cookie
+// preference once sat behind it, but its write side was never built — the read
+// plumbing was removed 2026-08-09 rather than left looking load-bearing.
+//
+// ── NOTHING STANDS IN, AND THAT CHANGED 2026-09-02 ─────────────────────────
+// This used to end `return leagues[0]`, so a page whose address names no league
+// — `/leagues`, `/account`, `/leagues/new` — was still described as being
+// inside one. The switcher named a league the reader had not opened and the
+// section strip offered its Films and its Dues: the two controls that answer
+// "where am I" were answering with a guess.
+//
+// Selection is EXPLICIT now. No league in the address means no league selected,
+// and every control that describes one hides rather than invents one. That is
+// the whole of the rule — there is no cookie, no last-used, nothing to restore.
 //
 // ── THE SEGMENTS ARE PLURAL, AND THEY WERE SINGULAR HERE UNTIL 2026-08-30 ──
 // This file was written against the pre-rebuild route shapes, `/league/[id]`
@@ -28,8 +38,6 @@ export function resolveFocusedLeague(
   leagues: NavLeague[],
   pathname: string
 ): NavLeague | null {
-  if (leagues.length === 0) return null;
-
   const leagueMatch = pathname.match(/^\/leagues\/([^/]+)/);
   if (leagueMatch) {
     const hit = leagues.find((l) => l.id === leagueMatch[1]);
@@ -42,5 +50,5 @@ export function resolveFocusedLeague(
     if (hit) return hit;
   }
 
-  return leagues[0];
+  return null;
 }
