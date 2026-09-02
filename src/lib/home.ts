@@ -2,7 +2,6 @@ import { getProfile } from "@/lib/auth";
 import { getMyInvites, type MyInvite } from "@/lib/invites";
 import {
   getNavLeagues,
-  leagueFrontDoor,
   liveSeason,
   type NavLeague,
   type NavSeason,
@@ -60,13 +59,6 @@ export type HomeLeague = NavLeague & {
    *
    *  False when nothing is open — there is no debt between weeks. */
   awaitingYourBid: boolean;
-  /** The open week's bid page, when there is one. The row links here rather
-   *  than to the league's front door when a bid is owed. */
-  bidHref: string | null;
-  /** Where this league's row goes when no bid is owed: its live season, or the
-   *  league itself when nothing is running. One rule, shared with the nav band
-   *  (`leagueFrontDoor`), so a card and a nav item cannot disagree. */
-  frontDoor: string;
   /** The viewer's place in this league's LIVE season, or null when none is
    *  running. Never a cross-league figure — see the header. */
   standing: HomeStanding | null;
@@ -119,10 +111,6 @@ export async function getHomeLeagues(
     closesAt: l.openWeek?.bidDeadline ?? null,
     openWeekNumber: l.openWeek?.number ?? null,
     awaitingYourBid: l.openWeek ? awaiting.has(l.openWeek.id) : false,
-    bidHref: l.openWeek
-      ? `/seasons/${l.openWeek.seasonId}/weeks/${l.openWeek.id}/bid`
-      : null,
-    frontDoor: leagueFrontDoor(l),
     standing: standings.get(l.id) ?? null,
   }));
 }

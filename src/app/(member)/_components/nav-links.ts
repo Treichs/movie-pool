@@ -23,16 +23,24 @@ import type { NavLeague } from "@/lib/nav";
  *
  * ── WHAT LEFT THE ROW, AND WHERE IT WENT ────────────────────────────────
  * Nothing was orphaned; each was checked.
- *   · League home — the switcher lists every league, the focused one included,
- *     and each entry links to `/leagues/[id]`. That is the same move an
- *     organisation switcher makes, and it is why the row needs no "League".
+ *   · League home — left on the argument that the switcher lists every league,
+ *     the focused one included. IT CAME BACK 2026-09-02, and it now LEADS the
+ *     row. That argument depended on the switcher always being there, and it no
+ *     longer is: a league is selected explicitly, the switcher only renders once
+ *     one is, and from four routes underneath it the way back to the league
+ *     itself was a breadcrumb rung and nothing else.
  *   · Announcements — League Home's own panel links to all of them.
  *   · Leaderboard — a tab on the season page, and the query string it lives in
  *     is invisible to `usePathname`, so it could never read as current here.
  *   · Settings — beside the switcher, not in the row: it is chrome ABOUT the
  *     league rather than a place inside it.
  *
- * ── SIX IS THE CEILING, AND MONEY IS NOT FOLDED ─────────────────────────
+ * ── THE ROW'S LENGTH, AND WHY MONEY IS NOT FOLDED ───────────────────────
+ * Six was written here as a ceiling. League's return makes seven while a week
+ * is open, and Bid is the item that pushes it there — which is the one item
+ * worth the overflow, since it is the only thing in the game with a deadline
+ * and it is absent six days a week.
+ *
  * ADR-443 proposed one "Money" section folding dues and payouts. They are not
  * foldable: dues is league-scoped and permanent, payouts is season-scoped, and
  * `/seasons/[id]/payouts` has NO other inbound link anywhere in the app —
@@ -57,7 +65,13 @@ export function sectionLinks(league: NavLeague | null): NavLink[] {
 
   const leagueBase = `/leagues/${league.id}`;
   const season = league.currentSeason;
-  const links: NavLink[] = [];
+
+  // EXACT, for the same reason Season is: Films, Records, Dues and Settings are
+  // all `/leagues/[id]/…` children with their own items in this row, and a
+  // prefix match would light League up on every one of them.
+  const links: NavLink[] = [
+    { label: "League", href: leagueBase, match: leagueBase, exact: true },
+  ];
 
   if (season) {
     const seasonBase = `/seasons/${season.id}`;
