@@ -24,19 +24,20 @@ import { cn } from "@/lib/utils";
  * anywhere else.
  */
 /**
- * The column count follows the number of briefs, and it stops at two.
+ * The column count follows the number of briefs.
  *
- * IT USED TO RUN TO FOUR ACROSS. That was a full-page section; this is a bento
- * cell eight columns of twelve wide, and four briefs across it gives each one
- * about 160px — a name, a figure and a film list, all wrapping. Two across and
- * two down is the same information at twice the measure. The class has to be a
- * literal for Tailwind to emit it at all.
+ * IT USED TO RUN TO FOUR ACROSS, then stopped at two when this became a bento
+ * cell seven columns of twelve wide — four briefs across 628px gives each one
+ * about 160px, and a name, a figure and a film list all wrap. The cell went
+ * back to the full twelve on 2026-09-02, so four across is 272px each and the
+ * measure that killed it no longer applies. Two across survives everywhere
+ * narrower. The class has to be a literal for Tailwind to emit it at all.
  */
 const COLUMNS: Record<number, string> = {
   1: "sm:grid-cols-1",
   2: "sm:grid-cols-2",
   3: "sm:grid-cols-2",
-  4: "sm:grid-cols-2",
+  4: "sm:grid-cols-2 xl:grid-cols-4",
 };
 
 export function WeekStory({ headlines }: { headlines: Headline[] }) {
@@ -60,6 +61,11 @@ export function WeekStory({ headlines }: { headlines: Headline[] }) {
             "border-b border-border last:border-b-0",
             "sm:border-b sm:[&:nth-last-child(-n+2)]:border-b-0",
             "sm:border-l sm:[&:nth-child(odd)]:border-l-0",
+            // FOUR ACROSS IS ONE ROW, so every bottom rule goes and every
+            // brief but the first takes a left one — including the third,
+            // which the two-column rule above cleared as the start of a row it
+            // is no longer the start of.
+            "xl:border-b-0 xl:border-l xl:first:border-l-0",
           )}
         >
           <span className="type-eyebrow text-eyebrow text-muted-foreground">

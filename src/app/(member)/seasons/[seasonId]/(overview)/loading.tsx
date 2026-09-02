@@ -5,6 +5,9 @@ import {
   SkeletonPanel,
 } from "@/components/page-skeleton";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+import { REGISTER } from "./_components/season-hero";
 
 /**
  * `/seasons/[seasonId]` WHILE `getSeasonHome` READS — and this is the page the
@@ -42,9 +45,14 @@ export default function SeasonLoading() {
       </div>
 
       {/* The hero: rank, the movement and two figures, then the money register
-          under its ink rule, then the bankroll and the way in. */}
+          under its ink rule, then the bankroll and the way in.
+
+          THE TRACKS ARE IMPORTED, NOT COPIED. `REGISTER` is the hero's own
+          column definition, and a skeleton that restates it in its own words is
+          a skeleton that will drift out of alignment the first time the hero is
+          retuned — which is exactly the jump this file exists to prevent. */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
+        <div className={REGISTER}>
           <div className="flex flex-col gap-1.5">
             <SkeletonLine w="w-24" h="h-2.5" />
             <SkeletonLine w="w-28" h="h-16" />
@@ -53,46 +61,55 @@ export default function SeasonLoading() {
           <SkeletonFigure />
           <SkeletonFigure />
         </div>
-        <div className="flex flex-wrap gap-x-10 gap-y-5 border-t-2 border-foreground pt-4">
+        <div className={cn(REGISTER, "border-t-2 border-foreground pt-4")}>
           <SkeletonFigure />
           <SkeletonFigure />
           <SkeletonFigure />
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 border-t pt-4">
-          <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
-            <SkeletonFigure />
-            <SkeletonFigure />
-            <SkeletonFigure />
-          </div>
-          <SkeletonLine w="w-36" h="h-9" className="rounded-4xl" />
+        <div className={cn(REGISTER, "border-t pt-4")}>
+          <SkeletonFigure />
+          <SkeletonFigure />
+          <SkeletonFigure />
+          <SkeletonLine
+            w="w-36"
+            h="h-9"
+            className="col-span-2 rounded-4xl lg:col-span-1"
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
-        <Card
-          variant="flat"
-          className="gap-3 md:col-span-2 xl:col-span-12"
-        >
+      {/* The grid, span for span:
+            WEEK NN IN BRIEF ......................... 12
+            FILMS YOU OWN ...... 7 │ THE SEASON'S PICKS 5
+            STANDINGS .......... 7 │ HEAD TO HEAD ..... 5
+            WEEKS .................................... 12 */}
+      <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
+        <div className="flex flex-col md:col-span-2 xl:col-span-12">
+          <SkeletonPanel lines={2} />
+        </div>
+
+        <div className="flex flex-col md:col-span-1 xl:col-span-7">
+          <SkeletonPanel lines={7} />
+        </div>
+        <div className="flex flex-col md:col-span-1 xl:col-span-5">
+          <SkeletonPanel lines={7} size="sm" />
+        </div>
+
+        <div className="flex flex-col md:col-span-2 xl:col-span-7">
+          <SkeletonPanel lines={7} />
+        </div>
+        <div className="flex flex-col md:col-span-2 xl:col-span-5">
+          <SkeletonPanel lines={7} size="sm" />
+        </div>
+
+        <Card variant="flat" className="gap-3 md:col-span-2 xl:col-span-12">
           <SkeletonLine w="w-20" h="h-4" />
           <div className="flex flex-col gap-3 border-t pt-3">
-            {Array.from({ length: 5 }, (_, i) => (
+            {Array.from({ length: 8 }, (_, i) => (
               <SkeletonLine key={i} w="w-full" h="h-8" />
             ))}
           </div>
         </Card>
-
-        <div className="flex flex-col md:col-span-2 xl:col-span-8">
-          <SkeletonPanel lines={4} />
-        </div>
-        <div className="flex flex-col md:col-span-1 xl:col-span-4">
-          <SkeletonPanel lines={4} size="sm" />
-        </div>
-        <div className="flex flex-col md:col-span-1 xl:col-span-5">
-          <SkeletonPanel lines={5} size="sm" />
-        </div>
-        <div className="flex flex-col md:col-span-2 xl:col-span-7">
-          <SkeletonPanel lines={6} />
-        </div>
       </div>
     </PageSkeleton>
   );
