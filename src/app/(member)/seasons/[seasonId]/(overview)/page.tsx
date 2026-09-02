@@ -25,9 +25,20 @@ export const metadata = { title: "Season" };
 /**
  * `/seasons/[seasonId]` — SEASON HOME, board 3.1 and its two sticky notes.
  *
- * The largest read screen in the app, and the destination `chooseLandingPath`
- * prefers above every other: a member with a live season lands here, not on
- * their league.
+ * The largest read screen in the app, and THE LEAGUE'S FRONT DOOR since
+ * ADR-443: `/leagues/[leagueId]` forwards here whenever the league has an
+ * active or a draft season, so for most of the year this is what "open my
+ * league" means.
+ *
+ * NO NOT-STARTED STATE IS OWED, and that was checked rather than assumed.
+ * ADR-443 accepted the cost of one — a draft season would forward a whole
+ * league to a page with no weeks. It cannot happen: `create_season` inserts at
+ * `active` (migration 20260804080000, "a season is ACTIVE the moment it is
+ * created"), enrols every league member into `season_members` in the same
+ * statement, and always calls `seed_season_weeks`. So a season arrives with a
+ * roster and a schedule, `draft` survives only as an enum value and a rescue
+ * transition for rows predating that migration, and the dev database holds
+ * none. Anyone arriving here has a member row and at least one week.
  *
  * ── THE TWO STICKY NOTES ──────────────────────────────────────────────────
  * 1. The season picker is a HEADER CONTROL, not a quarter-width left rail.

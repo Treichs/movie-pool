@@ -47,7 +47,12 @@ function Row({ member }: { member: CareerRow }) {
           className="size-6.5"
         />
       </ItemMedia>
-      <ItemContent className="flex-row flex-wrap items-center gap-2.5">
+      {/* `min-w-0` IS WHAT KEEPS THE COLUMNS COLUMNS. `Item` is a wrapping flex
+          row and `flex-1` still refuses to shrink below its content, so a name
+          carrying a "Commissioner" badge pushed the three figures onto a line
+          of their own at phone width — the exact raggedness the fixed widths
+          below exist to prevent. The name wraps inside its own cell instead. */}
+      <ItemContent className="min-w-0 flex-row flex-wrap items-center gap-2.5">
         <ItemTitle className={member.isMe ? "type-h3 text-ui" : "type-ui text-ui"}>
           {member.name}
         </ItemTitle>
@@ -56,7 +61,7 @@ function Row({ member }: { member: CareerRow }) {
       </ItemContent>
       {/* Tabular and column-width fixed, so 6,412.9 and 812.4 stack on their
           decimal — a list people read as a ranking must not read as ragged. */}
-      <ItemActions className="gap-6">
+      <ItemActions className="shrink-0 gap-3 sm:gap-6">
         <span className="type-numeral w-6 text-right text-ui text-muted-foreground">
           {member.seasons}
         </span>

@@ -15,7 +15,7 @@ import { buildSeasonStory, type SeasonStory } from "@/lib/season-story";
 
 /**
  * SEASON HOME — the composer for `/seasons/[seasonId]`, the largest read screen
- * in the app and the one `chooseLandingPath` prefers above every other.
+ * in the app and the one a league's front door forwards to (ADR-443).
  *
  * ── IT COMPOSES; IT DOES NOT QUERY ────────────────────────────────────────
  * Every read here was already written and every one of them has a caller

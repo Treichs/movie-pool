@@ -1,19 +1,43 @@
 import { getProfile } from "@/lib/auth";
 import { getMyInvites, type MyInvite } from "@/lib/invites";
-import { getNavLeagues, type NavLeague } from "@/lib/nav";
+import {
+  getNavLeagues,
+  leagueFrontDoor,
+  liveSeason,
+  type NavLeague,
+  type NavSeason,
+} from "@/lib/nav";
+import { rankBy, type StandingsRow } from "@/lib/pool";
 import type { SupabaseClient } from "@/lib/supabase";
 import { getWeeksAwaitingBid } from "@/lib/unbid-weeks";
 
-// Data for HOME — the signpost that replaced the Dashboard (2026-08-03).
+// Data for `/leagues` — THE COMMAND CENTRE since ADR-443, and the signpost that
+// replaced the Dashboard before that (2026-08-03).
 //
-// The Dashboard's job was to aggregate: every league, every season, points,
-// money, rank, results. That was closed off deliberately, because each league
-// has its own bankroll and its own rules, so a combined figure means nothing.
-// The player's own numbers now live on League Home, scoped to one season.
+// The Dashboard's job was to AGGREGATE: every league, every season, summed into
+// points, money, rank, results. That was closed off deliberately and stays
+// closed, because each league has its own bankroll and its own rules, so a
+// combined figure means nothing.
 //
-// So this module is deliberately THIN. It answers "where am I going", nothing
-// else. If a statistic ever appears in this file, that is the regression —
-// Home slowly re-accumulating the surface it replaced.
+// ── ONE STATISTIC CAME BACK, AND IT IS NOT THE ONE THAT WAS REMOVED ───────
+// This module read "if a statistic ever appears in this file, that is the
+// regression" until 2026-09-02. ADR-075 wrote that rule and drew the line
+// precisely: "anything that EXPIRES helps you choose which league to open and
+// is allowed; anything that does not expire and is not a name is a regression."
+// It also left the door open in its own consequences — "if cross-league
+// aggregation ever returns it is a fresh decision, not a Dashboard revival."
+//
+// That decision was made on 2026-09-02, when sign-in stopped routing past this
+// page. `standing` is PER LEAGUE and PER LIVE SEASON — the viewer's dense rank
+// and points inside one season, the same figure League Home shows, listed once
+// per league. Nothing is summed across leagues and nothing ever will be; the
+// flaw ADR-075 named was the aggregate, and there is no aggregate here. What
+// changed is that a page nobody landed on could afford to answer only "where am
+// I going", and the page everybody lands on cannot.
+//
+// ADR-075 is itself superseded (by ADR-094). Its line is quoted rather than
+// obeyed because the reasoning behind it is still the best statement of what
+// this page must not become.
 //
 // The one thing beyond a league list is STATE THAT EXPIRES: how many members,
 // and when the current week's bidding closes. That is not a statistic, it is
@@ -37,8 +61,25 @@ export type HomeLeague = NavLeague & {
    *  False when nothing is open — there is no debt between weeks. */
   awaitingYourBid: boolean;
   /** The open week's bid page, when there is one. The row links here rather
-   *  than to League Home when a bid is owed. */
+   *  than to the league's front door when a bid is owed. */
   bidHref: string | null;
+  /** Where this league's row goes when no bid is owed: its live season, or the
+   *  league itself when nothing is running. One rule, shared with the nav band
+   *  (`leagueFrontDoor`), so a card and a nav item cannot disagree. */
+  frontDoor: string;
+  /** The viewer's place in this league's LIVE season, or null when none is
+   *  running. Never a cross-league figure — see the header. */
+  standing: HomeStanding | null;
+};
+
+/** One league's answer to "how am I doing", scoped to one season. Dense ranks
+ *  (ADR-028), so ties share a place and the next place does not skip — the same
+ *  model the settlement ledger pays on, so nobody is shown one place and paid
+ *  another. */
+export type HomeStanding = {
+  rank: number;
+  /** How many are ranked, so "3rd" can say what it is 3rd of. */
+  players: number;
 };
 
 export async function getHomeLeagues(
@@ -67,7 +108,10 @@ export async function getHomeLeagues(
   }
 
   // Skips the database entirely between weeks — see `getWeeksAwaitingBid`.
-  const awaiting = await getWeeksAwaitingBid(supabase, userId, leagues);
+  const [awaiting, standings] = await Promise.all([
+    getWeeksAwaitingBid(supabase, userId, leagues),
+    getHomeStandings(supabase, userId, leagues),
+  ]);
 
   return leagues.map((l) => ({
     ...l,
@@ -78,7 +122,72 @@ export async function getHomeLeagues(
     bidHref: l.openWeek
       ? `/seasons/${l.openWeek.seasonId}/weeks/${l.openWeek.id}/bid`
       : null,
+    frontDoor: leagueFrontDoor(l),
+    standing: standings.get(l.id) ?? null,
   }));
+}
+
+/**
+ * THE VIEWER'S PLACE IN EVERY LIVE SEASON, IN ONE QUERY.
+ *
+ * `v_standings` carries `season_id`, so every league's season is answered by a
+ * single `.in()` rather than a round trip per league. A player belongs to a
+ * handful of leagues and this page is the first thing they see after signing
+ * in, so the difference is the difference between one query and five.
+ *
+ * LIVE SEASONS ONLY, and that is ADR-075's own line rather than a shortcut: a
+ * rank that can still move is state that expires, and it is why this page can
+ * carry it at all. A finished season's placing never changes again — it is
+ * history, it belongs in the record book, and putting it here would be the
+ * Dashboard growing back one column at a time.
+ *
+ * Ordered by points descending for the whole set at once, which keeps each
+ * season's rows in the order `rankBy` requires without sorting per season.
+ * A season the viewer is not enrolled in yields no row and no standing, which
+ * is the honest answer rather than a rank of last.
+ */
+async function getHomeStandings(
+  supabase: SupabaseClient,
+  userId: string,
+  leagues: NavLeague[]
+): Promise<Map<string, HomeStanding>> {
+  const live = leagues
+    .map((l) => ({ leagueId: l.id, season: liveSeason(l) }))
+    .filter((x): x is { leagueId: string; season: NavSeason } => x.season !== null);
+  const byLeague = new Map<string, HomeStanding>();
+  if (live.length === 0) return byLeague;
+
+  const { data } = await supabase
+    .from("v_standings")
+    .select("season_id, profile_id, points")
+    .in(
+      "season_id",
+      live.map((x) => x.season.id)
+    )
+    .order("points", { ascending: false });
+
+  const rows = (data ?? []) as Pick<
+    StandingsRow,
+    "season_id" | "profile_id" | "points"
+  >[];
+
+  const bySeason = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const list = bySeason.get(row.season_id);
+    if (list) list.push(row);
+    else bySeason.set(row.season_id, [row]);
+  }
+
+  for (const { leagueId, season } of live) {
+    const seasonRows = bySeason.get(season.id);
+    if (!seasonRows) continue;
+    const ranked = rankBy(seasonRows, (r) => r.points);
+    const mine = ranked.find(([, r]) => r.profile_id === userId);
+    if (!mine) continue;
+    byLeague.set(leagueId, { rank: mine[0], players: seasonRows.length });
+  }
+
+  return byLeague;
 }
 
 /** What `/leagues` renders. The invites are the only thing on the page that

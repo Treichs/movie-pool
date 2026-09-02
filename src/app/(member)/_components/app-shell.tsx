@@ -2,16 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDownIcon } from "lucide-react";
 
 import { LeagueMark } from "@/components/league-mark";
 import { SkipLink } from "@/components/skip-link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { resolveFocusedLeague } from "@/lib/league-focus";
 import type { NavLeague } from "@/lib/nav";
 import type { ShellAlert } from "@/lib/shell-alerts";
@@ -20,7 +13,7 @@ import { AccountMenu } from "./account-menu";
 import { BottomNav } from "./bottom-nav";
 import { LeagueSwitcher } from "./league-switcher";
 import { MobileDrawer } from "./mobile-drawer";
-import { isCurrent, leagueLinks, seasonLinks, type NavLink } from "./nav-links";
+import { isCurrent, sectionLinks, settingsLink } from "./nav-links";
 import { NotificationBell } from "./notification-bell";
 import { SearchCommand } from "./search-command";
 
@@ -66,8 +59,17 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const focused = resolveFocusedLeague(leagues, pathname);
-  const season = seasonLinks(focused);
-  const league = leagueLinks(focused);
+
+  // NO SECTIONS ON THE ACCOUNT HOME. `/leagues` is tier one — it is about the
+  // viewer across every league — and `resolveFocusedLeague` still has to name
+  // one for the switcher, so the strip would otherwise offer Season, Payouts
+  // and Dues for a league the reader has not opened while a list of four sits
+  // below it. Caught in the drive: signed in, landed here, and the band was
+  // pointing at whichever league sorted first. An organisation's tabs do not
+  // appear on the account dashboard for the same reason.
+  const onAccountHome = isCurrent(pathname, "/leagues", true);
+  const sections = onAccountHome ? [] : sectionLinks(focused);
+  const settings = onAccountHome ? null : settingsLink(focused);
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -108,9 +110,9 @@ export function AppShell({
           </div>
         </div>
 
-        {/* THE NAV BAND, desktop only. On a phone these two groups live in the
-            drawer, because a dropdown that opens under a thumb is a worse
-            control than a list you can scroll.
+        {/* THE NAV BAND, desktop only. On a phone this same list lives in the
+            drawer, because a row that scrolls sideways under a thumb is a worse
+            control than a list you can scroll down.
 
             IT IS A LANDMARK, and it is the only one the signed-in app has on a
             desktop: `BottomNav` carries the same `aria-label` but is
@@ -121,13 +123,38 @@ export function AppShell({
           aria-label="Primary"
           className="hidden h-11 items-stretch gap-7 border-b bg-card px-8 md:flex"
         >
-          {/* LEAGUE BEFORE SEASON, because a league is a season's parent: a
-              season belongs to one league and ends, the league outlives it. The
-              drawer lists the same two groups in the same order. */}
-          <NavItem href="/leagues" label="Home" current={isCurrent(pathname, "/leagues", true)} />
-          <NavGroup label="League" links={league} pathname={pathname} />
-          <NavGroup label="Season" links={season} pathname={pathname} />
-          <div className="ml-auto flex items-center">
+          {/* TIER ONE, AND IT IS NOT A SECTION. "Your leagues" is the account
+              home — the same words the breadcrumb root and the switcher's own
+              heading already use for the same destination, which is one fewer
+              thing in the frame disagreeing with another. It was labelled
+              "Home" while the landing rule worked hardest to route past it;
+              ADR-443 made it where sign-in lands, and the label now says what
+              the page is. The rule separates it from the league's sections,
+              because it is a different tier rather than a seventh destination. */}
+          <NavItem
+            href="/leagues"
+            label="Your leagues"
+            current={isCurrent(pathname, "/leagues", true)}
+          />
+          {sections.length > 0 && (
+            <span aria-hidden className="my-2.5 w-px shrink-0 bg-border" />
+          )}
+          {sections.map((link) => (
+            <NavItem
+              key={link.href}
+              href={link.href}
+              label={link.label}
+              current={isCurrent(pathname, link.match, link.exact)}
+            />
+          ))}
+          <div className="ml-auto flex items-center gap-4">
+            {settings && (
+              <NavItem
+                href={settings.href}
+                label={settings.label}
+                current={isCurrent(pathname, settings.match, settings.exact)}
+              />
+            )}
             <LeagueSwitcher leagues={leagues} focused={focused} />
           </div>
         </nav>
@@ -185,45 +212,5 @@ function NavItem({
     >
       {label}
     </Link>
-  );
-}
-
-/**
- * A group renders NOTHING when the league in focus cannot fill it — a season
- * dropdown with no season in it is a control that answers a question nobody
- * can ask yet.
- */
-function NavGroup({
-  label,
-  links,
-  pathname,
-}: {
-  label: string;
-  links: NavLink[];
-  pathname: string;
-}) {
-  if (links.length === 0) return null;
-  const active = links.some((link) => isCurrent(pathname, link.match, link.exact));
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={`${NAV_ITEM} gap-1.5 ${active ? NAV_CURRENT : NAV_RESTING}`}
-      >
-        {label}
-        <ChevronDownIcon className="size-3" aria-hidden />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        {links.map((link) => (
-          <DropdownMenuItem
-            key={link.href}
-            render={<Link href={link.href} />}
-            className={isCurrent(pathname, link.match, link.exact) ? "bg-accent" : undefined}
-          >
-            {link.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

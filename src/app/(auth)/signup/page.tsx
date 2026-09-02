@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AuthSplitShell } from "@/components/auth-split-shell";
-import { resolveLandingPath, safeNextPath } from "@/lib/landing";
+import { SIGNED_IN_LANDING, safeNextPath } from "@/lib/landing";
 import { createClient } from "@/lib/supabase/server";
 
 import { ConfirmationNotice } from "./confirmation-notice";
@@ -41,7 +41,7 @@ export default async function SignUpPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(safeNext ?? (await resolveLandingPath(supabase, user.id)));
+  if (user) redirect(safeNext ?? SIGNED_IN_LANDING);
 
   const resendEmail = resend?.trim().toLowerCase();
   const awaitingConfirmation =

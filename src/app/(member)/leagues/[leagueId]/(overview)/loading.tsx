@@ -20,44 +20,52 @@ import { Card } from "@/components/ui/card";
 export default function LeagueLoading() {
   return (
     <PageSkeleton label="this league">
-      <SkeletonLine w="w-52" h="h-3" />
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <SkeletonLine w="w-64" h="h-8" />
-          <SkeletonLine w="w-48" h="h-3.5" />
-        </div>
-        <SkeletonLine w="w-36" h="h-9" className="rounded-4xl" />
-      </div>
-
-      <Card
-        variant="flat"
-        className="flex-row flex-wrap items-center justify-between gap-6"
-      >
-        <div className="flex min-w-0 grow flex-col gap-2">
-          <SkeletonLine w="w-40" h="h-5" />
-          <SkeletonLine w="w-56" h="h-3.5" />
-        </div>
-        <SkeletonLine w="w-40" h="h-9" className="rounded-4xl" />
-      </Card>
-
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
-          <SkeletonPanel lines={2} />
-          <section className="flex flex-col gap-3">
-            <SkeletonLine w="w-28" h="h-6" />
-            <div className="flex flex-col gap-2.5">
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-            </div>
-          </section>
-        </div>
+      {/* THE SKELETON CITES THE PAGE'S OWN RHYTHM. `PageSkeleton` spaces its
+          bands at 24px for every route; this page moved to 40px between bands
+          and 16px inside its head, so without this wrapper the whole column
+          shifted up as the read landed. */}
+      <div className="flex flex-col gap-10">
         <div className="flex flex-col gap-4">
-          <SkeletonPanel size="sm" lines={3} />
-          <SkeletonPanel size="sm" lines={4} />
+          <SkeletonLine w="w-52" h="h-3" />
+
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <SkeletonLine w="w-64" h="h-8" />
+              <SkeletonLine w="w-48" h="h-3.5" />
+            </div>
+            <SkeletonLine w="w-36" h="h-9" className="rounded-4xl" />
+          </div>
+        </div>
+
+        <Card
+          variant="flat"
+          className="flex-row flex-wrap items-center justify-between gap-6"
+        >
+          <div className="flex min-w-0 grow flex-col gap-2">
+            <SkeletonLine w="w-40" h="h-5" />
+            <SkeletonLine w="w-56" h="h-3.5" />
+          </div>
+          <SkeletonLine w="w-40" h="h-9" className="rounded-4xl" />
+        </Card>
+
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
+          <div className="flex flex-col gap-8">
+            <SkeletonPanel lines={2} />
+            <section className="flex flex-col gap-3">
+              <SkeletonLine w="w-28" h="h-6" />
+              <div className="flex flex-col gap-2.5">
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </div>
+            </section>
+          </div>
+          <div className="flex flex-col gap-4">
+            <SkeletonPanel size="sm" lines={3} />
+            <SkeletonPanel size="sm" lines={4} />
+          </div>
         </div>
       </div>
     </PageSkeleton>

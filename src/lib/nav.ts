@@ -156,37 +156,43 @@ export async function getNavLeagues(
 }
 
 /**
- * Where a league's front door is: its current season, or the league page when
- * it has never run one.
+ * THE LEAGUE FRONT DOOR (ADR-443). The season a league's own links point at, or
+ * null when there is nothing live and League Home is the destination.
  *
- * Exists so that "land on the league's current season" has ONE implementation.
- * CH-01 made the nav's Home mean this, and accepting an invitation now means it
- * too — a second copy of the rule would drift the moment either changed, and
- * the rule is subtle enough (see pickCurrentSeason below) that the drift would
- * not be obvious.
+ * This is ADR-104's ordered rule, relocated. It stopped being the SIGN-IN rule —
+ * sign-in lands on `/leagues` and does not guess — and became the rule the
+ * command centre's league cards and the nav band's Season item follow. It is
+ * the only landing rule left; the arrangement it replaced had two that resolved
+ * differently for the same league on the same day.
  *
- * Reads v_seasons directly rather than going through getNavLeagues: the caller
- * already knows which league, and getNavLeagues fetches every league the user
- * belongs to plus avatars, which is a lot of query for one redirect.
+ * PURE, AND OVER A LEAGUE THE CALLER ALREADY HOLDS. It briefly existed as an
+ * async lookup keyed on a league id, for a redirect on `/leagues/[leagueId]`
+ * that was reverted the same day. Every caller now has a `NavLeague` in hand,
+ * so a second query would be a second definition of "live" waiting to disagree
+ * with this one — which is the exact condition ADR-443 exists to end.
+ *
+ * A COMPLETED SEASON IS NOT A FRONT DOOR, and `currentSeason` can be one:
+ * `pickCurrentSeason` below answers a different question (which season does the
+ * nav NAME) and must not be read as this one. A finished season is frozen
+ * standings with nothing to act on, and at the start of a new year it can
+ * momentarily read as the current one.
  */
-export async function leagueLandingPath(
-  supabase: SupabaseClient,
-  leagueId: string
-): Promise<string> {
-  const { data, error } = await supabase
-    .from("v_seasons")
-    .select("id, name, status, number")
-    .eq("league_id", leagueId);
-
-  // A failed read must not swallow the redirect — the league page is always a
-  // valid destination, so fall back rather than throwing the caller away.
-  if (error) return `/leagues/${leagueId}`;
-
-  const season = pickCurrentSeason((data ?? []) as NavSeason[]);
-  return season ? `/seasons/${season.id}` : `/leagues/${leagueId}`;
+export function liveSeason(
+  league: Pick<NavLeague, "currentSeason">
+): NavSeason | null {
+  const s = league.currentSeason;
+  if (!s) return null;
+  return s.status === "active" || s.status === "draft" ? s : null;
 }
 
-// "Current" is the season the nav lands on — CH-01 makes it Home.
+/** Where a league's own links go: its live season, else the league itself. */
+export function leagueFrontDoor(league: Pick<NavLeague, "id" | "currentSeason">): string {
+  const live = liveSeason(league);
+  return live ? `/seasons/${live.id}` : `/leagues/${league.id}`;
+}
+
+// "Current" is the season the nav NAMES. It is NOT the front-door rule —
+// `liveSeasonId` above is, and it deliberately stops at active-or-draft.
 //
 // THE RULE CHANGED 2026-08-17. It used to be `active ?? draft ?? null`, with
 // the note "finished seasons live in the archive", and that null was a real

@@ -9,7 +9,7 @@ import { LeagueMark } from "@/components/league-mark";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import type { NavLeague } from "@/lib/nav";
 
-import { isCurrent, leagueLinks, seasonLinks, type NavLink } from "./nav-links";
+import { isCurrent, sectionLinks, settingsLink, type NavLink } from "./nav-links";
 
 /**
  * THE PHONE'S OTHER HALF. The bottom bar carries the four places you go
@@ -30,8 +30,8 @@ export function MobileDrawer({
   pathname: string;
 }) {
   const [open, setOpen] = useState(false);
-  const season = seasonLinks(focused);
-  const league = leagueLinks(focused);
+  const sections = sectionLinks(focused);
+  const settings = settingsLink(focused);
 
   const item = (link: NavLink) => (
     <Link
@@ -87,17 +87,17 @@ export function MobileDrawer({
             Start a league
           </Link>
 
-          {league.length > 0 && (
+          {/* ONE LIST, NAMED FOR THE LEAGUE IT BELONGS TO — the same sections
+              the desktop band shows, in the same order, because they are one
+              design rather than two. The old "League" and "Season" headings
+              are gone with the dropdown groups they mirrored (ADR-443). */}
+          {sections.length > 0 && (
             <>
-              <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">League</span>
-              {league.map(item)}
-            </>
-          )}
-
-          {season.length > 0 && (
-            <>
-              <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">Season</span>
-              {season.map(item)}
+              <span className="type-micro text-micro mt-3 px-5 text-muted-foreground">
+                {focused?.name ?? "This league"}
+              </span>
+              {sections.map(item)}
+              {settings && item(settings)}
             </>
           )}
         </div>
