@@ -20,7 +20,14 @@ import {
 import { requireSeasonMember } from "@/lib/auth";
 import { getSeasonHome } from "@/lib/season-home";
 
-import { Bento, BentoCell } from "./_components/bento";
+import {
+  Dashboard,
+  DashboardGrid,
+  DashboardPanel,
+} from "@/components/dashboard";
+
+import { BankrollBurndown } from "./_components/bankroll-burndown";
+import { BumpChart } from "./_components/bump-chart";
 import { HeadToHead } from "./_components/head-to-head";
 import { QueueStrip } from "./_components/queue-strip";
 import { SeasonHero } from "./_components/season-hero";
@@ -59,9 +66,10 @@ const RETIRED_TABS: Record<string, string> = {
  * and between them they printed the viewer's season three times: the strip
  * above the tabs carried the bankroll and the deadline, the Leaderboard opened
  * with a position block saying the rank again, and the You tab's three deltas
- * said the movement a third time. What replaced them is one hero and a bento
- * grid — the hero answers where you stand and what is due, the grid holds every
- * table and chart at once, and nothing on the page is behind a control.
+ * said the movement a third time. What replaced them is one hero and a
+ * dashboard — the hero answers where you stand and what is due, the dashboard
+ * holds every table and chart at once, and nothing on the page is behind a
+ * control.
  *
  * The consolidation, block by block:
  *   • `StandingStrip` + `PositionBlock`  -> `SeasonHero` (one reading)
@@ -72,20 +80,49 @@ const RETIRED_TABS: Record<string, string> = {
  *   • `TopFilms` + season awards         -> `SeasonPicks` (one subject)
  *   • `LeaderboardTab`                   -> dissolved into the grid
  *
- * ── THE GRID IS UNEQUAL ON PURPOSE, AND PACKED BY LENGTH ──────────────────
- * Twelve columns at `xl`, two at `md`, one below:
+ * ── IT IS NOW ONE CONTAINED SURFACE, NOT A FIELD OF LOOSE CARDS ───────────
+ * The grid moved into `components/dashboard.tsx` on 2026-09-02: a wash-ground
+ * frame with one border, one radius, and sheet panels inset in it. Both this
+ * page and League Home take the same shell — the reason they share it is the
+ * reason `BidCta` was lifted out of both a week earlier.
  *
- *     WEEK NN IN BRIEF .............................. 12
- *     FILMS YOU OWN ........ 7 │ THE SEASON'S PICKS .. 5
- *     STANDINGS ............ 7 │ HEAD TO HEAD ........ 5
- *     WEEKS ......................................... 12
+ * THE `md` GRID IS SIX COLUMNS NOW, NOT TWO, so every span reads as a fraction
+ * of the same twelve: an 8-of-12 cell is a 4-of-6 cell rather than a
+ * full-width one. The spans below were rescaled, not re-laid-out.
+ *
+ * ── THE GRID IS UNEQUAL ON PURPOSE, AND PACKED BY LENGTH ──────────────────
+ * Twelve columns at `xl`, six at `md`, one below:
+ *
+ *     WEEK NN IN BRIEF .............................. 12   192px
+ *     FILMS YOU OWN ........ 8 │ BANKROLL ........... 4   363 / 252
+ *     THE RANK WALK ........ 7 │ THE SEASON'S PICKS . 5   575 / 694
+ *     STANDINGS ............ 7 │ HEAD TO HEAD ....... 5   554 / 601
+ *     WEEKS ......................................... 12   539px
+ *
+ * THE HEIGHTS ARE MEASURED, NOT ESTIMATED — taken off the ten-player fixture
+ * at 1440 on 2026-09-02, which is the only fixture big enough to tell the
+ * pairings apart. Every panel above is now a FIXED height: the rail is one
+ * poster tall however many films you own, the weeks ledger is six rows however
+ * long the season, and the picks list has always capped itself at five. That
+ * is what makes a measured pairing worth writing down — the numbers cannot
+ * drift out from under it the way the old list-and-table versions did.
+ *
+ * THE PAIRING WAS RE-CUT AGAIN WHEN THE RAIL LANDED. Turning films-you-own
+ * into a rail took it from roughly 700px to 363, which inverted the hole it
+ * used to have: it now sat beside a 694px picks panel and left 331px of
+ * nothing. Films moved next to the bankroll (363/252) and the picks moved
+ * next to the rank walk (575/694). Worst gap on the page went from 331 to
+ * about 120.
  *
  * THE ORDER OF THE CELLS BELOW *IS* THE LAYOUT — grid auto-placement fills
- * those slots from this DOM order, so moving one moves the shape. Cells are
- * PAIRED WITH WHAT GROWS AT THEIR OWN RATE, which is what stops the page
- * opening a hole: films-you-own and the picks list both lengthen as a season
- * runs on, and the standings and head-to-head both take one row per player.
- * `bento.tsx` carries the rule; these spans are its application.
+ * those slots from this DOM order, so moving one moves the shape.
+ *
+ * PAIRING BY GROWTH RATE IS RETIRED, and this is the commit that retires it.
+ * The old rule — put each cell next to something that lengthens at the same
+ * speed — existed because the cells grew. Rails and paging mean they do not,
+ * so pairs are now chosen by MEASURED HEIGHT, which is a fact you can check
+ * rather than a rate you have to predict. `components/dashboard.tsx` carries
+ * the reasoning.
  *
  * THE PAIRING WAS RE-CUT ON 2026-09-02, against the first fixture big enough
  * to test it — ten players, ten seasons, ten weeks. Three things moved:
@@ -196,13 +233,6 @@ export default async function SeasonPage({
         )}
       </div>
 
-      <SeasonHero
-        position={story.position}
-        bankrollLeft={hub.remaining}
-        filmsOwned={hub.me?.filmsOwned ?? null}
-        efficiency={hub.me?.efficiency ?? null}
-      />
-
       {/* THE SAME OBJECT LEAGUE HOME DRAWS, and until 2026-09-02 this page drew
           its own — a countdown and a button in the hero's fourth column, with
           different wording, no bid state, and a destination that could disagree
@@ -228,19 +258,46 @@ export default async function SeasonPage({
         <QueueStrip seasonId={seasonId} weeks={home.overdue} />
       )}
 
-      <Bento>
+      <Dashboard
+        eyebrow="The season report"
+        meta={`${leaderboard.playerCount} players · ${leaderboard.scoredWeeks.length} of ${hub.weeks.length} weeks scored`}
+        className="mt-4"
+      >
+        <DashboardGrid>
+          {/* ── THE COMMAND BAND ─────────────────────────────────────────
+              The hero, moved inside the frame on 2026-09-02 so the page reads
+              header → what is due → the report, which is what the approved
+              board draws. It spans all twelve and carries the page's only
+              72px numeral, so it is not "the first of nine equals" that
+              `season-hero.tsx` warns about — it is the widest panel, with the
+              largest figure, and the only one whose heading is hidden because
+              its own first line already says what it is. */}
+          <DashboardPanel
+            id="your-season"
+            title="Your season"
+            hideTitle
+            span="md:col-span-6 xl:col-span-12"
+          >
+            <SeasonHero
+              position={story.position}
+              bankrollLeft={hub.remaining}
+              filmsOwned={hub.me?.filmsOwned ?? null}
+              efficiency={hub.me?.efficiency ?? null}
+            />
+          </DashboardPanel>
+
         {/* FULL WIDTH, AND FOUR BRIEFS ACROSS IT. It was seven columns with a
             2x2 inside until the ten-player fixture landed; see the pairing note
             below for why it moved, and `week-story.tsx` for why four across is
             legible again at this width. */}
         {story.lastScoredWeek !== null && story.headlines.length > 0 && (
-          <BentoCell
+          <DashboardPanel
             id="week-brief"
             title={`Week ${String(story.lastScoredWeek).padStart(2, "0")} in brief`}
-            span="md:col-span-2 xl:col-span-12"
+            span="md:col-span-6 xl:col-span-12"
           >
             <WeekStory headlines={story.headlines} />
-          </BentoCell>
+          </DashboardPanel>
         )}
 
         {/* ── THE TWO LONG CELLS FACE EACH OTHER, AND THAT IS THE PAIRING ───
@@ -249,14 +306,14 @@ export default async function SeasonPage({
             players deep and the viewer owned four films. Against ten players
             and nine films owned the stack came out 1009px against the picks'
             719 and tore a 290px hole in the page — the same failure
-            `bento.tsx` documents, with its sign reversed.
+            `components/dashboard.tsx` documents, with its sign reversed.
 
             The two cells that actually grow together are these: what you own
             and what the season is remembered for both lengthen as a season
             runs on. Measured against the ten-player fixture they land 87px
             apart, and the briefs — four of them whatever happens — took the
             full width instead of propping up a stack. */}
-        <BentoCell
+        <DashboardPanel
           id="your-films"
           title="Films you own"
           aside={
@@ -264,19 +321,64 @@ export default async function SeasonPage({
               ? `${hub.myFilms.length} owned · best first`
               : undefined
           }
-          span="md:col-span-1 xl:col-span-7"
+          span="md:col-span-6 xl:col-span-8"
         >
           <YourFilms films={hub.myFilms} />
-        </BentoCell>
+        </DashboardPanel>
+
+        {leaderboard.hasScores && leaderboard.scoredWeeks.length >= 2 && (
+          <DashboardPanel
+            id="bankroll"
+            title="Bankroll"
+            aside="Never replenished"
+            span="md:col-span-6 xl:col-span-4"
+          >
+            <BankrollBurndown bankroll={hub.bankroll} rows={home.ledger} />
+          </DashboardPanel>
+        )}
+
+        {/* ── THE FIELD, IN THREE PANELS ───────────────────────────────────
+            The rank walk, the standings and head-to-head are one subject —
+            where everyone is — and they now sit together. The chart leads
+            because it is the only one of the three that says how you GOT
+            here; the two tables say where you ended up.
+
+            THE CHART IS BACK, AND ITS ENCODING IS WHY. It was deleted on
+            2026-09-02 for reading as spaghetti at ten players. Half of that
+            was the 444px cell it sat in — it takes eight of twelve columns
+            now, roughly double. The other half was that ten lines were asked
+            to carry ten identities in colour, and `--series-1..10` measurably
+            cannot: eight of the ten fall below the chroma floor and the worst
+            adjacent pair separates by ΔE 3.9 for normal colour vision. It
+            names three players and holds the rest back as one band. See
+            `bump-chart.tsx`.
+
+            THE BURNDOWN PAIRS WITH IT AND QUERIES NOTHING — the ledger this
+            page already holds carries what you paid each week, and running it
+            back from the bankroll is the one question the hero's "$10 left"
+            cannot answer: whether that is comfortable or ruinous this far in. */}
+        {leaderboard.hasScores && leaderboard.scoredWeeks.length >= 2 && (
+          <DashboardPanel
+            id="rank-walk"
+            title="The rank walk"
+            aside="You, the place above and the place below"
+            span="md:col-span-6 xl:col-span-7 xl:self-stretch"
+          >
+            <BumpChart
+              series={leaderboard.allTrends}
+              scoredWeeks={leaderboard.scoredWeeks}
+            />
+          </DashboardPanel>
+        )}
 
         {leaderboard.hasScores && (
-          <BentoCell
+          <DashboardPanel
             id="picks"
             title="The season's picks"
-            span="md:col-span-1 xl:col-span-5"
+            span="md:col-span-6 xl:col-span-5"
           >
             <SeasonPicks awards={leaderboard.awards} films={leaderboard.rail} />
-          </BentoCell>
+          </DashboardPanel>
         )}
 
         {/* EVERYTHING BELOW NEEDS A SCORED WEEK. Before anything is captured
@@ -286,7 +388,7 @@ export default async function SeasonPage({
             the flag for exactly this. */}
         {leaderboard.hasScores ? (
           <>
-            <BentoCell
+            <DashboardPanel
               id="standings"
               title="Standings"
               aside={
@@ -294,11 +396,11 @@ export default async function SeasonPage({
                   ? "Prize is a projection until the season is finalised"
                   : undefined
               }
-              span="md:col-span-2 xl:col-span-7"
+              span="md:col-span-6 xl:col-span-7"
               flush
             >
               <StandingsTable data={leaderboard} ladder={ladder} />
-            </BentoCell>
+            </DashboardPanel>
 
             {/* THE SECOND PAIR, AND THE ONE THE CHART USED TO BREAK UP. The
                 rank walk sat here as a slack-absorber, stretching to whatever
@@ -312,21 +414,21 @@ export default async function SeasonPage({
                 field — that both grow one row per player. Measured against the
                 ten-player fixture they land within about 90px. */}
             {story.rivals.length > 0 && (
-              <BentoCell
+              <DashboardPanel
                 id="head-to-head"
                 title="Head to head"
                 aside="A week is won by outscoring them, not by out-placing them"
-                span="md:col-span-2 xl:col-span-5"
+                span="md:col-span-6 xl:col-span-5"
               >
                 <HeadToHead rivals={story.rivals} nearest={story.nearest} />
-              </BentoCell>
+              </DashboardPanel>
             )}
           </>
         ) : (
-          <BentoCell
+          <DashboardPanel
             id="standings"
             title="Standings"
-            span="md:col-span-2 xl:col-span-5"
+            span="md:col-span-6 xl:col-span-7"
           >
             <Empty className="border-0 py-6">
               <EmptyHeader>
@@ -338,7 +440,7 @@ export default async function SeasonPage({
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
-          </BentoCell>
+          </DashboardPanel>
         )}
 
         {/* LAST, AND FULL WIDTH — THE SEASON'S BACK PAGES.
@@ -350,16 +452,17 @@ export default async function SeasonPage({
             page open with an archive. It closes the page instead, which is
             also the only place a table that grows one row per week can sit
             without dictating what pairs with what. */}
-        <BentoCell
+        <DashboardPanel
           id="weeks"
           title="Weeks"
           aside="Sort any column · open a row for the films you owned"
-          span="md:col-span-2 xl:col-span-12"
+          span="md:col-span-6 xl:col-span-12"
           flush
         >
           <WeeksTable rows={home.ledger} />
-        </BentoCell>
-      </Bento>
+        </DashboardPanel>
+        </DashboardGrid>
+      </Dashboard>
     </main>
   );
 }

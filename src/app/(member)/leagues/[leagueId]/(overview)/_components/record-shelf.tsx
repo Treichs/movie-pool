@@ -1,5 +1,4 @@
 import { RecordCard } from "@/components/record-card";
-import { TextLink } from "@/components/text-link";
 import type { LeagueRecordBook } from "@/lib/league-records";
 
 /**
@@ -43,14 +42,11 @@ export function RecordShelf({
   const marquee = records.filter((r) => r.marquee);
   if (marquee.length === 0) return null;
 
+  // NO HEADING AND NO SECTION OF ITS OWN. This sits in a `DashboardPanel`,
+  // which supplies the region, the heading and the link beside it. Keeping its
+  // own would be a heading under a heading inside a panel inside a frame.
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2>The record book</h2>
-        <TextLink href={`/leagues/${leagueId}/records`} size="micro">
-          Every record and every career
-        </TextLink>
-      </div>
+    <>
       <div
         className={`grid gap-4 ${COLUMNS[marquee.length] ?? "grid-cols-1 sm:grid-cols-2"}`}
       >
@@ -64,6 +60,6 @@ export function RecordShelf({
           />
         ))}
       </div>
-    </section>
+    </>
   );
 }

@@ -16,13 +16,29 @@ import { cn } from "@/lib/utils";
  * position, the money, the field, the bankroll and the deadline are one
  * reading, and the page is about the number at the top of it.
  *
- * ── IT IS NOT A CARD, AND THAT IS THE POINT ───────────────────────────────
- * Everything below it is a bordered sheet in a grid. This sits directly on the
- * paper, divided by two rules — a 2px ink rule under the position, a 1px rule
- * above the action. That ink rule is the only place in the app it appears
- * outside a navigation band: a masthead's weight rather than a panel's. Put
- * this in a card and it becomes the first of nine equals, which is exactly what
- * it is not.
+ * ── IT IS A PANEL NOW, AND THE OLD OBJECTION STILL HAS TO BE ANSWERED ─────
+ * This used to sit directly on the paper, and the note here said putting it in
+ * a card would make it "the first of nine equals, which is exactly what it is
+ * not". That was right about the risk and wrong about the remedy. Sitting
+ * outside the dashboard, it left the page reading header → your standing →
+ * what is due → the report, when the thing a player opens this page for is
+ * what is due. On 2026-09-02 it moved inside the frame as the COMMAND BAND and
+ * the call to action moved above it.
+ *
+ * WHAT KEEPS IT FROM BEING ONE OF NINE, now that it is a panel:
+ *   · It spans all twelve columns. Nothing else on the page but the week
+ *     briefs and the ledger does, and neither of those leads.
+ *   · It carries the only `numeral-xl` on the page — a 72px ordinal against a
+ *     30px figure everywhere else.
+ *   · Its panel heading is HIDDEN (`hideTitle`), because its own first line
+ *     already says "Your position". It is the one panel on either dashboard
+ *     that does not wear a title, and that absence is itself the hierarchy.
+ *   · The 2px ink rule below survives, and is still the only place that weight
+ *     appears outside a navigation band.
+ *
+ * The two rules are now INSIDE a bordered sheet rather than drawn on paper.
+ * That is the one thing genuinely lost, and it is the price of the reading
+ * order being right.
  *
  * ── THREE REGISTERS, AND EACH ANSWERS A DIFFERENT QUESTION ────────────────
  * Where am I · what is it worth and who is near me · what have I got and what

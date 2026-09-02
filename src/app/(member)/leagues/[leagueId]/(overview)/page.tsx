@@ -16,6 +16,13 @@ import { requireUser } from "@/lib/auth";
 import { formatMonthYear } from "@/lib/format";
 import { getLeagueHome } from "@/lib/league";
 
+import {
+  Dashboard,
+  DashboardGrid,
+  DashboardPanel,
+} from "@/components/dashboard";
+import { TextLink } from "@/components/text-link";
+
 import { AnnouncementsPanel } from "./_components/announcements-panel";
 import { CareerPositionBlock } from "./_components/career-position";
 import { MemberRoster } from "./_components/member-roster";
@@ -180,52 +187,120 @@ export default async function LeaguePage({
         }
       />
 
-      {home.story.position && (
-        <CareerPositionBlock
-          position={home.story.position}
-          nearest={home.story.nearest}
-        />
-      )}
+      {/* ── THE SAME DASHBOARD SEASON HOME USES ──────────────────────────
+          Same frame, same twelve columns, same paging. Only the subject
+          changes: careers and the archive instead of a season's standings.
+          That is the whole reason the shell is in `src/components` rather
+          than in either route — two pages drawing the same object differently
+          is the drift `BidCta` was lifted out of both pages to stop.
 
-      <RecordShelf records={home.records} leagueId={leagueId} />
+          THE PANELS' OWN CHROME CAME OFF. `RecordBookPanel` and
+          `AnnouncementsPanel` were each a `Card variant="flat"` with their own
+          eyebrow heading, and `RecordShelf` carried its own `<h2>` and section
+          wrapper. Inside the frame that would be a card in a card and a
+          heading under a heading, so the frame's panel supplies both and the
+          components supply only their content. */}
+      <Dashboard
+        eyebrow="The league record"
+        meta={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${seasonCount} season${seasonCount === 1 ? "" : "s"}`}
+        className="mt-4"
+      >
+        <DashboardGrid>
+          {/* THE COMMAND BAND — the league's twin of Season Home's. Same
+              placement, same full width, same hidden heading, so the two pages
+              open the same way. It is conditional because a member with no
+              completed season has no career position to state, and inventing a
+              rank for them would be the same lie the season page refuses to
+              tell before anything has scored. */}
+          {home.story.position && (
+            <DashboardPanel
+              id="your-career"
+              title="Your career"
+              hideTitle
+              span="md:col-span-6 xl:col-span-12"
+            >
+              <CareerPositionBlock
+                position={home.story.position}
+                nearest={home.story.nearest}
+              />
+            </DashboardPanel>
+          )}
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-8">
-          <section className="flex flex-col gap-3">
-            {/* "Past seasons", because that is all this table ever holds —
-                `SeasonsTable` filters to completed and archived. Headed
-                "Seasons" it sat directly under the running season's own card
-                and then said "No finished seasons yet", which reads as the
-                page contradicting itself rather than as two different things. */}
-            <h2>Past seasons</h2>
+          <DashboardPanel
+            id="record-shelf"
+            title="The record book"
+            aside={
+              <TextLink href={`/leagues/${leagueId}/records`} size="micro">
+                Every record and every career
+              </TextLink>
+            }
+            span="md:col-span-6 xl:col-span-12"
+          >
+            <RecordShelf records={home.records} leagueId={leagueId} />
+          </DashboardPanel>
+
+          <DashboardPanel
+            id="members"
+            title="Members"
+            aside="Seasons · titles · career points"
+            span="md:col-span-6 xl:col-span-7"
+          >
+            <MemberRoster members={home.career} leagueId={leagueId} />
+          </DashboardPanel>
+
+          <DashboardPanel
+            id="league-averages"
+            title="The going rate"
+            span="md:col-span-6 xl:col-span-5"
+          >
+            <RecordBookPanel aggregates={home.aggregates} leagueId={leagueId} />
+          </DashboardPanel>
+
+          {/* GATED HERE, BECAUSE THE PANEL SUPPLIES THE HEADING NOW.
+              `AnnouncementsPanel` returns null for an empty league, and its own
+              comment says why: "an empty Announcements heading is a promise the
+              league has not made". Wrapping it in a `DashboardPanel` moved the
+              heading outside the component, so the null no longer suppressed
+              it — a league with nothing to say got a titled, empty panel. The
+              condition has to live where the heading does. */}
+          {home.announcements.length > 0 && (
+            <DashboardPanel
+              id="announcements"
+              title="Announcements"
+              span="md:col-span-6 xl:col-span-5"
+            >
+              <AnnouncementsPanel
+                announcements={home.announcements}
+                leagueId={leagueId}
+              />
+            </DashboardPanel>
+          )}
+
+          {/* THE ARCHIVE TAKES THE WHOLE ROW WHEN THERE IS NOTHING TO PUT
+              BESIDE IT. Announcements is the one panel on this page that can
+              be absent — a league that has never posted has none — and a
+              seven-column table with an empty five beside it is a hole the
+              reader reads as a missing panel. This is the only conditional
+              span on either dashboard, and it exists because this is the only
+              conditional PANEL. */}
+          <DashboardPanel
+            id="past-seasons"
+            title="Past seasons"
+            aside="Completed and archived"
+            span={
+              home.announcements.length > 0
+                ? "md:col-span-6 xl:col-span-7"
+                : "md:col-span-6 xl:col-span-12"
+            }
+          >
             <SeasonsTable
               seasons={home.seasons}
               liveSeasonId={home.current.season?.id ?? null}
             />
-          </section>
+          </DashboardPanel>
 
-          <section className="flex flex-col gap-3">
-            {/* WRAPS RATHER THAN CRUSHES. At phone width the caption broke into
-                two lines jammed against the heading; given its own line it
-                still names the three columns it labels. */}
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2>Members</h2>
-              <span className="type-micro text-micro text-muted-foreground">
-                Seasons · titles · career points
-              </span>
-            </div>
-            <MemberRoster members={home.career} leagueId={leagueId} />
-          </section>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <RecordBookPanel aggregates={home.aggregates} leagueId={leagueId} />
-          <AnnouncementsPanel
-            announcements={home.announcements}
-            leagueId={leagueId}
-          />
-        </div>
-      </div>
+        </DashboardGrid>
+      </Dashboard>
     </main>
   );
 }

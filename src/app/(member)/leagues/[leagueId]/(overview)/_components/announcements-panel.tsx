@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { TextLink } from "@/components/text-link";
-import { Card } from "@/components/ui/card";
 import { relativeDay } from "@/lib/format";
 import type { LeagueAnnouncement } from "@/lib/league";
 
@@ -18,18 +17,11 @@ export function AnnouncementsPanel({
   if (announcements.length === 0) return null;
 
   return (
-    <Card variant="flat" size="sm" className="gap-3">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="type-eyebrow text-eyebrow text-muted-foreground">
-          Announcements
-        </h2>
-        <TextLink
-          href={`/leagues/${leagueId}/announcements`}
-          size="micro"
-        >
-          All of them
-        </TextLink>
-      </div>
+    // The panel around this supplies the card, the heading and the region.
+    <div className="flex flex-col gap-3">
+      <TextLink href={`/leagues/${leagueId}/announcements`} size="micro">
+        All of them
+      </TextLink>
       {announcements.map((a, i) => (
         <Link
           key={a.id}
@@ -46,6 +38,6 @@ export function AnnouncementsPanel({
           </span>
         </Link>
       ))}
-    </Card>
+    </div>
   );
 }

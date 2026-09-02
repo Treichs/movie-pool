@@ -1,5 +1,4 @@
 import { TextLink } from "@/components/text-link";
-import { Card } from "@/components/ui/card";
 import type { LeagueAggregates } from "@/lib/league-records";
 
 /**
@@ -43,20 +42,14 @@ export function RecordBookPanel({
     : [];
 
   return (
-    <Card variant="flat" size="sm" className="gap-3.5">
-      <div className="flex items-baseline justify-between gap-4">
-        {/* "League averages", not "Record book": the marquee records now lead
-            this page under that heading, and two panels with one name is the
-            reader's problem, not the composer's. This one has never held a
-            record — every figure in it is an average over the whole league,
-            with no member in any of them (ADR-085). */}
-        <h2 className="type-eyebrow text-eyebrow text-muted-foreground">
-          League averages
-        </h2>
-        <TextLink href={`/leagues/${leagueId}/records`} size="micro">
-          Open
-        </TextLink>
-      </div>
+    // The panel around this supplies the card, the heading and the region. It
+    // is titled "The going rate" there: every figure below is an average over
+    // the whole league with no member in any of them (ADR-085), which is a
+    // different thing from the record book above it.
+    <div className="flex flex-col gap-3.5">
+      <TextLink href={`/leagues/${leagueId}/records`} size="micro">
+        Open the full record book
+      </TextLink>
 
       {rows.length === 0 ? (
         <p className="text-ui text-muted-foreground">
@@ -73,6 +66,6 @@ export function RecordBookPanel({
           </p>
         </>
       )}
-    </Card>
+    </div>
   );
 }
