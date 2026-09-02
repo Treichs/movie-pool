@@ -29,14 +29,20 @@ import { cn } from "@/lib/utils";
  * gets a hole.
  *
  * Two devices keep it closed, and both are in `page.tsx`:
- *   • `xl:row-span-2` on the season's picks, which is the one cell that runs
- *     long. Two short cells stack beside it — the week's briefs and the films
- *     you own — and the three heights come out within about 16px of each
- *     other. That is the bento's whole trick and it was missing from the first
- *     pass, which left roughly 350px of empty page beside it.
+ *   • CELLS ARE PAIRED WITH WHAT GROWS AT THEIR OWN RATE. Films-you-own and
+ *     the season's picks both lengthen as a season runs on, so they face each
+ *     other; the week's briefs are four however big the league gets, so they
+ *     take the full width rather than propping up a stack.
  *   • `xl:self-stretch` on the rank chart, the one cell that gets BETTER with
  *     height rather than emptier. It is the slack-absorber: whatever the
  *     standings table beside it turns out to be, the chart is drawn to match.
+ *
+ * A ROW-SPAN IS NOT ONE OF THEM, AND USED TO BE. Until 2026-09-02 the picks
+ * cell was `xl:row-span-2` with two short cells stacked beside it, tuned to
+ * within 16px against a five-player league. The ten-player fixture inverted it
+ * — the stack came out 1009px against 719 — because a row-span pins a
+ * relationship between heights that the data is free to change. Pair by what
+ * grows, not by what measured equal once.
  *
  * Anything else new goes next to something of its own length, or it goes full
  * width.
@@ -57,9 +63,20 @@ import { cn } from "@/lib/utils";
  * `aria-labelledby` pointing at the heading IS the landmark a named `<section>`
  * produces, and it is what `standing-strip.tsx` and `you-tab.tsx` already did.
  */
+/**
+ * `mt-4` on top of the page's own `gap-6` is the page's ONE generous interval,
+ * and it is spent here on purpose. Everything above ran on 24px and everything
+ * inside runs on 16px, so a 24px step from the hero to the grid made the fold
+ * between *your answer* and *the report* read exactly as loudly as the step
+ * from a breadcrumb to its own heading — one value repeated until every break
+ * weighed the same. 40px here gives the page a cadence: tight inside the grid,
+ * ordinary between the page's own parts, wide at the single seam that matters.
+ * It sits below the commissioner queue as well as below the hero, because the
+ * queue belongs to the hero's question rather than to the report.
+ */
 export function Bento({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
+    <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
       {children}
     </div>
   );

@@ -34,6 +34,25 @@ import { cn } from "@/lib/utils";
  * accent means *live and yours* and the open week is the only live thing on
  * the page.
  *
+ * ── ALL THREE SHARE ONE SET OF COLUMNS, AND THAT IS `REGISTER` ────────────
+ * They were three independent wrapping rows, so their figures started at three
+ * different x positions — 176 / 343 / 542 on the first, 176 / 283 / 432 on the
+ * second — under two rules drawn the full width of the page. A full-width rule
+ * over ragged columns promises a table and does not deliver one, and this app's
+ * own Tabular Rule says a column of figures that does not line up is a defect.
+ *
+ * `REGISTER` is therefore ONE track definition consumed by all three rows: four
+ * equal columns from `lg`, two below it. Four is not arbitrary — it is what
+ * each register maxes out at. Position · movement · points · form. Prize held ·
+ * prize next · who is ahead · who is behind. Bankroll · films · points per
+ * dollar · THE DEADLINE AND ITS BUTTON, which used to be pushed to the far
+ * right by `justify-between` and sat 518px clear of the nearest figure. It is
+ * now the fourth column of the third register: the page's one call to action,
+ * standing in a column rather than adrift in a corner.
+ *
+ * Editing the track count means editing it here, once, or the rows go ragged
+ * again — which is the whole reason it is a constant and not three class lists.
+ *
  * ── THE MONEY IS A PROJECTION AND THE WORDING SAYS SO ─────────────────────
  * "3rd pays $20 back" is what makes a standing mean something in a league with
  * a buy-in. Nothing is owed until the commissioner finalises — the word is
@@ -49,6 +68,24 @@ import { cn } from "@/lib/utils";
  * coincide the money version wins: it carries the gap AND what closing it is
  * worth.
  */
+/**
+ * The shared tracks. Two columns on a phone, four from `lg`.
+ *
+ * The phone pair is UNEQUAL, and both numbers came off the rendered page rather
+ * than out of the air. Measured at 390px against a ten-player league, the
+ * widest thing the first column ever holds is "6th of 10" at 135px and the
+ * widest the second ever holds is "Down 1 place" at 160px. Two equal halves of
+ * 327px give each 144, which breaks both.
+ *
+ * 8.75rem is the first column's 135 with a little room; what is left is 155,
+ * which takes the movement inline in the ordinary case and lets it drop its
+ * unit word to a second line in the worst one — the graceful break
+ * `PlacesMoved` is built for. It was 8rem until the ten-player fixture, where
+ * a two-digit player count pushed "of 10" onto its own line under "6th".
+ */
+export const REGISTER =
+  "grid grid-cols-[8.75rem_minmax(0,1fr)] items-end gap-x-8 gap-y-5 sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-4";
+
 export function SeasonHero({
   position,
   bankrollLeft,
@@ -79,16 +116,19 @@ export function SeasonHero({
   return (
     <section aria-label="Your season" className="flex flex-col gap-4">
       {position ? (
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
+        <div className={REGISTER}>
           <div className="flex flex-col gap-1">
             <span className="type-eyebrow text-eyebrow text-muted-foreground">
               Your position
             </span>
-            <span className="flex items-baseline gap-2">
+            {/* "of 10" is one token, the same way "Down 1" is: a break between
+                the word and the count reads as two facts. Wrapping is allowed;
+                breaking inside the phrase is not. */}
+            <span className="flex flex-wrap items-baseline gap-x-2">
               <span className="type-numeral text-numeral-xl leading-none">
                 {ordinal(position.rank)}
               </span>
-              <span className="type-body text-ui text-muted-foreground">
+              <span className="type-body whitespace-nowrap text-ui text-muted-foreground">
                 of {position.playerCount}
               </span>
             </span>
@@ -141,7 +181,7 @@ export function SeasonHero({
       )}
 
       {(money?.holding || money?.next || showChasing || position?.pursuedBy) && (
-        <div className="flex flex-wrap gap-x-10 gap-y-5 border-t-2 border-foreground pt-4">
+        <div className={cn(REGISTER, "border-t-2 border-foreground pt-4")}>
           {money?.holding && (
             <Figure
               label={
@@ -189,31 +229,30 @@ export function SeasonHero({
         </div>
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 border-t pt-4">
-        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
-          <Figure
-            label="Bankroll left"
-            value={bankrollLeft === null ? "—" : `$${bankrollLeft}`}
-          />
-          <Figure
-            label="Films owned"
-            value={filmsOwned === null ? "—" : String(filmsOwned)}
-          />
-          {/* Points per dollar was the You tab's third delta. It is the stat
-              that separates good bidding from a big bankroll, and it belongs
-              beside the bankroll it is a ratio of. A player who has not spent
-              has no ratio — a dash, never a zero. */}
-          <Figure
-            label="Points per dollar"
-            value={efficiency === null ? "—" : efficiency.toFixed(2)}
-          />
-        </div>
+      <div className={cn(REGISTER, "border-t pt-4")}>
+        <Figure
+          label="Bankroll left"
+          value={bankrollLeft === null ? "—" : `$${bankrollLeft}`}
+        />
+        <Figure
+          label="Films owned"
+          value={filmsOwned === null ? "—" : String(filmsOwned)}
+        />
+        {/* Points per dollar was the You tab's third delta. It is the stat
+            that separates good bidding from a big bankroll, and it belongs
+            beside the bankroll it is a ratio of. A player who has not spent
+            has no ratio — a dash, never a zero. */}
+        <Figure
+          label="Points per dollar"
+          value={efficiency === null ? "—" : efficiency.toFixed(2)}
+        />
 
         {openWeek && deadline && (
-          // FULL WIDTH ON A PHONE. Wrapped into the figure row it landed
-          // half-indented under "Points per dollar", which reads as a fourth
-          // figure rather than as the thing the page is asking you to do.
-          <div className="flex w-full flex-wrap items-center justify-between gap-4 sm:w-auto sm:justify-start">
+          // ITS OWN ROW ON A PHONE, the register's fourth column above it.
+          // Sharing the figures' row it landed half-indented under "Points per
+          // dollar", which reads as a fourth figure rather than as the thing
+          // the page is asking you to do.
+          <div className="col-span-2 flex flex-wrap items-center justify-between gap-4 lg:col-span-1 lg:justify-start">
             <div className="flex flex-col gap-0.5">
               <span className="type-eyebrow text-eyebrow text-muted-foreground">
                 Week {String(openWeek.number).padStart(2, "0")} closes in
@@ -261,20 +300,28 @@ function PlacesMoved({
       <span className="type-eyebrow text-eyebrow text-muted-foreground">
         Since week {String(sinceWeek).padStart(2, "0")}
       </span>
+      {/* The direction and the count are ONE unbreakable unit, and the unit
+          word is the only thing allowed to wrap off the end of it. On a phone
+          narrow enough that "Down 1 place" will not fit its column, the choice
+          is between breaking inside the figure — "Down" over "1", which reads
+          as two facts — and dropping "place" to a second line, which still
+          reads as one. This is the second. */}
       <span
         className={cn(
-          "type-numeral inline-flex items-center gap-1.5 text-h2",
+          "type-numeral inline-flex flex-wrap items-center gap-x-1.5 text-h2",
           gained && "text-success",
           !gained && !held && "text-destructive",
         )}
       >
-        {!held &&
-          (gained ? (
-            <ArrowUpRightIcon aria-hidden className="size-6 shrink-0" />
-          ) : (
-            <ArrowDownRightIcon aria-hidden className="size-6 shrink-0" />
-          ))}
-        {held ? "Held" : `${gained ? "Up" : "Down"} ${count}`}
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+          {!held &&
+            (gained ? (
+              <ArrowUpRightIcon aria-hidden className="size-6 shrink-0" />
+            ) : (
+              <ArrowDownRightIcon aria-hidden className="size-6 shrink-0" />
+            ))}
+          {held ? "Held" : `${gained ? "Up" : "Down"} ${count}`}
+        </span>
         {!held && (
           <span className="type-body text-ui">
             {count === 1 ? "place" : "places"}

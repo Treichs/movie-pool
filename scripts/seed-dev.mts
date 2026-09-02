@@ -37,6 +37,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { clearSeededWeeks, futureFriday } from "./lib/season-fixture.mts";
+import { generateSeason, type Player as LongRunPlayer } from "./lib/long-run.mts";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -340,6 +341,7 @@ async function main() {
   await seedFilmClub(ids);
   await seedClosingCredits();
   await seedEdgeCases();
+  await seedLongRun(ids);
 
   console.log("\nDev fixtures ready:");
   for (const u of USERS) {
@@ -347,6 +349,9 @@ async function main() {
   }
   for (const u of CLUB_USERS) {
     console.log(`  ${u.email}  (Dev Film Club ${u.role})  password: ${DEV_PASSWORD}`);
+  }
+  for (const u of LONG_RUN_NEW_USERS) {
+    console.log(`  ${u.email}  (${LONG_RUN_NAME} player)  password: ${DEV_PASSWORD}`);
   }
 }
 
@@ -1193,3 +1198,296 @@ main().catch((err) => {
   console.error("Seed crashed:", err);
   process.exit(2);
 });
+
+// ---------------------------------------------------------------------------
+// League #5: "Dev Long Run" — the fixture that exists for VOLUME.
+//
+// Added 2026-09-02. Every league above it is small on purpose — 3 to 5 players,
+// 1 to 4 weeks, each number an assertion about a specific state. That made them
+// useless for the one question they were being asked: does a screen still hold
+// up against a real league? A standings table of five, a bump chart with three
+// points and a weeks ledger with four rows will look fine at any spacing. The
+// imported seasons 31/32/33 are 14, 19 and 18 weeks with a full roster, and
+// nothing seeded came within an order of magnitude of them.
+//
+// So: TEN players, TEN seasons, TEN weeks each. Seasons 1-9 are complete and
+// fully scored; season 10 is live with weeks 1-9 final and week 10 OPEN on a
+// real deadline. 100 weeks, 300 films, ~1,960 bids, all through the real RPCs
+// so every derived number — standings, budgets, awards, head-to-head, the rank
+// walk — is computed exactly as it is in production.
+//
+// ── THE DATA IS GENERATED, AND THE OUTCOME IS CHOSEN ──────────────────────
+// `scripts/lib/long-run.mts` generates the league from a seeded PRNG and scores
+// it with the database's own three rules, so the seed can be SEARCHED for the
+// outcome the fixture needs rather than the standings being faked (they are
+// derived; a faked row would be recomputed away). SEED 13 is the one that
+// lands it, and what it lands is deliberate:
+//
+//   · dev-player finishes 6th of 10 in the live season — the only position
+//     where BOTH halves of the season hero populate, with a player 8.38 points
+//     ahead and another 4.37 behind.
+//   · dev-player's ten seasons place 1,8,9,6,10,2,1,8,7,6 — two wins and a
+//     last — so the records and history screens have a career to show rather
+//     than ten identical finishes.
+//   · Dev Grace takes four of the ten seasons, which gives the all-time
+//     records a name that recurs.
+//
+// Changing SEED, the roster, or the three rules in `long-run.mts` changes all
+// of that. The seed is not arbitrary; it is the search result.
+//
+// ── dev-commish COMMISSIONS IT ────────────────────────────────────────────
+// The commissioner surfaces had never been driven against a league with a
+// decade of history behind them, and the season queue is the block this page
+// hides from a plain player. dev-player is an ordinary member, which is what
+// makes it the account to review the player-facing screens from.
+// ---------------------------------------------------------------------------
+
+const LONG_RUN_NAME = "Dev Long Run";
+/** The search result. See the header — this is not a nonce. */
+const LONG_RUN_SEED = 13;
+const LONG_RUN_SEASONS = 10;
+const LONG_RUN_WEEKS = 10;
+const LONG_RUN_FILMS_PER_WEEK = 3;
+/**
+ * Exactly 120, and the number is load-bearing: `generateSeason` shuffles the
+ * pool, which consumes one PRNG draw per film, so a pool of a different size
+ * shifts the whole stream and rebuilds a different league than the one SEED 13
+ * was chosen for.
+ */
+const LONG_RUN_POOL_SIZE = 120;
+
+const LONG_RUN_NEW_USERS = [
+  { email: "dev-ivy@moviepool.local", name: "Dev Ivy" },
+  { email: "dev-jonah@moviepool.local", name: "Dev Jonah" },
+  { email: "dev-kira@moviepool.local", name: "Dev Kira" },
+  { email: "dev-luis@moviepool.local", name: "Dev Luis" },
+  { email: "dev-mira@moviepool.local", name: "Dev Mira" },
+] as const;
+
+/**
+ * The roster, and the two numbers that separate them.
+ *
+ * `skill` is how well a player reads a slate and `appetite` is how much of the
+ * bankroll they will commit in a week; between them they are the only reason
+ * one player finishes above another. A league of ten identical players would
+ * be ten coin flips and its standings would say nothing.
+ */
+const LONG_RUN_PLAYERS: LongRunPlayer[] = [
+  { key: "commish", skill: 0.72, appetite: 0.3 },
+  { key: "player", skill: 0.62, appetite: 0.26 },
+  { key: "frank", skill: 0.8, appetite: 0.34 },
+  { key: "grace", skill: 0.68, appetite: 0.22 },
+  { key: "hana", skill: 0.58, appetite: 0.38 },
+  { key: "ivy", skill: 0.75, appetite: 0.28 },
+  { key: "jonah", skill: 0.5, appetite: 0.42 },
+  { key: "kira", skill: 0.66, appetite: 0.24 },
+  { key: "luis", skill: 0.55, appetite: 0.33 },
+  { key: "mira", skill: 0.7, appetite: 0.2 },
+];
+
+const LONG_RUN_EMAIL: Record<string, string> = {
+  commish: "dev-commish@moviepool.local",
+  player: "dev-player@moviepool.local",
+  frank: "dev-frank@moviepool.local",
+  grace: "dev-grace@moviepool.local",
+  hana: "dev-hana@moviepool.local",
+  ivy: "dev-ivy@moviepool.local",
+  jonah: "dev-jonah@moviepool.local",
+  kira: "dev-kira@moviepool.local",
+  luis: "dev-luis@moviepool.local",
+  mira: "dev-mira@moviepool.local",
+};
+
+/**
+ * The Friday `weeksBack` weeks before the NEXT Friday.
+ *
+ * The whole 100-week calendar is laid backwards from one anchor so the live
+ * season's last week is the next Friday and every week before it steps back
+ * exactly seven days — about 23 months of history, in order, with no gap for a
+ * season boundary to fall into. UTC at both ends, for the reason `fridays()`
+ * documents at length.
+ */
+function fridayBefore(weeksBack: number): string {
+  const day = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const toFriday = (5 - today.getUTCDay() + 7) % 7 || 7;
+  const next = today.getTime() + toFriday * day;
+  return new Date(next - weeksBack * 7 * day).toISOString().slice(0, 10);
+}
+
+/**
+ * 120 real films with posters, drawn from the catalog this database already
+ * holds and ordered by tmdb id so the draw is the same on every machine.
+ *
+ * No TMDB call: 300 film slots over ten seasons would otherwise be 300 fetches
+ * of titles the catalog cached long ago. Posters are required because the
+ * screens this fixture exists to test — the picks rail, the film page — are
+ * mostly poster.
+ */
+async function longRunFilmPool(): Promise<number[]> {
+  const { data, error } = await admin
+    .from("film_catalog")
+    .select("tmdb_id")
+    .not("poster_path", "is", null)
+    .order("tmdb_id")
+    .limit(LONG_RUN_POOL_SIZE);
+  if (error) throw new Error(`film pool: ${error.message}`);
+  if (!data || data.length < LONG_RUN_POOL_SIZE) {
+    throw new Error(
+      `film pool: need ${LONG_RUN_POOL_SIZE} catalog films with posters, found ${data?.length ?? 0}.`,
+    );
+  }
+  return data.map((r) => r.tmdb_id);
+}
+
+async function seedLongRun(ids: Record<string, string>) {
+  const { data: existing } = await admin
+    .from("leagues")
+    .select("id")
+    .eq("name", LONG_RUN_NAME)
+    .maybeSingle();
+  if (existing) {
+    for (const u of LONG_RUN_NEW_USERS) ids[u.email] = await ensureUser(u.email, u.name);
+    const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const commish = users?.users.find((u) => u.email === LONG_RUN_EMAIL.commish);
+    if (commish) await restoreCommissioner(existing.id, commish.id, LONG_RUN_NAME);
+    console.log(`  "${LONG_RUN_NAME}" already seeded — skipping`);
+    return;
+  }
+
+  console.log(
+    `\nSeeding "${LONG_RUN_NAME}" (${LONG_RUN_PLAYERS.length} players, ` +
+      `${LONG_RUN_SEASONS} seasons x ${LONG_RUN_WEEKS} weeks)…`,
+  );
+  console.log("  this one writes ~2,000 bids and takes a few minutes.");
+
+  for (const u of LONG_RUN_NEW_USERS) ids[u.email] = await ensureUser(u.email, u.name);
+
+  const c: Record<string, SupabaseClient> = {};
+  for (const p of LONG_RUN_PLAYERS) c[p.key] = await signIn(LONG_RUN_EMAIL[p.key]);
+
+  const leagueId = await rpc<string>(c.commish, "create_league", { p_name: LONG_RUN_NAME });
+  for (const p of LONG_RUN_PLAYERS) {
+    if (p.key === "commish") continue;
+    await rpc(c.commish, "add_league_member", {
+      p_league_id: leagueId,
+      p_email: LONG_RUN_EMAIL[p.key],
+      p_role: "player",
+    });
+  }
+  console.log(`  created league with ${LONG_RUN_PLAYERS.length} members`);
+
+  const filmPool = await longRunFilmPool();
+  const totalWeeks = LONG_RUN_SEASONS * LONG_RUN_WEEKS;
+  const deadline = (() => {
+    const d = new Date(`${fridayBefore(0)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    d.setUTCHours(16, 0, 0, 0); // Thursday, ~noon US/Eastern
+    return d.toISOString();
+  })();
+
+  for (let s = 0; s < LONG_RUN_SEASONS; s++) {
+    const live = s === LONG_RUN_SEASONS - 1;
+    // The open week is generated like any other — its bids are real bids — but
+    // it is not scored, because an open week's bids are neither won nor paid.
+    const scoredWeeks = live ? LONG_RUN_WEEKS - 1 : LONG_RUN_WEEKS;
+    const { season, standings } = generateSeason({
+      // 7919 is prime and larger than any draw a season makes, so no two
+      // seasons share a stretch of the stream.
+      seed: LONG_RUN_SEED + s * 7919,
+      players: LONG_RUN_PLAYERS,
+      weeks: LONG_RUN_WEEKS,
+      filmsPerWeek: LONG_RUN_FILMS_PER_WEEK,
+      filmPool,
+      bankroll: 100,
+      topN: 3,
+      minBid: 1,
+      scoredWeeks,
+    });
+
+    // ADR-020: a league may hold only ONE draft/active season, so each season
+    // has to be finished before the next is created. Seasons are therefore
+    // built oldest-first, which is also the order their numbers derive in.
+    const seasonId = await rpc<string>(c.commish, "create_season", {
+      p_league_id: leagueId,
+      p_first_opening_date: futureFriday(),
+      p_default_season_length: 1,
+    });
+    await clearSeededWeeks(admin, seasonId);
+    await rpc(c.commish, "open_due_weeks_for_season", { p_season_id: seasonId });
+
+    for (const [w, week] of season.weeks.entries()) {
+      const globalWeek = s * LONG_RUN_WEEKS + w;
+      const openThisWeek = live && w === LONG_RUN_WEEKS - 1;
+      const weekId = await rpc<string>(c.commish, "create_week", {
+        p_season_id: seasonId,
+        p_number: w + 1,
+        p_opening_date: fridayBefore(totalWeeks - 1 - globalWeek),
+        p_bid_deadline: openThisWeek ? deadline : null,
+      });
+
+      const filmIds: Record<number, string> = {};
+      for (const f of week.films) {
+        filmIds[f.tmdbId] = (await addCatalogFilm(weekId, f.tmdbId)).id;
+      }
+      await rpc(c.commish, "open_week", { p_week_id: weekId });
+
+      // One `place_bids` per player rather than one `place_bid` per film: it is
+      // the RPC the bid form itself calls, it applies the whole-basket budget
+      // check the way a real submission does, and it turns ~1,960 round trips
+      // into ~900. The baskets are independent, so they go out together.
+      const baskets = LONG_RUN_PLAYERS.map((p) => ({
+        key: p.key,
+        basket: week.films
+          .filter((f) => f.bids[p.key] !== undefined)
+          .map((f) => ({ film_id: filmIds[f.tmdbId], amount: f.bids[p.key] })),
+      })).filter(
+        ({ key, basket }) =>
+          // THE ACTION STATE IS THE POINT OF AN OPEN WEEK. Everyone else has
+          // bid — that is the who's-in signal — and the two accounts the UI is
+          // reviewed from have not, so the season page's "place your bids" is
+          // live rather than already answered.
+          basket.length > 0 &&
+          !(openThisWeek && (key === "player" || key === "commish")),
+      );
+      await Promise.all(
+        baskets.map(({ key, basket }) => rpc(c[key], "place_bids", { p_bids: basket })),
+      );
+
+      if (openThisWeek) {
+        console.log(
+          `  S${s + 1} week ${w + 1} OPEN (deadline ${deadline}) — dev-player/dev-commish have not bid`,
+        );
+        break;
+      }
+
+      await rpc(c.commish, "close_week", { p_week_id: weekId });
+      await Promise.all(
+        week.films.map((f) =>
+          rpc(c.commish, "capture_film", {
+            p_film_id: filmIds[f.tmdbId],
+            p_box_office_m: f.boxOfficeM,
+            p_tomatometer: f.tomatometer,
+          }),
+        ),
+      );
+      await rpc(c.commish, "finalize_week", { p_week_id: weekId });
+    }
+
+    if (!live) {
+      await rpc(c.commish, "update_season_status", {
+        p_season_id: seasonId,
+        p_status: "completed",
+      });
+    }
+    const top = standings[0];
+    const me = standings.find((r) => r.key === "player")!;
+    console.log(
+      `  season ${s + 1}/${LONG_RUN_SEASONS} ${live ? "LIVE" : "completed"} — ` +
+        `won by ${top.key} (${top.points}) · dev-player ${me.place}${
+          ["st", "nd", "rd"][me.place - 1] ?? "th"
+        } with ${me.points}`,
+    );
+  }
+}
