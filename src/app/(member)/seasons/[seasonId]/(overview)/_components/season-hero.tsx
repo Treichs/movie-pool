@@ -1,12 +1,8 @@
-import Link from "next/link";
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
-import { DeadlineCountdown } from "@/components/deadline-countdown";
 import { Figure } from "@/components/figure";
-import { Button } from "@/components/ui/button";
 import { ordinal } from "@/lib/format";
 import type { MyPosition } from "@/lib/season-story";
-import type { Week } from "@/lib/commish";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,10 +41,14 @@ import { cn } from "@/lib/utils";
  * equal columns from `lg`, two below it. Four is not arbitrary — it is what
  * each register maxes out at. Position · movement · points · form. Prize held ·
  * prize next · who is ahead · who is behind. Bankroll · films · points per
- * dollar · THE DEADLINE AND ITS BUTTON, which used to be pushed to the far
- * right by `justify-between` and sat 518px clear of the nearest figure. It is
- * now the fourth column of the third register: the page's one call to action,
- * standing in a column rather than adrift in a corner.
+ * dollar.
+ *
+ * THE THIRD REGISTER'S FOURTH COLUMN IS NOW EMPTY, and that is the point. It
+ * held a countdown and a "Place your bids" button — this page's own drawing of
+ * a call to action League Home was drawing differently a click away. Both were
+ * replaced on 2026-09-02 by `components/bid-cta.tsx`, which the page renders as
+ * its own band directly below this one. The tracks stay at four so the three
+ * figures keep the x positions the register exists to hold.
  *
  * Editing the track count means editing it here, once, or the rows go ragged
  * again — which is the whole reason it is a constant and not three class lists.
@@ -91,8 +91,6 @@ export function SeasonHero({
   bankrollLeft,
   filmsOwned,
   efficiency,
-  openWeek,
-  seasonId,
 }: {
   /** Null until something has scored — every player would otherwise be 1st. */
   position: MyPosition | null;
@@ -100,10 +98,7 @@ export function SeasonHero({
   filmsOwned: number | null;
   /** Season points per dollar. Null until the viewer has spent a dollar. */
   efficiency: number | null;
-  openWeek: Week | null;
-  seasonId: string;
 }) {
-  const deadline = openWeek?.bid_deadline_override ?? openWeek?.bid_deadline;
   const money = position?.money ?? null;
   const chasing = position?.chasing ?? null;
 
@@ -246,30 +241,6 @@ export function SeasonHero({
           label="Points per dollar"
           value={efficiency === null ? "—" : efficiency.toFixed(2)}
         />
-
-        {openWeek && deadline && (
-          // ITS OWN ROW ON A PHONE, the register's fourth column above it.
-          // Sharing the figures' row it landed half-indented under "Points per
-          // dollar", which reads as a fourth figure rather than as the thing
-          // the page is asking you to do.
-          <div className="col-span-2 flex flex-wrap items-center justify-between gap-4 lg:col-span-1 lg:justify-start">
-            <div className="flex flex-col gap-0.5">
-              <span className="type-eyebrow text-eyebrow text-muted-foreground">
-                Week {String(openWeek.number).padStart(2, "0")} closes in
-              </span>
-              <DeadlineCountdown target={deadline} size="inline" />
-            </div>
-            <Button
-              render={
-                <Link href={`/seasons/${seasonId}/weeks/${openWeek.id}/bid`} />
-              }
-              nativeButton={false}
-              variant="ink"
-            >
-              Place your bids
-            </Button>
-          </div>
-        )}
       </div>
     </section>
   );

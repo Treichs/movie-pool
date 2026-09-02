@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { BidCta } from "@/components/bid-cta";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -200,9 +201,26 @@ export default async function SeasonPage({
         bankrollLeft={hub.remaining}
         filmsOwned={hub.me?.filmsOwned ?? null}
         efficiency={hub.me?.efficiency ?? null}
-        openWeek={openWeek}
-        seasonId={seasonId}
       />
+
+      {/* THE SAME OBJECT LEAGUE HOME DRAWS, and until 2026-09-02 this page drew
+          its own — a countdown and a button in the hero's fourth column, with
+          different wording, no bid state, and a destination that could disagree
+          with League Home's. It points at the earliest open week the viewer has
+          NOT bid in, which is why it is `hub.bidTarget` and not `openWeek`.
+          No subject: the H1 four inches up already names the season. */}
+      {hub.bidTarget && (
+        <BidCta
+          weekNumber={hub.bidTarget.week.number}
+          subject={null}
+          deadline={
+            hub.bidTarget.week.bid_deadline_override ??
+            hub.bidTarget.week.bid_deadline
+          }
+          href={`/seasons/${seasonId}/weeks/${hub.bidTarget.week.id}/bid`}
+          hasBid={hub.bidTarget.hasBid}
+        />
+      )}
 
       {/* STICKY NOTE 2. Only fetched for a commissioner, so a player's browser
           never receives it. */}

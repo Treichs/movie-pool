@@ -169,7 +169,7 @@ export default async function LeaguePage({
         leagueId={leagueId}
         seasonId={home.current.season?.id ?? null}
         seasonName={home.current.season?.name ?? null}
-        openWeek={home.openWeek}
+        bidTarget={home.bidTarget}
         playerCount={home.current.players.length}
         isCommissioner={home.isCommissioner}
         lastChampion={champion?.name ?? null}

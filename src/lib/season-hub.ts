@@ -17,6 +17,7 @@ import {
   rankMovement,
   type ScoredOwnership,
 } from "@/lib/pool";
+import { pickBidTarget } from "@/lib/unbid-weeks";
 
 // Data for the player's season HUB (ADR-023) — one season, from the player's
 // point of view. The hub is the surface every other season page hangs off, so
@@ -95,6 +96,10 @@ export type SeasonHub = {
   unbidWeekIds: Set<string>;
   /** The EARLIEST still-open week. "Current week" means this, app-wide. */
   openWeek: Week | null;
+  /** The open week the page's call to action points at — the earliest the
+   *  viewer has not bid in, which is NOT always `openWeek`. See
+   *  `pickBidTarget`. */
+  bidTarget: { week: Week; hasBid: boolean } | null;
   /** The open week's films, with my bid on each already attached. */
   slate: HubFilm[];
   /** Films I own, best score first. Empty until a week resolves. */
@@ -309,6 +314,26 @@ export async function getSeasonHub(
       };
     });
 
+  // WHICH OPEN WEEK THIS SEASON'S CALL TO ACTION POINTS AT. Free: `withBids`
+  // already carries the viewer's own bid on every film in the season, so the
+  // question League Home pays two queries for is answered here by a filter.
+  // `pickBidTarget` is the shared rule, so the two pages cannot send the same
+  // player to two different weeks. A week whose slate does not exist yet is not
+  // owed — the same carve-out `getWeeksWithoutBids` makes.
+  const openWeeks = weeks.filter((w) => w.status === "open");
+  const weeksWithFilms = new Set(films.map((f) => f.weekId));
+  const weeksBidIn = new Set(
+    withBids.filter((f) => f.myBid !== null).map((f) => f.weekId)
+  );
+  const bidTarget = pickBidTarget(
+    openWeeks,
+    new Set(
+      openWeeks
+        .filter((w) => weeksWithFilms.has(w.id) && !weeksBidIn.has(w.id))
+        .map((w) => w.id)
+    )
+  );
+
   return {
     bankroll: config?.fake_bankroll ?? null,
     minBid: config?.min_bid ?? 1,
@@ -327,6 +352,7 @@ export async function getSeasonHub(
       );
     })(),
     openWeek,
+    bidTarget,
     slate: openWeek ? withBids.filter((f) => f.weekId === openWeek.id) : [],
     myFilms: withBids
       .filter((f) => wonFilmIds.has(f.id) && f.status === "active")
