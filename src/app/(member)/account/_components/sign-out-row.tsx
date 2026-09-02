@@ -14,12 +14,19 @@ import { Button } from "@/components/ui/button";
  * clears the cookie and redirects, and a fetch-and-hope button would leave a
  * stale session in the tab whenever JavaScript had not loaded. This is
  * therefore a server component — there is nothing here for the client to do.
+ *
+ * ── BELOW `lg` ONLY, SINCE 2026-09-02 ────────────────────────────────────
+ * Above that width the rail carries this control, and a page with two sign-out
+ * buttons in one viewport has stopped meaning anything by "the last thing".
+ * `display: none` keeps the hidden one out of the accessibility tree, so only
+ * one is ever announced — the same mechanism the shell relies on to keep a
+ * single `aria-label="Primary"` per viewport.
  */
 export function SignOutRow() {
   return (
     <form
       action={signOut}
-      className="flex flex-wrap items-center justify-between gap-4 border-t pt-6"
+      className="flex flex-wrap items-center justify-between gap-4 border-t pt-6 lg:hidden"
     >
       <div className="flex flex-col gap-0.5">
         <span className="type-h3 text-ui">Sign out</span>

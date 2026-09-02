@@ -8,10 +8,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import {
   Field,
   FieldDescription,
@@ -113,13 +110,13 @@ export function SignInSection({
   const nextId = useId();
   const confirmId = useId();
 
-  const [emailState, emailAction] = useActionState<ActionResult | null, FormData>(
-    changeEmail,
-    null
-  );
+  const [emailState, emailAction] = useActionState<
+    ActionResult | null,
+    FormData
+  >(changeEmail, null);
   const [pwState, pwAction] = useActionState<ActionResult | null, FormData>(
     changePassword,
-    null
+    null,
   );
 
   const hasGoogle = providers.includes("google");
@@ -163,9 +160,11 @@ export function SignInSection({
                   It is not live until you open the link we send there. Until
                   then, {email} still signs you in.
                 </FieldDescription>
-                {emailState && !emailState.ok && emailState.field === "email" && (
-                  <FieldError>{emailState.error}</FieldError>
-                )}
+                {emailState &&
+                  !emailState.ok &&
+                  emailState.field === "email" && (
+                    <FieldError>{emailState.error}</FieldError>
+                  )}
               </Field>
               <Field>
                 <FieldLabel htmlFor={currentId}>Current password</FieldLabel>
@@ -230,9 +229,7 @@ export function SignInSection({
                 )}
               </Field>
               <Field>
-                <FieldLabel htmlFor={confirmId}>
-                  New password again
-                </FieldLabel>
+                <FieldLabel htmlFor={confirmId}>New password again</FieldLabel>
                 <PasswordInput
                   id={confirmId}
                   name="confirm"
