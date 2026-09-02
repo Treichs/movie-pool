@@ -33,12 +33,17 @@ export const metadata = { title: "Your leagues" };
  * same players. Real usage here is one main league and occasionally a second
  * (ADR-094), and at one league an aggregate is a page with one number on it.
  *
- * ── MOST MEMBERS WILL RARELY SEE THIS, ON PURPOSE ─────────────────────────
- * `chooseLandingPath` routes a signed-in player PAST here to their live season
- * (IA map §5.3: "the season is the front door"). That is not a reason to build
- * it thinly — it is the reason to build it for the two people who do arrive:
- * the newcomer with nothing, and the invitee. Whether the landing rule should
- * change is an open question, deliberately left open on 2026-08-29.
+ * ── EVERY MEMBER SEES THIS FIRST, SINCE ADR-443 ───────────────────────────
+ * This used to be the page the landing rule worked hardest to route past, and
+ * its own header said so: "most members will rarely see this, on purpose", with
+ * the landing rule recorded as "an open question, deliberately left open on
+ * 2026-08-29". That question closed the other way on 2026-09-01. Sign-in lands
+ * here, unconditionally, and the member chooses a league from here.
+ *
+ * The two arrivals it was already built for — the newcomer with nothing and the
+ * invitee — still matter, and are still served first. What it now owes on top
+ * is the one view no league page can produce: what needs you, across every
+ * league, ranked by deadline.
  *
  * ── THE GATE ──────────────────────────────────────────────────────────────
  * `requireUser` before the read, as every composer requires. The group layout

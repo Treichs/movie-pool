@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AuthSplitShell } from "@/components/auth-split-shell";
-import { resolveLandingPath, safeNextPath } from "@/lib/landing";
+import { SIGNED_IN_LANDING, safeNextPath } from "@/lib/landing";
 import { createClient } from "@/lib/supabase/server";
 
 import { SignInForm } from "./sign-in-form";
@@ -38,13 +38,13 @@ export default async function LoginPage({
   const safeNext = safeNextPath(next);
 
   // SIGNED IN ALREADY? An explicit, validated `next` wins over the ordinary
-  // landing rule (ADR-104), because it means the visitor asked for a specific
-  // page and was bounced on the way.
+  // landing destination (ADR-443), because it means the visitor asked for a
+  // specific page and was bounced on the way.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect(safeNext ?? (await resolveLandingPath(supabase, user.id)));
+  if (user) redirect(safeNext ?? SIGNED_IN_LANDING);
 
   // Unknown codes fall back to the OAuth copy, which is where every code but
   // `link` comes from.

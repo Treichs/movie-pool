@@ -36,7 +36,13 @@ export function CareerPositionBlock({
 }) {
   return (
     <section aria-label="Your career in this league" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
+      {/* A COLUMN GRID BELOW `sm`, THE SAME BASELINE ROW ABOVE IT. Left to
+          wrap, four figures at a 40px gutter packed 3 + 1 on a phone and the
+          orphan landed under whichever figure happened to be widest — a
+          ranking's own numbers reading as ragged noise. `sm:contents` dissolves
+          the phone grid at the first breakpoint, so the desktop row is
+          unchanged. */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-10">
         <div className="flex flex-col gap-1">
           <span className="type-eyebrow text-eyebrow text-muted-foreground">
             All-time
@@ -57,17 +63,22 @@ export function CareerPositionBlock({
           )}
         </div>
 
-        <Figure label="Titles" value={String(position.titles)} size="lg" />
-        <Figure
-          label={position.seasons === 1 ? "Season played" : "Seasons played"}
-          value={String(position.seasons)}
-          size="lg"
-        />
-        <Figure label="Career points" value={position.points.toFixed(2)} size="lg" />
+        <div className="grid grid-cols-3 gap-x-4 sm:contents">
+          <Figure label="Titles" value={String(position.titles)} size="lg" />
+          <Figure
+            label={position.seasons === 1 ? "Season played" : "Seasons played"}
+            value={String(position.seasons)}
+            size="lg"
+          />
+          <Figure label="Career points" value={position.points.toFixed(2)} size="lg" />
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 border-t-2 border-foreground pt-4">
-        <div className="flex flex-wrap gap-x-10 gap-y-5">
+        {/* Two fixed columns on a phone rather than a ragged wrap: these labels
+            carry member names, so their widths are whatever the league happens
+            to have called its people. */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:flex sm:flex-wrap sm:gap-x-10">
           <Figure
             label="Best finish"
             value={

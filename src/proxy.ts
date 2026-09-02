@@ -1,6 +1,5 @@
 import { type NextRequest } from "next/server";
 
-import { rememberLeagueFromRequest } from "@/lib/landing";
 import { updateSession } from "@/lib/supabase/proxy";
 
 // Next.js 16: proxy.ts is the renamed middleware.ts (Node.js runtime).
@@ -8,18 +7,16 @@ import { updateSession } from "@/lib/supabase/proxy";
 // signed-out visitors of protected pages to `/login`, which is the sign-in
 // screen again since ADR-435 restored it and made `/` a landing page. The
 // bounce itself lives in updateSession (lib/supabase/proxy), not here — this
-// file only sequences the two things that must happen per request.
+// file only sequences what must happen per request.
 // Fine-grained role checks (player vs commissioner) happen server-side in each
 // page/action, never here alone.
 //
-// It also remembers which league you last opened (ADR-104), which has to
-// happen here for a mechanical reason: a Server Component cannot set cookies,
-// so the league page cannot record its own visit. Ordered AFTER updateSession
-// because that call can replace the response object when Supabase refreshes
-// its tokens — setting the cookie first would drop it on the floor.
+// IT NO LONGER REMEMBERS WHICH LEAGUE YOU LAST OPENED. The `mp_league` cookie
+// was written here because a Server Component cannot set cookies, and it was
+// read by exactly one thing: the sign-in destination guess ADR-443 removed.
+// Nothing reads it now, so the write is gone rather than left orphaned.
 export async function proxy(request: NextRequest) {
-  const response = await updateSession(request);
-  return rememberLeagueFromRequest(request, response);
+  return updateSession(request);
 }
 
 export const config = {

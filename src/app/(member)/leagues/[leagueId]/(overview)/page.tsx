@@ -36,11 +36,23 @@ export const metadata = { title: "League" };
  * record book. Separating them is the design, settled with the developer on
  * 2026-08-29 from the League Home prototype.
  *
- * So the live season leads in a band of its own and the archive below holds
- * still. `chooseLandingPath` sends a member here when their league has no live
- * season, which means this page's busiest moment is the one where least is
- * happening — and it is also two clicks from every live season all season long.
- * One band answers both arrivals.
+ * ── IT IS ALWAYS REACHABLE, AND THAT IS A DECISION (ADR-443, amended) ────
+ * ADR-443 first made this page redirect to the live season, so that opening a
+ * league WAS opening its season. That shipped and was reverted the same day,
+ * on evidence rather than taste: every breadcrumb's middle rung points here —
+ * from /records, /announcements, /films, /dues, /settings and the season page
+ * itself — so on the season page that rung bounced the reader back to the page
+ * they were already on. The member roster and "Invite someone" live only here
+ * too, and went with it.
+ *
+ * The outcome ADR-443 wanted survives without the redirect: the command centre's
+ * league cards and the nav band's Season item link STRAIGHT to `/seasons/[live]`,
+ * so every entry point that matters still lands on the game. This page is what
+ * you get when you ask for the league itself — the roster, the archive, the
+ * careers and, between seasons, the commissioner's "Start a season".
+ *
+ * The cost, accepted: pasting a bare `/leagues/[id]` lands here, not on the
+ * season.
  *
  * ── THE H1 IS A TITLE, NOT A SWITCHER ─────────────────────────────────────
  * Board 4.2 puts a caret in the heading and makes it a league switcher. The app
@@ -104,43 +116,52 @@ export default async function LeaguePage({
     .join(" · ");
 
   return (
-    <main id="main" tabIndex={-1} className="mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href="/leagues" />}>
-              Your leagues
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{home.league.name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    /* THREE INTERVALS, ASCENDING WITH STRUCTURE. A heading sits 12px from what
+       it heads, a section 32px from its neighbour inside a column, and a band
+       40px from the next band. Every one of those was 24px, which left a
+       heading only twice as close to its own content as to the section above —
+       too weak a ratio to read as ownership, and no interval left over to mark
+       where "what is true now" ends and the record begins. The breadcrumb joins
+       the title it names instead of floating a band's distance from it. */
+    <main id="main" tabIndex={-1} className="mx-auto flex max-w-measure-page flex-col gap-10 p-6 md:p-8">
+      <div className="flex flex-col gap-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink render={<Link href="/leagues" />}>
+                Your leagues
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{home.league.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      <div className="flex flex-wrap items-start justify-between gap-6">
-        <div className="flex flex-col gap-1.5">
-          <h1>{home.league.name}</h1>
-          <p className="text-muted-foreground">{meta}</p>
-        </div>
-        {/* NO "START A SEASON" HERE, though the board puts one in the head. The
-            thread below offers it in exactly the states where it is possible,
-            and two identical primary buttons in one viewport is the duplication
-            this layout exists to remove. The head keeps what the thread never
-            carries. */}
-        <div className="flex shrink-0 items-center gap-2">
-          {home.isCommissioner && <Badge variant="ink">You commission</Badge>}
-          {home.isCommissioner && (
-            <Button
-              render={<Link href={`/leagues/${leagueId}/settings`} />}
-              nativeButton={false}
-              variant="outline"
-            >
-              <SettingsIcon />
-              League settings
-            </Button>
-          )}
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="flex flex-col gap-1.5">
+            <h1>{home.league.name}</h1>
+            <p className="text-muted-foreground">{meta}</p>
+          </div>
+          {/* NO "START A SEASON" HERE, though the board puts one in the head. The
+              thread below offers it in exactly the states where it is possible,
+              and two identical primary buttons in one viewport is the duplication
+              this layout exists to remove. The head keeps what the thread never
+              carries. */}
+          <div className="flex shrink-0 items-center gap-2">
+            {home.isCommissioner && <Badge variant="ink">You commission</Badge>}
+            {home.isCommissioner && (
+              <Button
+                render={<Link href={`/leagues/${leagueId}/settings`} />}
+                nativeButton={false}
+                variant="outline"
+              >
+                <SettingsIcon />
+                League settings
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -169,7 +190,7 @@ export default async function LeaguePage({
       <RecordShelf records={home.records} leagueId={leagueId} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-8">
           <section className="flex flex-col gap-3">
             {/* "Past seasons", because that is all this table ever holds —
                 `SeasonsTable` filters to completed and archived. Headed
@@ -184,7 +205,10 @@ export default async function LeaguePage({
           </section>
 
           <section className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between gap-4">
+            {/* WRAPS RATHER THAN CRUSHES. At phone width the caption broke into
+                two lines jammed against the heading; given its own line it
+                still names the three columns it labels. */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2>Members</h2>
               <span className="type-micro text-micro text-muted-foreground">
                 Seasons · titles · career points

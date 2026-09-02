@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "./_components/public-footer";
-import { resolveLandingPath, safeNextPath } from "@/lib/landing";
+import { SIGNED_IN_LANDING, safeNextPath } from "@/lib/landing";
 import { createClient } from "@/lib/supabase/server";
 
 import { LandingBeats } from "./_components/landing-beats";
@@ -14,7 +14,7 @@ import { LandingHighlights } from "./_components/landing-highlights";
  * `/` — THE LANDING PAGE (ADR-435, IA map §7.1).
  *
  * This address used to be a two-audience Mode: a sign-in form when signed out,
- * a `resolveLandingPath` redirect when signed in. Sign-in moved to `/login`,
+ * a redirect to `/leagues` when signed in. Sign-in moved to `/login`,
  * which now has its own screen, and what is left here is the pitch.
  *
  * ── IT STILL HAS TWO AUDIENCES, AND ONLY ONE OF THEM SEES A PAGE ──────────
@@ -52,7 +52,7 @@ export default async function LandingPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    redirect(safeNextPath(next) ?? (await resolveLandingPath(supabase, user.id)));
+    redirect(safeNextPath(next) ?? SIGNED_IN_LANDING);
   }
 
   return (

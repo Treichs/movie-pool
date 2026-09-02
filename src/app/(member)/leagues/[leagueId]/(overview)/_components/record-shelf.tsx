@@ -19,6 +19,20 @@ import type { LeagueRecordBook } from "@/lib/league-records";
  * data for it, so a league on its first weekend genuinely has fewer, and a
  * hard-coded four would render an empty column.
  */
+/** THE COLUMN COUNT DIVIDES THE RECORD COUNT, so the shelf never ends on a
+ *  half-empty row. Three marquee records across two columns left a 536×225 hole
+ *  at the page's headline moment, and the four-across step was unreachable
+ *  anyway: the page frame caps at 72rem, so four columns is 276px of card —
+ *  narrower than the h1 numeral in it needs. Four records sit two-by-two
+ *  instead. The composer decides how many lead and every record self-suppresses,
+ *  so the count genuinely varies; this only decides how they sit. */
+const COLUMNS: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 lg:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2",
+};
+
 export function RecordShelf({
   records,
   leagueId,
@@ -37,11 +51,9 @@ export function RecordShelf({
           Every record and every career
         </TextLink>
       </div>
-      {/* TWO ACROSS UNTIL THE PAGE IS GENUINELY WIDE. A marquee record sets its
-          value at the h1 numeral beside a poster; in four columns of a 72rem
-          page that is 245px of card and "$6 → 0.45 pts" breaks across two
-          lines. The shelf is the page's headline — it is allowed the width. */}
-      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+      <div
+        className={`grid gap-4 ${COLUMNS[marquee.length] ?? "grid-cols-1 sm:grid-cols-2"}`}
+      >
         {marquee.map((r) => (
           <RecordCard
             key={r.label}
