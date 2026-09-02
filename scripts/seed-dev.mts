@@ -343,6 +343,8 @@ async function main() {
   await seedEdgeCases();
   await seedLongRun(ids);
 
+  await backfillCatalogMetrics();
+
   console.log("\nDev fixtures ready:");
   for (const u of USERS) {
     console.log(`  ${u.email}  (${u.role ?? "no season"})  password: ${DEV_PASSWORD}`);
@@ -472,6 +474,7 @@ async function rpc<T = unknown>(
 // ---------------------------------------------------------------------------
 
 const TMDB_TOKEN = process.env.TMDB_READ_TOKEN;
+const OMDB_KEY = process.env.OMDB_API_KEY?.trim();
 
 type Rec = Record<string, unknown>;
 
@@ -485,7 +488,10 @@ async function ensureCatalogFilm(tmdbId: number): Promise<string> {
     .select("title")
     .eq("tmdb_id", tmdbId)
     .maybeSingle();
-  if (cached) return cached.title;
+  if (cached) {
+    await ensureCatalogMetrics(tmdbId);
+    return cached.title;
+  }
 
   if (!TMDB_TOKEN) {
     throw new Error(
@@ -551,7 +557,144 @@ async function ensureCatalogFilm(tmdbId: number): Promise<string> {
   });
   if (error) throw new Error(`film_catalog ${tmdbId}: ${error.message}`);
   console.log(`  cached film_catalog ${tmdbId} — ${title}`);
+  await ensureCatalogMetrics(tmdbId);
   return title;
+}
+
+// ---------------------------------------------------------------------------
+// THE OMDb HALF OF A CATALOG ROW — REAL NUMBERS, FETCHED, NEVER INVENTED.
+//
+// A seeded film is added by hand and never picked, so the columns the catalog
+// picker would have written stayed null and the film pages' Tomatometer,
+// Metacritic and IMDb figures rendered as nothing at all. The header above
+// refuses to close that with made-up values, and it is right to: film_catalog
+// is a SHARED cache the replica league reads. So this asks OMDb, exactly as
+// the picker does, and writes what it answers.
+//
+// The fetch and the parse are restated here rather than imported for the same
+// reason the TMDB one above is: `src/lib/omdb.ts` opens with `import
+// "server-only"` and resolves through `@/`, neither of which survives a plain
+// `node scripts/*.mts`. The two traps that file documents are load-bearing and
+// are honoured below: the Tomatometer lives in `Ratings[]` and not in any
+// top-level field, and OMDb answers HTTP 200 on failure, so `Response` is
+// tested before anything else is read.
+//
+// `metrics_refreshed_at` is the idempotence guard AND the thing that keeps
+// "asked, nothing to report" apart from "never asked" — a film Rotten
+// Tomatoes has not scored yet is a null Tomatometer on a stamped row, and is
+// not asked about again on the next run.
+// ---------------------------------------------------------------------------
+/**
+ * Every catalog row the fixtures can reach, brought up to date with OMDb.
+ *
+ * WHY THIS IS A SWEEP AND NOT A SIDE-EFFECT OF SEEDING A LEAGUE. The league
+ * seeders are idempotent by SKIPPING — "already seeded, skipping" — so a film
+ * added before this existed is never walked again, and hanging the fetch off
+ * `ensureCatalogFilm` alone would have backfilled nothing on any database that
+ * had already been seeded once. That is the whole population in practice.
+ *
+ * `metrics_refreshed_at` makes the sweep cost nothing on the second run: a row
+ * is asked about exactly once, whether or not Rotten Tomatoes had a score to
+ * give. Serial on purpose — OMDb's free tier is a daily call budget, not a
+ * concurrency one, and a seed script is not in a hurry.
+ */
+async function backfillCatalogMetrics(): Promise<void> {
+  if (!OMDB_KEY) {
+    console.log("");
+    console.log("  OMDB_API_KEY is unset — film pages will show no Tomatometer.");
+    return;
+  }
+
+  const { data: rows, error } = await admin
+    .from("film_catalog")
+    .select("tmdb_id")
+    .is("metrics_refreshed_at", null)
+    .not("imdb_id", "is", null);
+  if (error) throw new Error(`film_catalog sweep: ${error.message}`);
+  if (!rows || rows.length === 0) return;
+
+  console.log("");
+  console.log(`  asking OMDb about ${rows.length} catalog films…`);
+  let rated = 0;
+  for (const r of rows) {
+    await ensureCatalogMetrics(r.tmdb_id, { quiet: true });
+    rated += 1;
+  }
+  console.log(`  ${rated} catalog rows stamped`);
+}
+
+async function ensureCatalogMetrics(
+  tmdbId: number,
+  opts: { quiet?: boolean } = {},
+): Promise<void> {
+  if (!OMDB_KEY) return;
+
+  const { data: row } = await admin
+    .from("film_catalog")
+    .select("imdb_id, metrics_refreshed_at")
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle();
+  if (!row || row.metrics_refreshed_at !== null) return;
+  if (!row.imdb_id || !/^tt\d+$/.test(row.imdb_id)) return;
+
+  const res = await fetch(
+    `https://www.omdbapi.com/?apikey=${encodeURIComponent(OMDB_KEY)}` +
+      `&i=${encodeURIComponent(row.imdb_id)}&tomatoes=short`,
+    { signal: AbortSignal.timeout(8_000) },
+  );
+  const raw: unknown = await res.json();
+  const obj = (v: unknown): Rec =>
+    typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Rec) : {};
+  /** OMDb writes "N/A" where other APIs write null, and it means the same. */
+  const field = (o: Rec, key: string): string | null => {
+    const v = o[key];
+    if (typeof v !== "string") return null;
+    const t = v.trim();
+    return t === "" || t === "N/A" ? null : t;
+  };
+  const digits = (v: string | null): number | null => {
+    if (v === null) return null;
+    const n = Number(v.replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) ? Math.trunc(n) : null;
+  };
+
+  const d = obj(raw);
+  // Trap 2 — the only signal that anything went wrong.
+  if (field(d, "Response") !== "True") {
+    if (!opts.quiet) {
+      console.log(`  omdb ${tmdbId}: ${field(d, "Error") ?? "failed"} — left null`);
+    }
+    return;
+  }
+
+  // Trap 1 — match on Source, and tolerate the "83%" formatting.
+  let tomatometer: number | null = null;
+  if (Array.isArray(d.Ratings)) {
+    for (const r of d.Ratings) {
+      if (field(obj(r), "Source") !== "Rotten Tomatoes") continue;
+      const pct = digits(field(obj(r), "Value"));
+      if (pct !== null && pct >= 0 && pct <= 100) tomatometer = pct;
+    }
+  }
+  const metascore = digits(field(d, "Metascore"));
+  const imdbRating = Number(field(d, "imdbRating"));
+
+  const { error } = await admin
+    .from("film_catalog")
+    .update({
+      rt_tomatometer: tomatometer,
+      metascore:
+        metascore !== null && metascore >= 0 && metascore <= 100 ? metascore : null,
+      imdb_rating: Number.isFinite(imdbRating) ? imdbRating : null,
+      metrics_refreshed_at: new Date().toISOString(),
+    })
+    .eq("tmdb_id", tmdbId);
+  if (error) throw new Error(`film_catalog metrics ${tmdbId}: ${error.message}`);
+  if (!opts.quiet) {
+    console.log(
+      `  omdb ${tmdbId} — Tomatometer ${tomatometer === null ? "not yet rated" : `${tomatometer}%`}`,
+    );
+  }
 }
 
 /**
@@ -922,14 +1065,15 @@ async function seedClosingCredits() {
 // now — a film cannot be created without one — but this is where it started, and
 // `addCatalogFilm` is the one path.
 //
-// WHAT THIS FIXTURE STILL CANNOT REACH: the OMDb half of a film page
-// (Tomatometer, Metacritic, IMDb). Those columns are written at PICK time by
-// the commissioner's catalog picker, and a seeded film is added by hand and
-// never picked. `OMDB_API_KEY` is set, so this is not a configuration gap —
-// but `src/lib/omdb.ts` is `import "server-only"` and cannot be called from a
-// script, and writing invented Tomatometers into `film_catalog` would be worse
-// than the gap: that table is a SHARED cache, and the replica league's film
-// pages read the same rows.
+// THE OMDb HALF OF A FILM PAGE (Tomatometer, Metacritic, IMDb) used to be out
+// of reach here, and is not any more — `ensureCatalogMetrics` asks OMDb the
+// same question the commissioner's catalog picker asks and writes the answer.
+// The constraint that made it look unreachable still holds and is what that
+// function is shaped around: `src/lib/omdb.ts` is `import "server-only"` and
+// cannot be called from a script, so the fetch is restated inline exactly as
+// the TMDB one above is. What is NOT allowed has not changed — no invented
+// Tomatometer is ever written to `film_catalog`, because that table is a
+// SHARED cache and the replica league's film pages read the same rows.
 // ---------------------------------------------------------------------------
 
 const EDGE_NAME = "Dev Edge Cases";

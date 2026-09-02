@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { Figure } from "@/components/figure";
 import { FilmMasthead } from "@/components/film-masthead";
+import { TomatoMark } from "@/components/tomato-mark";
+import { isFresh } from "@/components/tomatometer";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -22,6 +24,13 @@ import type { FilmDetailPage } from "@/lib/film-page";
  * size — the one the type scale reserves for a number that IS the explanation
  * — and Metacritic and IMDb take the default. A third size for this one
  * caller is the prop the `Figure` docblock warns against.
+ *
+ * ── THE MARK JOINS THE NUMBER, NOT THE LABEL ─────────────────────────────
+ * `Tomatometer` (the chip) lets the mark replace the words Fresh and Rotten.
+ * It cannot here: this figure sits in a row with Metacritic and IMDb, where
+ * the eyebrow is what tells the three apart. So the label stays and the mark
+ * rides beside the numeral, which is also the only place it can be big enough
+ * to read.
  */
 
 function Rating({
@@ -30,7 +39,7 @@ function Rating({
   lead,
 }: {
   label: string;
-  value: string | null;
+  value: React.ReactNode;
   lead?: boolean;
 }) {
   if (value === null) return null;
@@ -98,7 +107,17 @@ export function FilmHero({ film }: { film: FilmDetailPage }) {
       <div className="flex items-end gap-7 pb-1">
         <Rating
           label="Tomatometer®"
-          value={film.rt_tomatometer === null ? null : `${film.rt_tomatometer}%`}
+          value={
+            film.rt_tomatometer === null ? null : (
+              <span className="inline-flex items-center gap-2">
+                <TomatoMark
+                  fresh={isFresh(film.rt_tomatometer)}
+                  className="size-6"
+                />
+                {film.rt_tomatometer}%
+              </span>
+            )
+          }
           lead
         />
         <Rating

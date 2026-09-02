@@ -1,5 +1,7 @@
 import { Figure } from "@/components/figure";
 import { TextLink } from "@/components/text-link";
+import { TomatoMark } from "@/components/tomato-mark";
+import { isFresh } from "@/components/tomatometer";
 import { Card } from "@/components/ui/card";
 import type { FilmDetailPage } from "@/lib/film-page";
 
@@ -16,6 +18,11 @@ import type { FilmDetailPage } from "@/lib/film-page";
  * OMDb's canonical numbers, and the two legitimately differ. They sit down
  * here, under a heading that says "about the film", rather than next to the
  * score where they would read as a correction to it.
+ *
+ * ── THE MARK RIDES THE NUMERAL, THE EYEBROW STAYS A WORD ─────────────────
+ * Same reason as the catalog masthead: in a row of four figures the label is
+ * what separates them, so the mark cannot replace it the way it does in the
+ * `Tomatometer` chip. It sits beside the number instead.
  */
 export function AboutTheFilm({
   film,
@@ -29,10 +36,19 @@ export function AboutTheFilm({
       ? null
       : `${Math.floor(film.runtime_min / 60)}h ${film.runtime_min % 60}m`;
 
-  const figures = [
+  const figures: { label: string; value: React.ReactNode }[] = [
     {
       label: "Tomatometer®",
-      value: film.rt_tomatometer === null ? null : `${film.rt_tomatometer}%`,
+      value:
+        film.rt_tomatometer === null ? null : (
+          <span className="inline-flex items-center gap-1.5">
+            <TomatoMark
+              fresh={isFresh(film.rt_tomatometer)}
+              className="size-5"
+            />
+            {film.rt_tomatometer}%
+          </span>
+        ),
     },
     {
       label: "Metacritic",
@@ -43,7 +59,7 @@ export function AboutTheFilm({
       value: film.imdb_rating === null ? null : `${film.imdb_rating}/10`,
     },
     { label: "Runtime", value: runtime },
-  ].filter((f): f is { label: string; value: string } => f.value !== null);
+  ].filter((f) => f.value !== null);
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[2fr_1fr]">

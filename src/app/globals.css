@@ -109,6 +109,25 @@
   --series-8: #D0BE95;
   --series-9: #AEC47A;
   --series-10: #9BD095;
+
+  /* ROTTEN TOMATOES' OWN ARTWORK FILLS, NOT APP COLOURS.
+
+     These three are the literal values out of Rotten Tomatoes' supplied SVGs.
+     They are declared here so the marks are themeable rather than hardcoded in
+     a component, and they are deliberately OUTSIDE the state-token system:
+     they are somebody else's brand, not a signal this app assigns meaning to.
+     That is what keeps the tomato from spending --primary, which means "live
+     and yours", or --success, which means "settled".
+
+     THEY ARE FILL-ONLY. `scripts/a11y/contrast.mjs` gates on `text-<token>`
+     usage; a token used solely as `fill-*` forms no pair and is never
+     measured. Writing `text-tomato-*` anywhere would fail the run as an
+     unchecked colour token, and would also be a lie -- these never set type.
+
+     Same values in .dark. Brand artwork does not invert. */
+  --tomato-fresh: #F93208;
+  --tomato-leaf: #02902E;
+  --tomato-rotten: #0FC755;
 }
 
 /* ---------------------------------------------------------------------------
@@ -179,6 +198,11 @@
   --series-8: #473B1F;
   --series-9: #52632C;
   --series-10: #23471F;
+
+  /* Same artwork in both modes -- see :root. */
+  --tomato-fresh: #F93208;
+  --tomato-leaf: #02902E;
+  --tomato-rotten: #0FC755;
 }
 
 /* ---------------------------------------------------------------------------
@@ -240,6 +264,10 @@
   --color-series-9: var(--series-9);
   --color-series-10: var(--series-10);
 
+  --color-tomato-fresh: var(--tomato-fresh);
+  --color-tomato-leaf: var(--tomato-leaf);
+  --color-tomato-rotten: var(--tomato-rotten);
+
   --color-nav: var(--nav);
   --color-nav-primary: var(--nav-primary);
   --color-nav-foreground: var(--nav-foreground);
@@ -247,13 +275,22 @@
   --color-nav-border: var(--nav-border);
 
   /* PAGE AND PROSE MEASURES. The three `ch` values bound a line of text; the
-     page frame is a different question in a different unit — 72rem is the
-     width the route files already use, so a page and its loading state agree.
-     Yields max-w-measure-tight / -default / -wide / -page. */
+     page frame is a different question in a different unit.
+     Yields max-w-measure-tight / -default / -wide / -page.
+
+     THE PAGE MEASURE IS 90rem BECAUSE THE MASTHEAD HAS NO MEASURE AT ALL.
+     `app-shell` and `public-header` are full-bleed with a 32px inset, so the
+     wordmark sits at x=32 on any monitor while the page under it was centred
+     in 72rem — at 1920 that put the h1 at x=384, a 352px stagger between two
+     things this system says line up. 90rem closes it to 208px. Widening is
+     therefore an ALIGNMENT fix, not a density preference, and it applies to
+     every route rather than to one dashboard.
+     The prose measures do NOT follow it: a wider page is not a wider
+     paragraph, and a form still wants a measure of its own. */
   --container-measure-tight: 45ch;
   --container-measure-default: 65ch;
   --container-measure-wide: 80ch;
-  --container-measure-page: 72rem;
+  --container-measure-page: 90rem;
 
   /* THE ONE ROUNDED CORNER THAT IS NOT DERIVED FROM --radius, and it must not
      be: a film perforation is a rounded rectangle, and one that squared itself
