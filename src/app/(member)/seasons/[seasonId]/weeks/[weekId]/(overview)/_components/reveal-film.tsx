@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownIcon, ArrowUpIcon, FilmIcon } from "lucide-react";
 
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Figure } from "@/components/figure";
 import { Card } from "@/components/ui/card";
 import { numberWord } from "@/lib/format";
 import { posterUrl } from "@/lib/tmdb-urls";
@@ -11,6 +11,21 @@ import { cn } from "@/lib/utils";
 
 /**
  * ONE FILM, REVEALED — board 3.2's row.
+ *
+ * ── TWO REGISTERS, DIVIDED BY THE INK RULE ──────────────────────────────
+ * Poster, title and the three figures sit above a 2px ink rule; the bid
+ * ladder runs the full width of the sheet below it. That is Season Home's
+ * hero shape borrowed deliberately: what the film IS and what it EARNED is
+ * one reading, and who bid what against it is another.
+ *
+ * The row used to nest the ladder inside the column beside the poster, which
+ * cost every bar 96px of width and pushed the three figures into a
+ * right-aligned cluster that had to wrap on a phone. Stacking the figures
+ * under the title and handing the ladder the whole sheet spends that width on
+ * the two things the reveal is for.
+ *
+ * The figures are `Figure`, the same unit the hero sets its money in, rather
+ * than a fourth local re-spelling of label-over-numeral.
  *
  * ── THE OWNERS LINE STATES THE TIE, BECAUSE THE TIE IS THE MISREAD RULE ──
  * "Three winning tiers" means three distinct AMOUNTS, not three people: a tie
@@ -53,27 +68,6 @@ const two = (n: number) =>
     maximumFractionDigits: 2,
   });
 
-function Stat({
-  label,
-  value,
-  big,
-}: {
-  label: string;
-  value: string;
-  big?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-end gap-0.5">
-      <span className="type-eyebrow text-eyebrow text-muted-foreground">
-        {label}
-      </span>
-      <span className={cn("type-numeral", big ? "text-h3" : "text-ui")}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
 /**
  * The sentence under the chips. Null when there is nothing worth saying.
  *
@@ -106,14 +100,14 @@ function ownersNote(film: RevealFilm): string | null {
       .filter((a) => winners.filter((r) => r.amount === a).length > 1)
       .sort((a, b) => a - b)[0];
     parts.push(
-      `${numberWord(distinct.size)} distinct amount${distinct.size === 1 ? "" : "s"} — a tie at $${tied} gives ${numberWord(winners.length)} owners.`
+      `${numberWord(distinct.size)} distinct amount${distinct.size === 1 ? "" : "s"} — a tie at $${tied} gives ${numberWord(winners.length)} owners.`,
     );
   }
 
   const mine = film.rows.find((r) => r.isMe);
   if (mine && !mine.isWinning) {
     parts.push(
-      `You bid $${mine.amount} and lost the tier — ${numberWord(distinct.size)} distinct amount${distinct.size === 1 ? "" : "s"} above yours.`
+      `You bid $${mine.amount} and lost the tier — ${numberWord(distinct.size)} distinct amount${distinct.size === 1 ? "" : "s"} above yours.`,
     );
   }
 
@@ -135,7 +129,11 @@ function ownersNote(film: RevealFilm): string | null {
  * Null until both inputs are captured; a half-scored film explains nothing.
  */
 function scoreWorking(film: RevealFilm): string | null {
-  if (film.score === null || film.boxOfficeM === null || film.tomatometer === null) {
+  if (
+    film.score === null ||
+    film.boxOfficeM === null ||
+    film.tomatometer === null
+  ) {
     return null;
   }
   return `$${film.boxOfficeM}M × ${film.tomatometer}% = ${two(film.score)}`;
@@ -185,7 +183,7 @@ function Moved({ places }: { places: number }) {
     <span
       className={cn(
         "type-micro inline-flex items-center gap-1 text-micro",
-        up ? "text-success" : "text-destructive"
+        up ? "text-success" : "text-destructive",
       )}
     >
       <Icon aria-hidden className="size-3 shrink-0" />
@@ -227,20 +225,42 @@ export function RevealFilmRow({
     <Card
       variant="flat"
       className={cn(
-        "flex-row gap-5 overflow-hidden p-0",
-        film.iOwn && "border-foreground"
+        "grid grid-cols-[6rem_1fr] overflow-hidden p-0 lg:grid-cols-[11rem_16rem_1fr]",
+        film.iOwn && "border-foreground",
       )}
     >
-      <div
-        className={cn("w-24 shrink-0 sm:w-27", !film.iOwn && "opacity-60")}
-      >
-        <AspectRatio ratio={2 / 3} className="overflow-hidden bg-muted">
+      {/* THE LADDER GOES BESIDE THE FILM, NOT UNDER IT.
+          Stacked, this card wasted its width twice over: an $18 bar was drawn
+          630px long when 400 says the same thing, while the film's own numbers
+          huddled in 400px and the poster column padded the remaining height out
+          in grey. The tall element (the ladder — one row per bidder) and the
+          tall element (the poster) now share a row, so the card is as tall as
+          its content in BOTH columns instead of the sum of them.
+
+          ONE TREE, TWO STRUCTURES, which is what the grid buys. Below `lg` it
+          is two columns and two rows — poster beside the title, ink rule across
+          the whole sheet, ladder under it. At `lg` it is three columns in one
+          row and the rule turns vertical. That is a change of STRUCTURE rather
+          than a reflow, the same move the nav makes at `md`. A flex row cannot
+          express both without rendering the ladder twice, and two copies would
+          be two sets of nodes for the sheet's FLIP re-rank to fight over.
+
+          THE COLUMN STRETCHES; THE ARTWORK DOES NOT. Letting the poster cover
+          its whole cell was tried and is a defect: a card is as tall as its bid
+          ladder, so a film the whole league bid on made a 554px column that
+          cropped `OBSESSION` down to `BSESSIO`. A poster is a fixed 2:3 object
+          and the one thing it may not lose is its title. So the artwork holds
+          its ratio at the top of the column and the wash carries on beneath it
+          — a poster mounted in a slot, which is also why the slot is `--muted`
+          rather than the sheet white it would otherwise disappear into. */}
+      <div className={cn("bg-muted", !film.iOwn && "opacity-60")}>
+        <div className="relative aspect-2/3 w-full">
           {poster ? (
             <Image
               src={poster}
               alt=""
               fill
-              sizes="(min-width: 640px) 6.75rem, 6rem"
+              sizes="(min-width: 1024px) 11rem, 6rem"
               className="object-cover object-center"
             />
           ) : (
@@ -248,154 +268,170 @@ export function RevealFilmRow({
               <FilmIcon className="size-6 text-muted-foreground" aria-hidden />
             </div>
           )}
-        </AspectRatio>
+        </div>
       </div>
 
-      <div className="flex grow flex-col gap-2.5 py-4 pe-4">
-        <div className="flex flex-wrap items-start justify-between gap-x-7 gap-y-3">
-          <div className="flex min-w-0 flex-col gap-1">
-            <h3 className="min-w-0">
-              {href ? (
-                <Link href={href} className="hover:underline">
-                  {film.title}
-                </Link>
-              ) : (
-                film.title
-              )}
-            </h3>
-            {move !== null && <Moved places={move} />}
-          </div>
-
-          {/* WRAPS, and did not: three stats at a fixed 28px gap beside a
-              96px poster overflow a 375px card, and the Card clips rather than
-              scrolls — so "Score" simply was not on the page at phone width.
-              Pre-dates the ladder below; it just became obvious next to it. */}
-          <div className="flex flex-wrap items-start justify-end gap-x-5 gap-y-2 sm:gap-x-7">
-            <Stat
-              label="Opening"
-              value={film.boxOfficeM === null ? "—" : `$${film.boxOfficeM}M`}
-            />
-            <Stat
-              label={film.tomatometer === null && tomato !== null ? "Tomatometer (live)" : "Tomatometer"}
-              value={tomato === null ? "—" : `${tomato}%`}
-            />
-            <Stat
-              label="Score"
-              value={film.score === null ? "—" : two(film.score)}
-              big
-            />
-          </div>
+      <div className="flex min-w-0 flex-col gap-3 py-4 pe-4 ps-5">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h3 className="min-w-0">
+            {href ? (
+              <Link href={href} className="hover:underline">
+                {film.title}
+              </Link>
+            ) : (
+              film.title
+            )}
+          </h3>
+          {move !== null && <Moved places={move} />}
         </div>
+
+        {/* THE INPUTS ON ONE LINE, THE RESULT ON THE NEXT — at every width.
+              Three abreast is what a phone could not fit, and the wrap it was
+              forced into turned out to be the better reading everywhere: the
+              two figures the rulebook multiplies sit together, and the score
+              they produce is set apart and larger beneath them. Left as a wrap
+              it would have been an accident of available width, and a desktop
+              card would have drawn the same three facts in a different shape
+              from the phone one. `items-end` matters when the live-Tomatometer
+              label runs to two lines: the numerals stay on one baseline. */}
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <Figure
+            label="Opening"
+            value={film.boxOfficeM === null ? "—" : `$${film.boxOfficeM}M`}
+          />
+          <Figure
+            label={
+              film.tomatometer === null && tomato !== null
+                ? "Tomatometer (live)"
+                : "Tomatometer"
+            }
+            value={tomato === null ? "—" : `${tomato}%`}
+          />
+        </div>
+
+        <Figure
+          label="Score"
+          value={film.score === null ? "—" : two(film.score)}
+          size="lg"
+        />
 
         {working && (
           <p className="type-numeral text-micro tabular-nums text-muted-foreground">
             {working}
           </p>
         )}
+      </div>
 
-        <div className="flex flex-col gap-1.5">
-          {/* NOT "Owners" on a removed film. `remove_film` refunds the
-              winning bids and leaves `is_winning` where it was, so these are
-              the people who got their money back — calling them owners would
-              name them as holding something the commissioner took away. */}
-          <span className="type-eyebrow text-eyebrow text-muted-foreground">
-            {film.removed ? "Refunded" : "The bids"}
+      {/* THE INK RULE, TURNED. The 2px weight is the hero's, not a panel's
+          hairline: it divides the film from the argument the league had about
+          it, and it is the same rule the cut is drawn in a few lines down.
+          Stacked, that division is horizontal; in three columns it is the
+          vertical rule between two columns of a page, which is the more
+          literal trade-paper gesture of the two. */}
+      <div className="col-span-2 flex flex-col gap-1.5 border-t-2 border-foreground p-4 lg:col-span-1 lg:border-t-0 lg:border-s-2">
+        {/* NOT "Owners" on a removed film. `remove_film` refunds the
+            winning bids and leaves `is_winning` where it was, so these are
+            the people who got their money back — calling them owners would
+            name them as holding something the commissioner took away. */}
+        <span className="type-eyebrow text-eyebrow text-muted-foreground">
+          {film.removed ? "Refunded" : "The bids"}
+        </span>
+
+        {film.rows.length === 0 ? (
+          <span className="type-body text-micro text-muted-foreground">
+            Nobody bid on it.
           </span>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {film.rows.map((r, i) => (
+              <li key={r.seasonMemberId} className="flex flex-col gap-1">
+                <div
+                  className="reveal-rise flex items-center gap-2 sm:gap-3"
+                  style={{ animationDelay: `${delayOf(index, i)}ms` }}
+                >
+                  <span
+                    className={cn(
+                      "w-24 shrink-0 truncate text-ui sm:w-32",
+                      r.isMe ? "type-h3" : "type-ui",
+                      r.isWinning ? "text-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {r.isMe ? "You" : r.name}
+                  </span>
 
-          {film.rows.length === 0 ? (
-            <span className="type-body text-micro text-muted-foreground">
-              Nobody bid on it.
-            </span>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {film.rows.map((r, i) => (
-                <li key={r.seasonMemberId} className="flex flex-col gap-1">
-                  <div
-                    className="reveal-rise flex items-center gap-2 sm:gap-3"
-                    style={{ animationDelay: `${delayOf(index, i)}ms` }}
+                  {/* The track is the WEEK's top bid; the fill is this bid's
+                      share of it. `aria-hidden` because the amount beside it
+                      already says the number — a bar is a second rendering
+                      of one fact, not a fact of its own. */}
+                  <span
+                    aria-hidden
+                    className="h-2.5 min-w-6 grow rounded-sm bg-muted"
                   >
                     <span
                       className={cn(
-                        "w-16 shrink-0 truncate text-ui sm:w-32",
-                        r.isMe ? "type-h3" : "type-ui",
-                        r.isWinning ? "text-foreground" : "text-muted-foreground"
+                        "reveal-bar block h-full rounded-sm",
+                        r.isWinning
+                          ? "bg-foreground"
+                          : "bg-muted-foreground/40",
                       )}
-                    >
-                      {r.isMe ? "You" : r.name}
-                    </span>
+                      style={{
+                        width: `${share(r.amount, weekTop)}%`,
+                        animationDelay: `${delayOf(index, i)}ms`,
+                      }}
+                    />
+                  </span>
 
-                    {/* The track is the WEEK's top bid; the fill is this bid's
-                        share of it. `aria-hidden` because the amount beside it
-                        already says the number — a bar is a second rendering
-                        of one fact, not a fact of its own. */}
-                    <span
-                      aria-hidden
-                      className="h-2.5 min-w-6 grow rounded-sm bg-muted"
-                    >
-                      <span
-                        className={cn(
-                          "reveal-bar block h-full rounded-sm",
-                          r.isWinning ? "bg-foreground" : "bg-muted-foreground/40"
-                        )}
-                        style={{
-                          width: `${share(r.amount, weekTop)}%`,
-                          animationDelay: `${delayOf(index, i)}ms`,
-                        }}
-                      />
-                    </span>
-
-                    <span
-                      className={cn(
-                        "type-numeral w-10 shrink-0 text-right text-ui sm:w-12",
-                        r.isWinning ? "text-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      ${r.amount}
-                    </span>
-                  </div>
-
-                  {/* THE CUT, drawn under the last bid that got in. It is the
-                      one line on the page that decided anything, so it is the
-                      2px ink rule rather than the panel hairline. Suppressed on
-                      a removed film: those bids were refunded and no cut
-                      survived the removal. */}
-                  {!film.removed &&
-                    film.cut !== null &&
-                    r.isWinning &&
-                    film.rows[i + 1] !== undefined &&
-                    !film.rows[i + 1].isWinning && (
-                      <div
-                        className="reveal-rise flex items-center gap-2 pt-0.5 sm:gap-3"
-                        style={{ animationDelay: `${delayOf(index, i + 1)}ms` }}
-                      >
-                        <span className="type-micro w-16 shrink-0 text-right text-micro text-muted-foreground sm:w-32">
-                          The cut
-                        </span>
-                        <span className="h-0.5 grow bg-foreground" />
-                        <span className="type-numeral w-10 shrink-0 text-right text-micro sm:w-12">
-                          ${film.cut}
-                        </span>
-                      </div>
+                  <span
+                    className={cn(
+                      "type-numeral w-10 shrink-0 text-right text-ui sm:w-12",
+                      r.isWinning ? "text-foreground" : "text-muted-foreground",
                     )}
-                </li>
-              ))}
-            </ul>
-          )}
+                  >
+                    ${r.amount}
+                  </span>
+                </div>
 
-          {film.everyoneElse > 0 && (
-            <span className="type-body text-micro text-muted-foreground">
-              {numberWord(film.everyoneElse)}{" "}
-              {film.everyoneElse === 1 ? "other player" : "other players"} passed
-              or bid nothing.
-            </span>
-          )}
+                {/* THE CUT, drawn under the last bid that got in. It is the
+                    one line on the page that decided anything, so it is the
+                    2px ink rule rather than the panel hairline. Suppressed on
+                    a removed film: those bids were refunded and no cut
+                    survived the removal. */}
+                {!film.removed &&
+                  film.cut !== null &&
+                  r.isWinning &&
+                  film.rows[i + 1] !== undefined &&
+                  !film.rows[i + 1].isWinning && (
+                    <div
+                      className="reveal-rise flex items-center gap-2 pt-0.5 sm:gap-3"
+                      style={{ animationDelay: `${delayOf(index, i + 1)}ms` }}
+                    >
+                      <span className="type-micro w-24 shrink-0 text-right text-micro text-muted-foreground sm:w-32">
+                        The cut
+                      </span>
+                      <span className="h-0.5 grow bg-foreground" />
+                      <span className="type-numeral w-10 shrink-0 text-right text-micro sm:w-12">
+                        ${film.cut}
+                      </span>
+                    </div>
+                  )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-          {note && (
-            <span className="type-body text-micro text-muted-foreground">
-              {note}
-            </span>
-          )}
-        </div>
+        {film.everyoneElse > 0 && (
+          <span className="type-body text-micro text-muted-foreground">
+            {numberWord(film.everyoneElse)}{" "}
+            {film.everyoneElse === 1 ? "other player" : "other players"} passed
+            or bid nothing.
+          </span>
+        )}
+
+        {note && (
+          <span className="type-body text-micro text-muted-foreground">
+            {note}
+          </span>
+        )}
       </div>
     </Card>
   );
