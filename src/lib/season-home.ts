@@ -10,6 +10,7 @@ import {
 import { getLeaderboard, type LeaderboardData } from "@/lib/leaderboard";
 import { seasonLadder, type PayoutLadder } from "@/lib/payout";
 import { getSeasonHub, type SeasonHub } from "@/lib/season-hub";
+import { buildWeekLedger, type WeekLedgerRow } from "@/lib/season-ledger";
 import { getSeasonOptions, type SeasonOption } from "@/lib/season-schedule";
 import { buildSeasonStory, type SeasonStory } from "@/lib/season-story";
 
@@ -62,6 +63,9 @@ export type SeasonHome = {
   /** What the places are worth while the season runs. Null for a practice
    *  league, which is playing for nothing. */
   ladder: PayoutLadder | null;
+  /** One row per week from the viewer's side, in the order the table shows
+   *  them. Derived from `hub` and `leaderboard`; queries nothing. */
+  ledger: WeekLedgerRow[];
   /** Commissioner only. Empty for a player, because a player never asked. */
   overdue: OverdueWeek[];
   isCommissioner: boolean;
@@ -80,6 +84,7 @@ export async function getSeasonHome(ctx: SeasonContext): Promise<SeasonHome> {
 
   const ladder = seasonLadder(settings, leaderboard.playerCount);
   const story = buildSeasonStory(leaderboard, memberId, ladder);
+  const ledger = buildWeekLedger(hub, leaderboard, seasonId);
 
   const [seasonOptions, overdue] = await Promise.all([
     league ? getSeasonOptions(db, league.id) : Promise.resolve([]),
@@ -100,6 +105,7 @@ export async function getSeasonHome(ctx: SeasonContext): Promise<SeasonHome> {
     leaderboard,
     story,
     ladder,
+    ledger,
     overdue,
     isCommissioner,
   };

@@ -45,12 +45,25 @@ export function HeadToHead({
   const byRank = [...rivals].sort((a, b) => a.rank - b.rank);
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2>Head to head</h2>
-
+    // ── THE SENTENCE MOVES BESIDE THE TABLE AT THE WIDTH THAT NEEDS IT ─────
+    // This is the page's one full-width bento cell after the ledger, and a
+    // five-column table stretched across 1088px puts every figure against the
+    // right edge with 700px of empty Player column in front of it. Set the
+    // prose in a 22rem column and the table takes the rest at about the width
+    // it actually wants — which is also the measure the sentence wants, so the
+    // split earns the width twice. Below `xl` they stack and the table bleeds
+    // to the panel edges as every other table on this page does.
+    <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[22rem_minmax(0,1fr)] xl:items-start xl:gap-8">
       {nearest && <NearestLine rival={nearest} />}
 
-      <div className="overflow-x-auto rounded border">
+      <div
+        className={cn(
+          "-mx-(--card-spacing) -mb-(--card-spacing) border-t xl:mx-0 xl:mb-0 xl:overflow-hidden xl:rounded xl:border",
+          // With no nearest rival there is no prose column to sit beside, and
+          // a lone grid child would otherwise be laid into the 22rem one.
+          !nearest && "xl:col-span-2",
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -102,7 +115,7 @@ export function HeadToHead({
           </TableBody>
         </Table>
       </div>
-    </section>
+    </div>
   );
 }
 

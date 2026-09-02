@@ -2,7 +2,7 @@ import {
   PageSkeleton,
   SkeletonFigure,
   SkeletonLine,
-  SkeletonRow,
+  SkeletonPanel,
 } from "@/components/page-skeleton";
 import { Card } from "@/components/ui/card";
 
@@ -18,10 +18,12 @@ import { Card } from "@/components/ui/card";
  * one announcing "Loading this season" over a week. The group scopes it to this
  * page without touching the URL.
  *
- * THE TABS ARE DRAWN, THE PANEL BELOW THEM IS NOT SPLIT. Which tab lands is
- * decided by `?tab=`, which the server knows — but drawing three triggers and
- * then a generic body is honest: the triggers are certain, the contents are
- * not.
+ * ── IT DRAWS THE HERO ON PAPER AND THE GRID IN PANELS ─────────────────────
+ * The tabs it used to draw are gone. What replaced them is a hero sitting
+ * directly on the page under two rules and a grid of unequal panels, and the
+ * skeleton mirrors both — including the spans, so the columns do not jump when
+ * the data lands. The rules are drawn because they are certain: two registers
+ * always exist, whatever numbers end up in them.
  *
  * NO QUEUE STRIP, for the same reason as the league: it belongs to a
  * commissioner and the role has not been read yet.
@@ -39,33 +41,57 @@ export default function SeasonLoading() {
         <SkeletonLine w="w-24" h="h-5" className="rounded-3xl" />
       </div>
 
-      <Card
-        variant="flat"
-        className="flex-row flex-wrap items-end justify-between gap-6"
-      >
-        <div className="flex flex-wrap items-end gap-8">
+      {/* The hero: rank, the movement and two figures, then the money register
+          under its ink rule, then the bankroll and the way in. */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
           <div className="flex flex-col gap-1.5">
             <SkeletonLine w="w-24" h="h-2.5" />
-            <SkeletonLine w="w-20" h="h-9" />
+            <SkeletonLine w="w-28" h="h-16" />
           </div>
           <SkeletonFigure />
           <SkeletonFigure />
           <SkeletonFigure />
         </div>
-        <SkeletonLine w="w-36" h="h-9" className="rounded-4xl" />
-      </Card>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex gap-2">
-          <SkeletonLine w="w-20" h="h-8" className="rounded-3xl" />
-          <SkeletonLine w="w-28" h="h-8" className="rounded-3xl" />
-          <SkeletonLine w="w-14" h="h-8" className="rounded-3xl" />
+        <div className="flex flex-wrap gap-x-10 gap-y-5 border-t-2 border-foreground pt-4">
+          <SkeletonFigure />
+          <SkeletonFigure />
+          <SkeletonFigure />
         </div>
-        <div className="flex flex-col gap-2.5">
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 border-t pt-4">
+          <div className="flex flex-wrap items-end gap-x-10 gap-y-5">
+            <SkeletonFigure />
+            <SkeletonFigure />
+            <SkeletonFigure />
+          </div>
+          <SkeletonLine w="w-36" h="h-9" className="rounded-4xl" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
+        <Card
+          variant="flat"
+          className="gap-3 md:col-span-2 xl:col-span-12"
+        >
+          <SkeletonLine w="w-20" h="h-4" />
+          <div className="flex flex-col gap-3 border-t pt-3">
+            {Array.from({ length: 5 }, (_, i) => (
+              <SkeletonLine key={i} w="w-full" h="h-8" />
+            ))}
+          </div>
+        </Card>
+
+        <div className="flex flex-col md:col-span-2 xl:col-span-8">
+          <SkeletonPanel lines={4} />
+        </div>
+        <div className="flex flex-col md:col-span-1 xl:col-span-4">
+          <SkeletonPanel lines={4} size="sm" />
+        </div>
+        <div className="flex flex-col md:col-span-1 xl:col-span-5">
+          <SkeletonPanel lines={5} size="sm" />
+        </div>
+        <div className="flex flex-col md:col-span-2 xl:col-span-7">
+          <SkeletonPanel lines={6} />
         </div>
       </div>
     </PageSkeleton>
