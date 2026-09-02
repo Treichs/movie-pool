@@ -1,12 +1,8 @@
-import Link from "next/link";
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
-import { DeadlineCountdown } from "@/components/deadline-countdown";
 import { Figure } from "@/components/figure";
-import { Button } from "@/components/ui/button";
 import { ordinal } from "@/lib/format";
 import type { MyPosition } from "@/lib/season-story";
-import type { Week } from "@/lib/commish";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,13 +16,29 @@ import { cn } from "@/lib/utils";
  * position, the money, the field, the bankroll and the deadline are one
  * reading, and the page is about the number at the top of it.
  *
- * ── IT IS NOT A CARD, AND THAT IS THE POINT ───────────────────────────────
- * Everything below it is a bordered sheet in a grid. This sits directly on the
- * paper, divided by two rules — a 2px ink rule under the position, a 1px rule
- * above the action. That ink rule is the only place in the app it appears
- * outside a navigation band: a masthead's weight rather than a panel's. Put
- * this in a card and it becomes the first of nine equals, which is exactly what
- * it is not.
+ * ── IT IS A PANEL NOW, AND THE OLD OBJECTION STILL HAS TO BE ANSWERED ─────
+ * This used to sit directly on the paper, and the note here said putting it in
+ * a card would make it "the first of nine equals, which is exactly what it is
+ * not". That was right about the risk and wrong about the remedy. Sitting
+ * outside the dashboard, it left the page reading header → your standing →
+ * what is due → the report, when the thing a player opens this page for is
+ * what is due. On 2026-09-02 it moved inside the frame as the COMMAND BAND and
+ * the call to action moved above it.
+ *
+ * WHAT KEEPS IT FROM BEING ONE OF NINE, now that it is a panel:
+ *   · It spans all twelve columns. Nothing else on the page but the week
+ *     briefs and the ledger does, and neither of those leads.
+ *   · It carries the only `numeral-xl` on the page — a 72px ordinal against a
+ *     30px figure everywhere else.
+ *   · Its panel heading is HIDDEN (`hideTitle`), because its own first line
+ *     already says "Your position". It is the one panel on either dashboard
+ *     that does not wear a title, and that absence is itself the hierarchy.
+ *   · The 2px ink rule below survives, and is still the only place that weight
+ *     appears outside a navigation band.
+ *
+ * The two rules are now INSIDE a bordered sheet rather than drawn on paper.
+ * That is the one thing genuinely lost, and it is the price of the reading
+ * order being right.
  *
  * ── THREE REGISTERS, AND EACH ANSWERS A DIFFERENT QUESTION ────────────────
  * Where am I · what is it worth and who is near me · what have I got and what
@@ -45,10 +57,14 @@ import { cn } from "@/lib/utils";
  * equal columns from `lg`, two below it. Four is not arbitrary — it is what
  * each register maxes out at. Position · movement · points · form. Prize held ·
  * prize next · who is ahead · who is behind. Bankroll · films · points per
- * dollar · THE DEADLINE AND ITS BUTTON, which used to be pushed to the far
- * right by `justify-between` and sat 518px clear of the nearest figure. It is
- * now the fourth column of the third register: the page's one call to action,
- * standing in a column rather than adrift in a corner.
+ * dollar.
+ *
+ * THE THIRD REGISTER'S FOURTH COLUMN IS NOW EMPTY, and that is the point. It
+ * held a countdown and a "Place your bids" button — this page's own drawing of
+ * a call to action League Home was drawing differently a click away. Both were
+ * replaced on 2026-09-02 by `components/bid-cta.tsx`, which the page renders as
+ * its own band directly below this one. The tracks stay at four so the three
+ * figures keep the x positions the register exists to hold.
  *
  * Editing the track count means editing it here, once, or the rows go ragged
  * again — which is the whole reason it is a constant and not three class lists.
@@ -91,8 +107,6 @@ export function SeasonHero({
   bankrollLeft,
   filmsOwned,
   efficiency,
-  openWeek,
-  seasonId,
 }: {
   /** Null until something has scored — every player would otherwise be 1st. */
   position: MyPosition | null;
@@ -100,10 +114,7 @@ export function SeasonHero({
   filmsOwned: number | null;
   /** Season points per dollar. Null until the viewer has spent a dollar. */
   efficiency: number | null;
-  openWeek: Week | null;
-  seasonId: string;
 }) {
-  const deadline = openWeek?.bid_deadline_override ?? openWeek?.bid_deadline;
   const money = position?.money ?? null;
   const chasing = position?.chasing ?? null;
 
@@ -246,30 +257,6 @@ export function SeasonHero({
           label="Points per dollar"
           value={efficiency === null ? "—" : efficiency.toFixed(2)}
         />
-
-        {openWeek && deadline && (
-          // ITS OWN ROW ON A PHONE, the register's fourth column above it.
-          // Sharing the figures' row it landed half-indented under "Points per
-          // dollar", which reads as a fourth figure rather than as the thing
-          // the page is asking you to do.
-          <div className="col-span-2 flex flex-wrap items-center justify-between gap-4 lg:col-span-1 lg:justify-start">
-            <div className="flex flex-col gap-0.5">
-              <span className="type-eyebrow text-eyebrow text-muted-foreground">
-                Week {String(openWeek.number).padStart(2, "0")} closes in
-              </span>
-              <DeadlineCountdown target={deadline} size="inline" />
-            </div>
-            <Button
-              render={
-                <Link href={`/seasons/${seasonId}/weeks/${openWeek.id}/bid`} />
-              }
-              nativeButton={false}
-              variant="ink"
-            >
-              Place your bids
-            </Button>
-          </div>
-        )}
       </div>
     </section>
   );

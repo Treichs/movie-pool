@@ -36,10 +36,18 @@ import type { NavLeague } from "@/lib/nav";
  *     league rather than a place inside it.
  *
  * ── THE ROW'S LENGTH, AND WHY MONEY IS NOT FOLDED ───────────────────────
- * Six was written here as a ceiling. League's return makes seven while a week
- * is open, and Bid is the item that pushes it there — which is the one item
- * worth the overflow, since it is the only thing in the game with a deadline
- * and it is absent six days a week.
+ * Six, and fixed at six: the row no longer changes width with the calendar.
+ *
+ * A conditional `Bid` item used to ride after Season while a week was open,
+ * pushing the row to seven. It went on 2026-09-02, with the call to action.
+ * Three surfaces were pointing at the same bid page — this item, League Home's
+ * ticket and Season Home's hero button — and a NAVIGATION BAND IS THE WRONG
+ * ONE OF THE THREE. It cannot carry the deadline, it cannot say whether you
+ * have already bid, and it appears and disappears under the reader, which is
+ * the behaviour this file's own note says teaches people to stop reading the
+ * row. `components/bid-cta.tsx` is the single surface that replaced it, and
+ * unlike the item it names the week you still owe rather than the earliest
+ * open one.
  *
  * ADR-443 proposed one "Money" section folding dues and payouts. They are not
  * foldable: dues is league-scoped and permanent, payouts is season-scoped, and
@@ -80,18 +88,6 @@ export function sectionLinks(league: NavLeague | null): NavLink[] {
     // item that was actually current. A parent that claims its children's
     // routes tells you where you are not.
     links.push({ label: "Season", href: seasonBase, match: seasonBase, exact: true });
-
-    // ONLY WHILE A WEEK IS TAKING BIDS. An item that is dead six days a week
-    // teaches people to stop reading the row. It appears on the week being
-    // OPEN, which every member can already see — never on whether the viewer
-    // has bid, which would leak the one thing sealed bidding hides.
-    if (league.openWeek) {
-      links.push({
-        label: "Bid",
-        href: `${seasonBase}/weeks/${league.openWeek.id}/bid`,
-        match: `${seasonBase}/weeks`,
-      });
-    }
   }
 
   links.push(

@@ -42,7 +42,7 @@ export function EmailSection({
   const [prefs, setPrefs] = useState(preferences);
   const [state, formAction] = useActionState<ActionResult | null, FormData>(
     updateEmailPreferences,
-    null
+    null,
   );
 
   const dirty = NOTIFY_KINDS.some((k) => prefs[k] !== preferences[k]);

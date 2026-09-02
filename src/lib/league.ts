@@ -7,6 +7,7 @@ import {
 } from "@/lib/league-records";
 import { buildLeagueStory, type LeagueStory } from "@/lib/league-story";
 import type { SupabaseClient } from "@/lib/supabase";
+import { getWeeksWithoutBids, pickBidTarget } from "@/lib/unbid-weeks";
 
 // League data helpers (phase 11 / ADR-016). RLS scopes every read to
 // leagues the caller belongs to.
@@ -562,8 +563,10 @@ export type LeagueHome = {
   /** Every season, newest first — the archive AND the record book's input. */
   seasons: LeagueSeason[];
   current: LeagueCurrentSeason;
-  /** The earliest week still taking bids, which is what the thread counts to. */
-  openWeek: LeagueWeek | null;
+  /** The open week the page's call to action points at, and whether the viewer
+   *  has already bid in every open week. Null when nothing is taking bids.
+   *  See `pickBidTarget` — this is NOT simply the earliest open week. */
+  bidTarget: { week: LeagueWeek; hasBid: boolean } | null;
   career: CareerRow[];
   /**
    * The record book's own marquee flags, which its type has always said "lead
@@ -604,13 +607,25 @@ export async function getLeagueHome(
   const career = book?.career ?? [];
   const me = career.find((row) => row.isMe);
 
-  // Two weeks can be open at once (2026-08-03), and the earliest is the one
-  // with a deadline actually approaching — the same rule `getNavLeagues` uses
-  // for the shell's countdown, so the two never disagree.
-  const openWeek =
-    current.weeks
-      .filter((w) => w.status === "open")
-      .sort((a, b) => a.number - b.number)[0] ?? null;
+  // Two weeks can be open at once (2026-08-03). WHICH ONE THE PAGE ASKS FOR IS
+  // NOT "the earliest" — it is the earliest the viewer has not bid in, and
+  // `pickBidTarget` holds that rule so Season Home cannot answer it differently.
+  // The read is skipped entirely when nothing is open, which is most of the
+  // calendar, and when the viewer has no member row to have bid with.
+  const openWeeks = current.weeks
+    .filter((w) => w.status === "open")
+    .sort((a, b) => a.number - b.number);
+  const awaitingBid =
+    openWeeks.length > 0 && current.myMemberId
+      ? await getWeeksWithoutBids(
+          supabase,
+          openWeeks.map((w) => ({
+            weekId: w.id,
+            seasonMemberId: current.myMemberId as string,
+          }))
+        )
+      : new Set<string>();
+  const bidTarget = pickBidTarget(openWeeks, awaitingBid);
 
   return {
     league: { id: league.id, name: league.name },
@@ -618,7 +633,7 @@ export async function getLeagueHome(
     runningSince,
     seasons,
     current,
-    openWeek,
+    bidTarget,
     career,
     records: book?.records ?? [],
     aggregates: book?.aggregates ?? null,

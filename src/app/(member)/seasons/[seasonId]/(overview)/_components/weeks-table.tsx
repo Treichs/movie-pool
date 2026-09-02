@@ -5,17 +5,21 @@ import Link from "next/link";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
 } from "lucide-react";
 import {
   createColumnHelper,
+  createPaginatedRowModel,
   createSortedRowModel,
+  rowPaginationFeature,
   rowSortingFeature,
   sortFn_basic,
   sortFn_text,
   tableFeatures,
   useTable,
+  type PaginationState,
   type SortingState,
 } from "@tanstack/react-table";
 
@@ -67,11 +71,33 @@ import { cn } from "@/lib/utils";
  * pans.
  */
 
+/**
+ * PAGING IS A LAYOUT DECISION BEFORE IT IS A NAVIGATION ONE.
+ *
+ * A season runs 14 to 20 weeks, so this table was the one panel on the page
+ * whose height was set by the calendar: at ten weeks it ran past everything
+ * beside it, and it was moved to the bottom of the grid on 2026-09-02 partly
+ * to stop it pushing the standings under the fold. Paged, it costs a fixed
+ * ~330px whatever the season does, which is what lets the dashboard grid be
+ * laid out by importance rather than by measuring what each panel came out at.
+ *
+ * SORTING RUNS OVER THE WHOLE SEASON, NOT THE PAGE. The row models compose in
+ * order — sorted, then paginated — so sorting by points ranks all twenty weeks
+ * and then shows the first six of that ranking. A sort that only reordered the
+ * visible page would be a different and much less useful control.
+ */
 const features = tableFeatures({
   rowSortingFeature,
   sortedRowModel: createSortedRowModel(),
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
   sortFns: { basic: sortFn_basic, text: sortFn_text },
 });
+
+/** Six rows is the page. It is what makes this panel about as tall as the
+ *  standings table it shares the grid with, and a season's weeks divide into
+ *  it without a stub page in the common 14-to-20-week range. */
+const PAGE_SIZE = 6;
 
 const columnHelper = createColumnHelper<typeof features, WeekLedgerRow>();
 
@@ -105,6 +131,13 @@ const two = (n: number) => n.toFixed(2);
 
 export function WeeksTable({ rows }: { rows: WeekLedgerRow[] }) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  // Controlled, exactly as sorting is: v9's `useTable` exposes the pagination
+  // ACTIONS (nextPage, getCanNextPage, getPageCount) but not a `getState`, so
+  // the page index has to be held here to be read here.
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
+  });
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   const toggle = (id: string) =>
@@ -215,8 +248,9 @@ export function WeeksTable({ rows }: { rows: WeekLedgerRow[] }) {
     features,
     columns,
     data: rows,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
   });
 
   // The expander is NOT a table column: it has no header text, no sort and no
@@ -224,7 +258,16 @@ export function WeeksTable({ rows }: { rows: WeekLedgerRow[] }) {
   // row. It is rendered beside the generated cells instead.
   const span = columns.length + 1;
 
+  // The pager's own arithmetic. `getPageCount` and the row count come off the
+  // table; the range is stated in weeks rather than rows because that is what
+  // one row is here.
+  const pageIndex = pagination.pageIndex;
+  const pageCount = table.getPageCount();
+  const first = pageIndex * PAGE_SIZE + 1;
+  const last = Math.min(first + PAGE_SIZE - 1, rows.length);
+
   return (
+    <>
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
@@ -364,5 +407,52 @@ export function WeeksTable({ rows }: { rows: WeekLedgerRow[] }) {
         })}
       </TableBody>
     </Table>
+    {pageCount > 1 && (
+      <div className="flex items-center justify-between gap-4 border-t px-(--frame-panel-px) py-2.5 max-sm:px-4">
+        <span className="type-micro text-micro text-muted-foreground">
+          {first}&ndash;{last} of {rows.length} weeks
+        </span>
+        <div className="flex items-center gap-1.5">
+          {/* A RULE PER PAGE, NOT A ROW OF DOTS. Every other current-thing
+              marker in this app is a 2px rule — the nav band, the bottom nav —
+              and a row of circles here would be a second vocabulary for the
+              same idea. Hidden from assistive technology because the range
+              beside it already says where you are, and these are not
+              controls. */}
+          <div aria-hidden className="mr-1.5 flex items-center gap-1">
+            {Array.from({ length: pageCount }, (_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1 rounded-sm transition-all",
+                  i === pageIndex ? "w-5 bg-foreground" : "w-2 bg-border",
+                )}
+              />
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-11 sm:size-7"
+            disabled={!table.getCanPreviousPage()}
+            onClick={() => table.previousPage()}
+          >
+            <ChevronLeftIcon />
+            <span className="sr-only">Earlier weeks</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-11 sm:size-7"
+            disabled={!table.getCanNextPage()}
+            onClick={() => table.nextPage()}
+          >
+            <ChevronRightIcon />
+            <span className="sr-only">Later weeks</span>
+          </Button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

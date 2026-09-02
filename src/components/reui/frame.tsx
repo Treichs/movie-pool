@@ -16,8 +16,17 @@ import { cn } from "@/lib/utils"
  */
 const frameVariants = cva(
   [
-    "relative flex flex-col bg-muted/50 gap-(--frame-gap) px-(--frame-px) py-(--frame-py) rounded-(--frame-radius)",
-    "(--radius-xl)] [--frame-radius:var(--radius-xl)]",
+    // GROUND IS FULL WASH, NOT HALF. The registry default is `bg-muted/50`,
+    // which over this app's paper (#F5F4F3) lands around #F1F0EE — one step off
+    // the page, which is no edge at all. `--muted` neat is the wash the rest of
+    // the app already uses for a field fill, and it is what makes the frame read
+    // as a container rather than as a rectangle someone drew.
+    "relative flex flex-col bg-muted gap-(--frame-gap) px-(--frame-px) py-(--frame-py) rounded-(--frame-radius)",
+    // 4px, NOT 5.6px. The registry ships `--radius-xl`; this app's panels take
+    // the base radius and read as paper, and a frame full of them cannot round
+    // harder than what it holds. (The stray `(--radius-xl)]` fragment that led
+    // this string in the registry copy is gone with it — see the note below.)
+    "[--frame-radius:var(--radius)]",
     "(--radius-none)] (--radius-2xl)] (--radius-lg)] (--radius-none)]",
     "[--frame-gap:--spacing(0.75)] [--frame-px:--spacing(0.75)] [--frame-py:--spacing(0.75)] [--frame-panel-header-gap:0rem] [--frame-panel-footer-gap:--spacing(1)]",
     "[--frame-panel-px-adjust:0px] [--frame-panel-py-adjust:0px] [--frame-panel-header-px-adjust:0px] [--frame-panel-header-py-adjust:0px] [--frame-panel-footer-px-adjust:0px] [--frame-panel-footer-py-adjust:0px]",
@@ -25,14 +34,15 @@ const frameVariants = cva(
     "(1)] (1)] (1.25)] (1.5)] (1.5)] (0.5)] (1)] (1)]",
     // Default panel token values — overridden per-variant below
     "[--frame-panel-bg:var(--color-card)] [--frame-panel-border-color:var(--color-border)] [--frame-border-color:var(--color-border)]",
-    // Concentric inner radius: the panel corner nests smoothly inside the frame
-    // corner instead of matching it. The panel sits inset from the frame's outer
-    // edge by the frame's 1px border + --frame-px padding, so its radius is
-    // reduced by that same gap (radius − gap keeps the two arcs parallel). This
-    // base value assumes the bordered default/inverse frame; `ghost` drops the
-    // 1px border term and `dense` pins it back to the frame radius (its panels
-    // are pulled flush to the edge).
-    "[--frame-panel-radius:calc(var(--frame-radius)_-_var(--frame-px)_-_1px)]",
+    // CONCENTRIC NESTING IS SWITCHED OFF, AND HAS TO BE AT THIS SCALE.
+    // The registry computes `frame − padding − 1px` so a panel's corner nests
+    // inside the frame's rather than matching it. That trick needs a frame
+    // radius larger than its own padding; this app's corner language is 4px and
+    // a dashboard frame pads by 12, so the calc goes NEGATIVE and every panel
+    // squares off. Concentric radii are a large-corner idea, and there is
+    // nothing to nest at 4px — panel and frame both take the base radius, which
+    // is what every other panel in the app already does.
+    "[--frame-panel-radius:var(--radius)]",
   ],
   {
     variants: {
@@ -40,8 +50,10 @@ const frameVariants = cva(
         default: "border border-[var(--frame-border-color)] bg-clip-padding",
         inverse:
           "[--frame-panel-bg:color-mix(in_oklch,var(--color-muted)_40%,transparent)] border border-[var(--frame-border-color)] bg-background bg-clip-padding",
-        // No frame border, so the panel is inset by --frame-px padding only.
-        ghost: "[--frame-panel-radius:calc(var(--frame-radius)_-_var(--frame-px))]",
+        // Flattened for the same reason as the base value above: with nesting
+        // off there is no border term to drop, so ghost's panels take the base
+        // radius like everything else.
+        ghost: "[--frame-panel-radius:var(--radius)]",
       },
       // Header/footer vertical rhythm is tighter than the panel body's, and
       // the gap widens as the frame grows: the bars read as chrome rather than
@@ -120,11 +132,18 @@ function FramePanel({
         // bg-(--frame-panel-bg) and border-(--frame-panel-border-color) consume the
         // CSS vars set by the Frame parent. Any explicit bg-* or border-* class passed
         // via className overrides these by Tailwind source order - no ! needed.
-        "relative overflow-hidden rounded-(--frame-panel-radius) border border-(--frame-panel-border-color) bg-(--frame-panel-bg) bg-clip-padding shadow-xs",
+        // NO SHADOW, AND NO INNER RING. The registry ships `shadow-xs` plus a
+        // `before:` pseudo-element carrying a second, inset shadow. Both are
+        // removed: the Flat Panel Rule says a surface holding data is flat, and
+        // lift is spent only on things that behave like physical objects — a
+        // poster, a film cell, an overlay. A frame of softly shadowed tiles is
+        // the generic-dashboard look the whole design system exists to avoid.
+        // Depth here comes from the border and the wash-to-sheet tonal step,
+        // which is the same way every other panel in the app gets it.
+        "relative overflow-hidden rounded-(--frame-panel-radius) border border-(--frame-panel-border-color) bg-(--frame-panel-bg) bg-clip-padding",
         // `fit` sizes the panel to its content; otherwise it grows to fill the frame.
         !fit && "grow",
-        "before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--frame-panel-radius)_-_1px)] before:shadow-black/5",
-        "dark:bg-clip-border dark:before:shadow-white/5",
+        "dark:bg-clip-border",
         "px-(--frame-panel-px) py-(--frame-panel-py)",
         className
       )}
