@@ -147,10 +147,13 @@ export async function GET(request: Request) {
       getSeasonRecipients(admin, week.seasonId, "results_up"),
       getAlreadyEmailed(admin, week.id, "results_up"),
     ]);
-    // CH-02: /standings is Season Home's Leaderboard tab. Emails link to the
-    // real URL rather than leaning on the redirect — a mail client following a
-    // 308 is one more thing to go wrong in someone's inbox.
-    const link = `${SITE_URL}/seasons/${week.seasonId}?tab=leaderboard`;
+    // CH-02: the standings are a region of Season Home, not a page of their
+    // own. This linked `?tab=leaderboard` while that page had tabs; the tabs
+    // are gone and the region carries the same name as an anchor, so the mail
+    // links the anchor directly. The page still redirects the old query for
+    // mail already in somebody's inbox — a mail client following a redirect is
+    // one more thing to go wrong, which is why new mail does not rely on it.
+    const link = `${SITE_URL}/seasons/${week.seasonId}#standings`;
 
     for (const { profile } of members) {
       if (sent.has(profile.id)) continue;

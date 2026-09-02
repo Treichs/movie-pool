@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,28 +10,87 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { requireSeasonMember } from "@/lib/auth";
 import { getSeasonHome } from "@/lib/season-home";
 
-import { LeaderboardTab } from "./_components/leaderboard-tab";
+import { Bento, BentoCell } from "./_components/bento";
+import { BumpChart } from "./_components/bump-chart";
+import { HeadToHead } from "./_components/head-to-head";
 import { QueueStrip } from "./_components/queue-strip";
+import { SeasonHero } from "./_components/season-hero";
 import { SeasonPicker } from "./_components/season-picker";
-import { SeasonTabs } from "./_components/season-tabs";
-import { StandingStrip } from "./_components/standing-strip";
-import { WeeksTab } from "./_components/weeks-tab";
-import { YouTab } from "./_components/you-tab";
+import { SeasonPicks } from "./_components/season-picks";
+import { StandingsTable } from "./_components/standings-table";
+import { WeekStory } from "./_components/week-story";
+import { WeeksTable } from "./_components/weeks-table";
+import { YourFilms } from "./_components/your-films";
 
 export const metadata = { title: "Season" };
 
 /**
- * `/seasons/[seasonId]` — SEASON HOME, board 3.1 and its two sticky notes.
+ * Where a retired `?tab=` value now lands.
  *
- * The largest read screen in the app, and THE LEAGUE'S FRONT DOOR since
+ * The Monday-scores mail has been linking `?tab=leaderboard` since the tabs
+ * existed (`api/cron/notify`), and mail already sent cannot be edited. Each old
+ * value names a region that still exists on the page, so the address is
+ * redirected to that region's anchor rather than dropped: an old link lands on
+ * the standings, which is what it always promised.
+ */
+const RETIRED_TABS: Record<string, string> = {
+  weeks: "weeks",
+  leaderboard: "standings",
+  you: "your-films",
+};
+
+/**
+ * `/seasons/[seasonId]` — SEASON HOME, and THE LEAGUE'S FRONT DOOR since
  * ADR-443: `/leagues/[leagueId]` forwards here whenever the league has an
  * active or a draft season, so for most of the year this is what "open my
  * league" means.
  *
- * NO NOT-STARTED STATE IS OWED, and that was checked rather than assumed.
+ * ── THE TABS ARE GONE, AND THE PAGE IS ONE SURFACE ────────────────────────
+ * Weeks, Leaderboard and You each hid two thirds of this screen behind a click,
+ * and between them they printed the viewer's season three times: the strip
+ * above the tabs carried the bankroll and the deadline, the Leaderboard opened
+ * with a position block saying the rank again, and the You tab's three deltas
+ * said the movement a third time. What replaced them is one hero and a bento
+ * grid — the hero answers where you stand and what is due, the grid holds every
+ * table and chart at once, and nothing on the page is behind a control.
+ *
+ * The consolidation, block by block:
+ *   • `StandingStrip` + `PositionBlock`  -> `SeasonHero` (one reading)
+ *   • `WeeksTab`                         -> `WeeksTable` (a ledger, per week,
+ *                                           scoped to the viewer, expandable)
+ *   • `YouTab`'s deltas                  -> the hero's third register
+ *   • `YouTab`'s film list               -> `YourFilms` (ranked by score)
+ *   • `TopFilms` + season awards         -> `SeasonPicks` (one subject)
+ *   • `LeaderboardTab`                   -> dissolved into the grid
+ *
+ * ── THE GRID IS UNEQUAL ON PURPOSE, AND PACKED BY LENGTH ──────────────────
+ * Twelve columns at `xl`, two at `md`, one below:
+ *
+ *     WEEKS ......................................... 12
+ *     WEEK NN IN BRIEF ..... 7 │ THE SEASON'S PICKS .. 5
+ *     FILMS YOU OWN ........ 7 │   (the same cell, row-spanned)
+ *     STANDINGS ............ 7 │ HOW THE SEASON MOVED  5
+ *     HEAD TO HEAD .................................. 12
+ *
+ * THE ORDER OF THE CELLS BELOW *IS* THE LAYOUT — grid auto-placement fills
+ * those slots from this DOM order, so moving one moves the shape. They are
+ * paired by HEIGHT rather than by subject, which is what stops the page opening
+ * a hole: the picks list runs about as long as the briefs and the films-owned
+ * list stacked against it, and the chart stretches to whatever the standings
+ * beside it turn out to be. `bento.tsx` carries the rule; these spans are its
+ * application, and a first pass that ignored it left roughly 350px of empty
+ * page beside the standings.
+ *
+ * ── NO NOT-STARTED STATE IS OWED, AND THAT WAS CHECKED RATHER THAN ASSUMED ─
  * ADR-443 accepted the cost of one — a draft season would forward a whole
  * league to a page with no weeks. It cannot happen: `create_season` inserts at
  * `active` (migration 20260804080000, "a season is ACTIVE the moment it is
@@ -40,16 +100,12 @@ export const metadata = { title: "Season" };
  * transition for rows predating that migration, and the dev database holds
  * none. Anyone arriving here has a member row and at least one week.
  *
- * ── THE TWO STICKY NOTES ──────────────────────────────────────────────────
+ * ── THE TWO STICKY NOTES BOTH SURVIVE ─────────────────────────────────────
  * 1. The season picker is a HEADER CONTROL, not a quarter-width left rail.
  * 2. The commissioner Queue is a STRIP on this page, not a route — the whole
- *    of what the retired commissioner tree becomes.
- *
- * ── `?tab=` IS HONOURED; SWITCHING WRITES NOTHING BACK ────────────────────
- * The Monday-scores email links `?tab=leaderboard` (`api/cron/notify`), so
- * arriving at an address that names a tab must land on it. Switching afterwards
- * is a view change, not a navigation, and pushing history for it would turn
- * Back into a tab cycler.
+ *    of what the retired commissioner tree becomes. It sits between the hero
+ *    and the grid, because it is the only block that is not the same for
+ *    everybody and it must not be found by scrolling.
  *
  * ── THE GATE IS `requireSeasonMember`, AND IT CARRIES THE ROLE ────────────
  * One `maybeSingle()` on `season_members` answers membership and role together;
@@ -66,13 +122,25 @@ export default async function SeasonPage({
 }) {
   const { seasonId } = await params;
   const { tab } = await searchParams;
+
+  const anchor = tab ? RETIRED_TABS[tab] : undefined;
+  if (anchor) redirect(`/seasons/${seasonId}#${anchor}`);
+
   const ctx = await requireSeasonMember(seasonId);
   const home = await getSeasonHome(ctx);
 
-  const openWeek = home.hub.openWeek;
+  const { hub, leaderboard, story, ladder } = home;
+  const openWeek = hub.openWeek;
+  const paysMoney =
+    ladder !== null &&
+    (ladder.first > 0 || ladder.second > 0 || ladder.third > 0);
 
   return (
-    <main id="main" tabIndex={-1} className="mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8">
+    <main
+      id="main"
+      tabIndex={-1}
+      className="mx-auto flex max-w-measure-page flex-col gap-6 p-6 md:p-8"
+    >
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -109,14 +177,16 @@ export default async function SeasonPage({
         {openWeek && (
           <Badge variant="secondary">
             Week {String(openWeek.number).padStart(2, "0")} of{" "}
-            {home.hub.weeks.length}
+            {hub.weeks.length}
           </Badge>
         )}
       </div>
 
-      <StandingStrip
-        me={home.hub.me}
-        bankrollLeft={home.hub.remaining}
+      <SeasonHero
+        position={story.position}
+        bankrollLeft={hub.remaining}
+        filmsOwned={hub.me?.filmsOwned ?? null}
+        efficiency={hub.me?.efficiency ?? null}
         openWeek={openWeek}
         seasonId={seasonId}
       />
@@ -127,25 +197,125 @@ export default async function SeasonPage({
         <QueueStrip seasonId={seasonId} weeks={home.overdue} />
       )}
 
-      <SeasonTabs
-        initial={tab ?? "weeks"}
-        weeks={
-          <WeeksTab
-            seasonId={seasonId}
-            weeks={home.hub.weeks}
-            myFilms={home.hub.myFilms}
-            unbidWeekIds={home.hub.unbidWeekIds}
-          />
-        }
-        leaderboard={
-          <LeaderboardTab
-            data={home.leaderboard}
-            story={home.story}
-            ladder={home.ladder}
-          />
-        }
-        you={<YouTab films={home.hub.myFilms} deltas={home.hub.myDeltas} />}
-      />
+      <Bento>
+        <BentoCell
+          id="weeks"
+          title="Weeks"
+          aside="Sort any column · open a row for the films you owned"
+          span="md:col-span-2 xl:col-span-12"
+          flush
+        >
+          <WeeksTable rows={home.ledger} />
+        </BentoCell>
+
+        {story.lastScoredWeek !== null && story.headlines.length > 0 && (
+          <BentoCell
+            id="week-brief"
+            title={`Week ${String(story.lastScoredWeek).padStart(2, "0")} in brief`}
+            span="md:col-span-2 xl:col-span-7"
+          >
+            <WeekStory headlines={story.headlines} />
+          </BentoCell>
+        )}
+
+        {/* THE TALL CELL, PLACED BEFORE THE TWO SHORT ONES IT LEANS AGAINST.
+            `xl:row-span-2` sets the briefs above the films-you-own list on its
+            left, and the three come out within about 16px of each other. That
+            is the only reason this page has no hole in it — see `bento.tsx`. */}
+        {leaderboard.hasScores && (
+          <BentoCell
+            id="picks"
+            title="The season's picks"
+            span="md:col-span-1 xl:col-span-5 xl:row-span-2"
+          >
+            <SeasonPicks awards={leaderboard.awards} films={leaderboard.rail} />
+          </BentoCell>
+        )}
+
+        <BentoCell
+          id="your-films"
+          title="Films you own"
+          aside={
+            hub.myFilms.length > 0
+              ? `${hub.myFilms.length} owned · best first`
+              : undefined
+          }
+          span="md:col-span-1 xl:col-span-7"
+        >
+          <YourFilms films={hub.myFilms} />
+        </BentoCell>
+
+        {/* EVERYTHING BELOW NEEDS A SCORED WEEK. Before anything is captured
+            every player has zero points and dense ranking would put the whole
+            league in 1st, so a standings table would be a list of ties and the
+            awards would name a pick nobody has made. `getLeaderboard` returns
+            the flag for exactly this. */}
+        {leaderboard.hasScores ? (
+          <>
+            <BentoCell
+              id="standings"
+              title="Standings"
+              aside={
+                paysMoney
+                  ? "Prize is a projection until the season is finalised"
+                  : undefined
+              }
+              span="md:col-span-2 xl:col-span-7"
+              flush
+            >
+              <StandingsTable data={leaderboard} ladder={ladder} />
+            </BentoCell>
+
+            <BentoCell
+              id="season-chart"
+              title="How the season has moved"
+              aside="First place is the top"
+              // THE SLACK-ABSORBER. Whatever height the standings table beside
+              // it comes out at — five players or fifteen — the chart is drawn
+              // to match, and a rank walk with more room is easier to read
+              // rather than emptier.
+              span="md:col-span-2 xl:col-span-5 xl:self-stretch"
+            >
+              <BumpChart
+                series={leaderboard.allTrends}
+                scoredWeeks={leaderboard.scoredWeeks}
+              />
+            </BentoCell>
+
+            {/* LAST, AND FULL WIDTH. It is the longest table on the page and
+                the only one with a sentence above it. Putting it here lets
+                every cell above pair with something of its own length instead
+                of against this. */}
+            {story.rivals.length > 0 && (
+              <BentoCell
+                id="head-to-head"
+                title="Head to head"
+                aside="A week is won by outscoring them, not by out-placing them"
+                span="md:col-span-2 xl:col-span-12"
+              >
+                <HeadToHead rivals={story.rivals} nearest={story.nearest} />
+              </BentoCell>
+            )}
+          </>
+        ) : (
+          <BentoCell
+            id="standings"
+            title="Standings"
+            span="md:col-span-2 xl:col-span-5"
+          >
+            <Empty className="border-0 py-6">
+              <EmptyHeader>
+                <EmptyTitle>Nothing scored yet</EmptyTitle>
+                <EmptyDescription>
+                  Standings appear the first Monday a week is captured. Until
+                  then everybody is level, and a table would only say so eleven
+                  times.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </BentoCell>
+        )}
+      </Bento>
     </main>
   );
 }

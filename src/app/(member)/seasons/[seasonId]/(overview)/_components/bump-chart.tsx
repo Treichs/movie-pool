@@ -82,10 +82,19 @@ export function BumpChart({
   );
 
   return (
-    <ChartContainer config={config} className="h-72 w-full">
+    // THE ONE CELL THAT GROWS TO CLOSE A GAP. A rank walk drawn taller is a
+    // rank walk read more easily — the lines separate — so this is the bento's
+    // slack-absorber rather than a panel with air in it. `min-h-72` is the
+    // floor it had as a fixed height; `flex-1` is what lets it take more.
+    <ChartContainer config={config} className="min-h-72 w-full flex-1">
       <LineChart
         data={data}
-        margin={{ left: 4, right: 16, top: 8 }}
+        // TOP 16, NOT 8, AND THE REASON IS THE FIRST TICK. Recharts drops an
+        // axis label it cannot draw inside the plot area, and at 8 the "1" —
+        // first place, the line every reader looks for — was the one tick
+        // silently missing from a chart whose own caption says first place is
+        // the top.
+        margin={{ left: 4, right: 16, top: 16 }}
         title={`Rank by week for ${series.length} ${series.length === 1 ? "player" : "players"}`}
         desc={`One line per player, plotting their place in the standings after each of ${scoredWeeks.length} scored weeks. First place is the top of the chart. Press the left and right arrow keys to move week by week.`}
       >
@@ -98,6 +107,12 @@ export function BumpChart({
           tickLine={false}
           axisLine={false}
           domain={[1, series.length]}
+          // EVERY PLACE GETS A TICK, INCLUDING FIRST. Left to choose its own,
+          // recharts skipped 1 and drew the top of the chart as an empty band
+          // exactly where the leader's line runs — the one row a reader looks
+          // for first, unlabelled. There is no 2.5th place, so the ticks are
+          // the places themselves.
+          ticks={Array.from({ length: series.length }, (_, i) => i + 1)}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
         {series.map((s) => (
