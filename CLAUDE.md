@@ -25,10 +25,11 @@ Next.js App Router · React Server Components · TypeScript · Tailwind v4 ·
 shadcn/ui on Base UI · Supabase (Postgres + Auth + RLS) · Vercel.
 
 ```
-npm run dev        localhost:3000
+npm run dev        localhost:3000 — kills this repo's stale server first
 npm run verify     typecheck · lint · a11y:contrast · types:fresh · build
 npm run seed:dev   the persistent dev fixtures — idempotent, safe to re-run
 npm run types:gen  regenerate the schema type after a migration
+npm run icons      redraw the favicons — never hand-edit the PNGs, they are generated
 ```
 
 ## The two rules that replace an architecture
@@ -61,9 +62,21 @@ npm run types:gen  regenerate the schema type after a migration
 Listing that folder tells you nothing.
 
 ```bash
-npx shadcn@latest search @shadcn -q "<thing>"   # does it exist?
-npx shadcn@latest add <name> --dry-run          # what would it touch?
-npx shadcn@latest add <name>
+npx shadcn search @shadcn -q "<thing>"   # does it exist?
+npx shadcn add <name> --dry-run          # what would it touch?
+npx shadcn add <name>
+```
+
+**Never `@latest`.** `package.json` pins the CLI, and `@latest` downloads a
+different build that ignores the pin. Moving the version is its own commit.
+
+**A paid registry reads its key from the environment; the CLI does not read
+`.env.local`.** Unauthenticated, `search` and `view` return `dependencies` and
+`registryDependencies` empty — the two fields that say what an item drags in
+with it. Export before the command:
+
+```powershell
+$env:SHADCNBLOCKS_API_KEY = (Select-String '^SHADCNBLOCKS_API_KEY=' .env.local).Line.Split('=', 2)[1]
 ```
 
 The shadcn MCP server is configured — ask it rather than running the search by
@@ -87,6 +100,9 @@ inside a field, a callout, an empty state, a loading placeholder or a
 confirmation. Those all have primitives (`alert`, `input-group`, `empty`,
 `skeleton`, `spinner`, `alert-dialog`). "Not installed, so I'll compose it"
 reached from an `ls` is the documented failure mode.
+
+What happens after you pick one — proving it, placing a change to it, recording
+what you changed — is the **`vendor-intake` skill**.
 
 ## Theming
 

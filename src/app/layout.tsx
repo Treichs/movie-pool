@@ -20,6 +20,33 @@ export const metadata: Metadata = {
   title: "The Movie Pool",
   description:
     "Season-long blind-bidding game on opening-weekend films — box office × Tomatometer.",
+  // THE MARK, IN THE FOUR SHAPES A CLIENT CAN ASK FOR. Both drawings are the
+  // same identity the app's own chrome paints: ink #000000 ground, paper
+  // #F5F4F3 letters, vermilion #EB4B37 name — `--nav`, `--nav-foreground` and
+  // `--nav-primary`. They are files, not CSS: retune those tokens and the
+  // icons have to be recut, they will not follow.
+  //
+  // src/app/favicon.ico WAS THE NEXT.JS SCAFFOLD DEFAULT, and is now deleted.
+  // `app/favicon.ico` is a Next FILE CONVENTION, so Next emits its own
+  // <link rel="icon"> for it BEFORE anything declared here — the scaffold
+  // triangle would have outranked every entry below. There is one source now.
+  //
+  // SVG IS FIRST because it is the only one that stays crisp at any tab size.
+  // The PNGs are the fallback for clients that do not take it, plus the one
+  // case where a PNG is mandatory: iOS ignores SVG for apple-touch-icon and
+  // composites a transparent one onto black, so that entry is the tile drawing
+  // already flattened onto the app's own ink.
+  //
+  // Every raster here is generated from the two SVGs by `npm run icons`, so a
+  // size cannot drift from the drawing it came from.
+  icons: {
+    icon: [
+      { url: "/movie-pool-favicon.svg", type: "image/svg+xml" },
+      { url: "/icon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
 };
 
 export default function RootLayout({
