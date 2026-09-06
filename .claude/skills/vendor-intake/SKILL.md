@@ -1,6 +1,6 @@
 ---
 name: vendor-intake
-description: How a registry component or block enters this repo — which registry, how to preview it, how to prove it before adapting it, and where a change to it belongs. Use before any `shadcn add`, when choosing between registries, when a dry run reports an overwrite, or when an installed file needs to behave differently. Triggers on "add a component", "install a block", "shadcn add", "registry", "@reui", "@shadcnblocks", "overwrite", "vendor", "intake".
+description: How a registry component enters this repo and how to compose it once it is here — which registry, how to preview and prove an item, where a change to it belongs, and the form, overlay and trigger rules this stack actually follows. Use before any `shadcn add`, when a dry run reports an overwrite, when an installed file needs to behave differently, and when building a form, a callout, an empty state or a custom trigger. Triggers on "add a component", "install a block", "shadcn add", "registry", "@reui", "@shadcnblocks", "overwrite", "vendor", "intake", "form layout", "Field", "FieldGroup", "InputGroup", "asChild", "render prop", "toast", "empty state".
 ---
 
 # Taking a component in
@@ -125,3 +125,59 @@ skill on the first screen that uses it.
 Known gap, accepted: a primitive that no screen uses yet is never exercised.
 There is no story catalogue and no render net here — `ui-review` is per-screen,
 so an item's proof arrives when a screen needs it.
+
+## Composing what you took in
+
+**This is Base UI, so a custom trigger is `render`, not `asChild`.** There is not
+one `asChild` in the tree; `<BreadcrumbLink render={<Link href="/leagues" />}>`
+is the shape. Style state off Base UI's own attributes — `data-open`,
+`data-slot` — not `data-[state=open]`.
+
+**Toast is `sonner` here, not the Base UI `toast` component.** shadcn's rule says
+Base UI projects use `toast` from the `toast` component; this repo does not, and
+`import { toast } from "sonner"` is right in about a dozen files. Follow the
+repo.
+
+Form rules, all of which the auth forms already follow:
+
+- **`FieldGroup` + `Field`** own form layout — never a `div` with `gap-*`.
+  `field.tsx` also exports `FieldLabel`, `FieldDescription`, `FieldError`,
+  `FieldContent`, `FieldTitle`, `FieldSeparator`, `FieldSet` and `FieldLegend`.
+- **`FieldSet` + `FieldLegend`** group related checkboxes or radios. Not a `div`
+  with a heading over them.
+- **Validation is two attributes:** `data-invalid` on the `Field`,
+  `aria-invalid` on the control. Disabled is `data-disabled` on the `Field` and
+  `disabled` on the control.
+- **A button or text inside an input is `InputGroup`** — `InputGroupInput` or
+  `InputGroupTextarea` for the control (never a raw `Input` inside one), plus
+  `InputGroupAddon`, `InputGroupButton`, `InputGroupText`.
+
+What to reach for, and what is not here yet:
+
+| Need | Use | |
+|---|---|---|
+| Callout | `Alert` | installed |
+| Empty state | `Empty` | installed |
+| Loading placeholder | `Skeleton`, `Spinner` | installed |
+| Confirmation | `AlertDialog` | installed |
+| A styled span | `Badge` | installed |
+| A rule | `Separator`, never `<hr>` | installed |
+| A row with a leading element | `Item` | installed |
+| Overlays | `Dialog`, `Sheet`, `Drawer`, `Popover` | installed |
+| Menus, palettes | `DropdownMenu`, `Command`, `Combobox` | installed |
+| 2–7 exclusive options | `ToggleGroup` | **not installed** |
+| Single choice from a list | `RadioGroup` | **not installed** |
+| A determinate bar | `Progress` | **not installed** |
+| Long scrolling region | `ScrollArea` | **not installed** |
+
+The right-hand column goes stale the moment someone installs one — `ls
+src/components/ui` is the current answer. It is here to stop the documented
+failure mode: reading "not installed" as "so I will compose it from a `div`."
+
+**Dialog, Sheet and Drawer each need a title** for accessibility — `sr-only` if
+it should not be seen. `Avatar` needs an `AvatarFallback`.
+
+**A pending submit is `SubmitButton`, not a prop on `Button`.** It reads
+`useFormStatus` rather than taking `pending`, and its own comment says why: a
+prop has to be passed by whoever renders the form, so a sibling ends up wired to
+`pending: false` for ever. Reach for it before adding a spinner to a `Button`.
