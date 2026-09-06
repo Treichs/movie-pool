@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:keep": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
@@ -12,7 +13,8 @@
     "a11y:contrast": "node scripts/a11y/contrast.mjs",
     "types:fresh": "node scripts/types-fresh.mjs",
     "types:gen": "node --env-file=.env.local scripts/gen-types.mjs",
-    "seed:dev": "node --env-file=.env.local scripts/seed-dev.mts"
+    "seed:dev": "node --env-file=.env.local scripts/seed-dev.mts",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
