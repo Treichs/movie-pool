@@ -101,6 +101,9 @@ confirmation. Those all have primitives (`alert`, `input-group`, `empty`,
 `skeleton`, `spinner`, `alert-dialog`). "Not installed, so I'll compose it"
 reached from an `ls` is the documented failure mode.
 
+What happens after you pick one — proving it, placing a change to it, recording
+what you changed — is the **`vendor-intake` skill**.
+
 ## Theming
 
 `src/app/globals.css` is the whole theming system: values in `:root`, the same
