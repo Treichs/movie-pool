@@ -7,7 +7,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import { REGISTER } from "./_components/season-hero";
+import { REGISTER } from "@/components/dashboard";
 
 /**
  * `/seasons/[seasonId]` WHILE `getSeasonHome` READS — and this is the page the
@@ -47,7 +47,7 @@ export default function SeasonLoading() {
       {/* The hero: rank, the movement and two figures, then the money register
           under its ink rule, then the bankroll and the way in.
 
-          THE TRACKS ARE IMPORTED, NOT COPIED. `REGISTER` is the hero's own
+          THE TRACKS ARE IMPORTED, NOT COPIED. `REGISTER` is the command band's
           column definition, and a skeleton that restates it in its own words is
           a skeleton that will drift out of alignment the first time the hero is
           retuned — which is exactly the jump this file exists to prevent. */}

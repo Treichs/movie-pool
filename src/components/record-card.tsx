@@ -44,29 +44,39 @@ import { cn } from "@/lib/utils";
  * table. So the "yours" mark here is ink. (Board 4.3 draws its chips in
  * `#EB4B37`, which is `--nav-primary`, the INK-side red; the theme says that
  * one appears nowhere but an ink surface, and these cards are paper.)
+ *
+ * ── TWO FORMS, ONE RECORD ────────────────────────────────────────────────
+ * On the records page a record is a card on paper. Inside League Home's
+ * record-book panel it is a COLUMN: the panel is already the sheet, so a card
+ * there would be a card in a card, and the shelf divides its columns with
+ * rules instead — the same way Season Home's "in brief" band does. The
+ * marquee border is a card's device and is not drawn on a column; on League
+ * Home every record shown is marquee, so the border would distinguish nothing.
  */
 export function RecordCard({
   label,
   entry,
   marquee,
   leagueId,
+  variant = "card",
+  className,
 }: {
   label: string;
   entry: RecordEntry;
   marquee: boolean;
   leagueId: string;
+  variant?: "card" | "column";
+  className?: string;
 }) {
+  const column = variant === "column";
   const poster = posterUrl(entry.film?.posterPath);
   const filmHref =
     entry.film?.tmdbId != null
       ? `/leagues/${leagueId}/films/${entry.film.tmdbId}`
       : null;
 
-  return (
-    <Card
-      variant="flat"
-      className={cn("gap-2.5", marquee && "border-2 border-foreground")}
-    >
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <span className="type-eyebrow text-eyebrow text-muted-foreground">
           {label}
@@ -81,7 +91,12 @@ export function RecordCard({
       <div className="flex items-start justify-between gap-4">
         {/* The board sizes a marquee record at 44px and the rest at 30px —
             the shelf's hierarchy is in the numeral, not only in the border. */}
-        <span className={cn("type-numeral", marquee ? "text-h1" : "text-h2")}>
+        <span
+          className={cn(
+            "type-numeral",
+            marquee && !column ? "text-h1" : "text-h2",
+          )}
+        >
           {entry.value}
         </span>
         {poster && (
@@ -153,6 +168,19 @@ export function RecordCard({
       <span className="type-body text-micro text-muted-foreground">
         {entry.detail}
       </span>
+    </>
+  );
+
+  if (column) {
+    return <div className={cn("flex flex-col gap-2.5", className)}>{body}</div>;
+  }
+
+  return (
+    <Card
+      variant="flat"
+      className={cn("gap-2.5", marquee && "border-2 border-foreground", className)}
+    >
+      {body}
     </Card>
   );
 }

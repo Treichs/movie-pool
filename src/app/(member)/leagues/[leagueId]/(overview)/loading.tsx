@@ -1,10 +1,12 @@
+import { REGISTER } from "@/components/dashboard";
 import {
   PageSkeleton,
+  SkeletonFigure,
   SkeletonLine,
   SkeletonPanel,
-  SkeletonRow,
 } from "@/components/page-skeleton";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 /**
  * `/leagues/[leagueId]` WHILE `getLeagueHome` READS.
@@ -48,23 +50,37 @@ export default function LeagueLoading() {
           <SkeletonLine w="w-40" h="h-9" className="rounded-4xl" />
         </Card>
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[2fr_1fr]">
-          <div className="flex flex-col gap-8">
-            <SkeletonPanel lines={2} />
-            <section className="flex flex-col gap-3">
-              <SkeletonLine w="w-28" h="h-6" />
-              <div className="flex flex-col gap-2.5">
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
-                <SkeletonRow />
+        {/* The frame, span for span, on the command band's own tracks:
+              YOUR CAREER .............................. 12
+              MEMBERS ............ 7 │ PAST SEASONS .... 5
+              THE RECORD BOOK .......................... 12 */}
+        <div className="mt-4 grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-12">
+          <Card variant="flat" className="gap-4 md:col-span-2 xl:col-span-12">
+            <div className={REGISTER}>
+              <div className="flex flex-col gap-1.5">
+                <SkeletonLine w="w-24" h="h-2.5" />
+                <SkeletonLine w="w-28" h="h-16" />
               </div>
-            </section>
+              <SkeletonFigure />
+              <SkeletonFigure />
+              <SkeletonFigure />
+            </div>
+            <div className={cn(REGISTER, "border-t-2 border-foreground pt-4")}>
+              <SkeletonFigure />
+              <SkeletonFigure />
+              <SkeletonFigure />
+            </div>
+          </Card>
+
+          <div className="flex flex-col md:col-span-1 xl:col-span-7">
+            <SkeletonPanel lines={6} />
           </div>
-          <div className="flex flex-col gap-4">
-            <SkeletonPanel size="sm" lines={3} />
-            <SkeletonPanel size="sm" lines={4} />
+          <div className="flex flex-col md:col-span-1 xl:col-span-5">
+            <SkeletonPanel lines={6} size="sm" />
+          </div>
+
+          <div className="flex flex-col md:col-span-2 xl:col-span-12">
+            <SkeletonPanel lines={4} />
           </div>
         </div>
       </div>

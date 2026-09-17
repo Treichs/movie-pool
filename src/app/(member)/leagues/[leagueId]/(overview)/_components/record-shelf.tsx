@@ -1,5 +1,8 @@
 import { RecordCard } from "@/components/record-card";
-import type { LeagueRecordBook } from "@/lib/league-records";
+import type { LeagueAggregates, LeagueRecordBook } from "@/lib/league-records";
+import { cn } from "@/lib/utils";
+
+import { GoingRate } from "./going-rate";
 
 /**
  * THE MARQUEE RECORDS — the bragging rights, at the top of the league rather
@@ -17,39 +20,77 @@ import type { LeagueRecordBook } from "@/lib/league-records";
  * records page follows: every record self-suppresses when the league has no
  * data for it, so a league on its first weekend genuinely has fewer, and a
  * hard-coded four would render an empty column.
+ *
+ * ── COLUMNS, NOT CARDS, AND THE AVERAGES UNDERNEATH ──────────────────────
+ * This sits inside a `DashboardPanel`, which is already the sheet. Until
+ * 2026-09-17 it drew four bordered cards two-by-two inside that sheet — a card
+ * in a card, 430px tall for four facts, with a 300px void between each
+ * numeral and its poster. Now it is one row of four columns divided by rules,
+ * the shape Season Home's "in brief" band uses, and the league's averages run
+ * as a strip beneath them. The two were separate panels that both linked to
+ * `/records`; a reader wants one record book, not two doors to it.
+ *
+ * The page gates the whole panel on there being a marquee record, so the
+ * heading is never drawn over nothing — the condition lives where the heading
+ * does, the lesson the announcements panel taught.
  */
-/** THE COLUMN COUNT DIVIDES THE RECORD COUNT, so the shelf never ends on a
- *  half-empty row. Three marquee records across two columns left a 536×225 hole
- *  at the page's headline moment, and the four-across step was unreachable
- *  anyway: the page frame caps at 72rem, so four columns is 276px of card —
- *  narrower than the h1 numeral in it needs. Four records sit two-by-two
- *  instead. The composer decides how many lead and every record self-suppresses,
- *  so the count genuinely varies; this only decides how they sit. */
+/** THE COLUMN COUNT FOLLOWS THE RECORD COUNT. Four across at `xl` is ~320px a
+ *  column on the 90rem page frame, which takes an h2 numeral and a poster
+ *  side by side; two across survives everywhere narrower. Three at `lg` rather
+ *  than at `sm`, because three of anything at 640px is three slivers. The
+ *  class has to be a literal for Tailwind to emit it at all. */
 const COLUMNS: Record<number, string> = {
-  1: "grid-cols-1",
-  2: "grid-cols-1 sm:grid-cols-2",
-  3: "grid-cols-1 lg:grid-cols-3",
-  4: "grid-cols-1 sm:grid-cols-2",
+  1: "sm:grid-cols-1",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 lg:grid-cols-3",
+  4: "sm:grid-cols-2 xl:grid-cols-4",
+};
+
+/** Rules between columns and rows, drawn by position rather than by wrapper:
+ *  every row but the last gets a rule beneath it, every column but the first
+ *  a rule to its left, at each of the three column counts. Tailwind needs the
+ *  literal selectors, so they are spelled out per breakpoint. */
+const RULES: Record<number, string> = {
+  1: "border-b border-border last:border-b-0",
+  2: cn(
+    "border-b border-border last:border-b-0",
+    "sm:[&:nth-last-child(-n+2)]:border-b-0",
+    "sm:border-l sm:[&:nth-child(odd)]:border-l-0",
+  ),
+  3: cn(
+    "border-b border-border last:border-b-0",
+    "sm:[&:nth-last-child(-n+2)]:border-b-0",
+    "sm:border-l sm:[&:nth-child(odd)]:border-l-0",
+    "lg:border-b-0 lg:border-l lg:first:border-l-0",
+  ),
+  4: cn(
+    "border-b border-border last:border-b-0",
+    "sm:[&:nth-last-child(-n+2)]:border-b-0",
+    "sm:border-l sm:[&:nth-child(odd)]:border-l-0",
+    "xl:border-b-0 xl:border-l xl:first:border-l-0",
+  ),
 };
 
 export function RecordShelf({
   records,
+  aggregates,
   leagueId,
 }: {
   records: LeagueRecordBook["records"];
+  aggregates: LeagueAggregates | null;
   leagueId: string;
 }) {
   const marquee = records.filter((r) => r.marquee);
   if (marquee.length === 0) return null;
 
-  // NO HEADING AND NO SECTION OF ITS OWN. This sits in a `DashboardPanel`,
-  // which supplies the region, the heading and the link beside it. Keeping its
-  // own would be a heading under a heading inside a panel inside a frame.
+  const count = Math.min(marquee.length, 4);
+
   return (
-    <>
-      <div
-        className={`grid gap-4 ${COLUMNS[marquee.length] ?? "grid-cols-1 sm:grid-cols-2"}`}
-      >
+    // Bleeds to the panel's edges so the rules run into its border, the way a
+    // ruled column does in print. The panel's own padding is what each column
+    // takes back as its inset.
+    <div className="-mx-(--frame-panel-px) -mb-(--frame-panel-py) flex flex-col border-t">
+      <div className={cn("grid grid-cols-1", COLUMNS[count])}>
         {marquee.map((r) => (
           <RecordCard
             key={r.label}
@@ -57,9 +98,12 @@ export function RecordShelf({
             entry={r.entry}
             marquee={r.marquee}
             leagueId={leagueId}
+            variant="column"
+            className={cn("px-(--frame-panel-px) py-4", RULES[count])}
           />
         ))}
       </div>
-    </>
+      <GoingRate aggregates={aggregates} />
+    </div>
   );
 }

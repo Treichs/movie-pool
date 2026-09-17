@@ -1,6 +1,8 @@
+import { REGISTER } from "@/components/dashboard";
 import { Figure } from "@/components/figure";
 import { ordinal } from "@/lib/format";
 import type { CareerPosition, CareerRival } from "@/lib/league-story";
+import { cn } from "@/lib/utils";
 
 /**
  * YOUR CAREER IN THIS LEAGUE — the league-scoped twin of the season
@@ -36,13 +38,13 @@ export function CareerPositionBlock({
 }) {
   return (
     <section aria-label="Your career in this league" className="flex flex-col gap-4">
-      {/* A COLUMN GRID BELOW `sm`, THE SAME BASELINE ROW ABOVE IT. Left to
-          wrap, four figures at a 40px gutter packed 3 + 1 on a phone and the
-          orphan landed under whichever figure happened to be widest — a
-          ranking's own numbers reading as ragged noise. `sm:contents` dissolves
-          the phone grid at the first breakpoint, so the desktop row is
-          unchanged. */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-10">
+      {/* THE SEASON HERO'S OWN TRACKS. This row was a wrapping flex, which
+          packed four figures into the left two-fifths of a twelve-column
+          panel and left the rest empty — the one place on the page that
+          should carry the most weight read as the emptiest. `REGISTER` spreads
+          the same four across the width and answers the phone wrap the same
+          way the hero does. */}
+      <div className={REGISTER}>
         <div className="flex flex-col gap-1">
           <span className="type-eyebrow text-eyebrow text-muted-foreground">
             All-time
@@ -63,22 +65,22 @@ export function CareerPositionBlock({
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-x-4 sm:contents">
-          <Figure label="Titles" value={String(position.titles)} size="lg" />
-          <Figure
-            label={position.seasons === 1 ? "Season played" : "Seasons played"}
-            value={String(position.seasons)}
-            size="lg"
-          />
-          <Figure label="Career points" value={position.points.toFixed(2)} size="lg" />
-        </div>
+        <Figure label="Titles" value={String(position.titles)} size="lg" />
+        <Figure
+          label={position.seasons === 1 ? "Season played" : "Seasons played"}
+          value={String(position.seasons)}
+          size="lg"
+        />
+        <Figure label="Career points" value={position.points.toFixed(2)} size="lg" />
       </div>
 
-      <div className="flex flex-col gap-3 border-t-2 border-foreground pt-4">
-        {/* Two fixed columns on a phone rather than a ragged wrap: these labels
-            carry member names, so their widths are whatever the league happens
-            to have called its people. */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:flex sm:flex-wrap sm:gap-x-10">
+      <div className="flex flex-col gap-4">
+        {/* The same tracks under the ink rule, so a figure here sits under the
+            figure above it. These labels carry member names, so a cell's
+            content is whatever the league happens to have called its people;
+            the fixed tracks are what keep that from turning into a ragged
+            wrap. */}
+        <div className={cn(REGISTER, "border-t-2 border-foreground pt-4")}>
           <Figure
             label="Best finish"
             value={
