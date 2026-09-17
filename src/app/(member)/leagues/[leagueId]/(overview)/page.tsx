@@ -26,7 +26,6 @@ import { TextLink } from "@/components/text-link";
 import { AnnouncementsPanel } from "./_components/announcements-panel";
 import { CareerPositionBlock } from "./_components/career-position";
 import { MemberRoster } from "./_components/member-roster";
-import { RecordBookPanel } from "./_components/record-book-panel";
 import { RecordShelf } from "./_components/record-shelf";
 import { SeasonThread } from "./_components/season-thread";
 import { SeasonsTable } from "./_components/seasons-table";
@@ -66,15 +65,24 @@ export const metadata = { title: "League" };
  * shell already carries one in the paper band a few inches above. One switcher
  * per screen; the H1 goes back to naming the thing you are looking at.
  *
- * ── THE COMMAND CENTRE, IN THREE REGISTERS ────────────────────────────────
- * The STANDING/RECORD split above is still the spine; what changed on
- * 2026-09-01 is that RECORD stopped being a rail of averages. The page now
- * reads: what is live (the thread), where you stand all-time (the career
- * block), what this league is famous for (the marquee records), and only then
- * the archive. Bragging rights lead, because a league page nobody enjoys
- * opening is a directory.
+ * ── THE SPINE, IN ORDER (settled 2026-09-17) ──────────────────────────────
+ * Outside the frame, what is true now: the live thread, then the league's
+ * news. Inside it, three rows that never change shape: where you stand
+ * all-time, the people (the ranked roster beside the archive of seasons they
+ * played), and the record — the marquee records over the league's averages.
  *
- * Both new bands are DERIVED FROM READS THIS PAGE ALREADY MADE. The record
+ * The 2026-09-01 layout put the record shelf second, on the argument that
+ * bragging rights lead. That argument still holds and the order still honours
+ * it: the roster IS a ranked career table with a titles column, so "the
+ * people" is bragging rights too, and it is the direct continuation of the
+ * career band — the rival that band names is in the list. What that layout
+ * cost was the spine itself: STANDING and RECORD interleaved on screen
+ * (you → records → members → averages → news → archive) and three of its
+ * panels were holes — a full-width shelf of four bordered cards, a rail of
+ * four averages beside a roster twice its height, and an archive stretched to
+ * twelve columns whenever a league had no announcements.
+ *
+ * Both record bands are DERIVED FROM READS THIS PAGE ALREADY MADE. The record
  * book was being built here for its career table alone, and its marquee
  * records — flagged, by their own type, as the ones that "lead League Home" —
  * were thrown away every render.
@@ -187,6 +195,11 @@ export default async function LeaguePage({
         }
       />
 
+      <AnnouncementsPanel
+        announcements={home.announcements}
+        leagueId={leagueId}
+      />
+
       {/* ── THE SAME DASHBOARD SEASON HOME USES ──────────────────────────
           Same frame, same twelve columns, same paging. Only the subject
           changes: careers and the archive instead of a season's standings.
@@ -194,12 +207,9 @@ export default async function LeaguePage({
           than in either route — two pages drawing the same object differently
           is the drift `BidCta` was lifted out of both pages to stop.
 
-          THE PANELS' OWN CHROME CAME OFF. `RecordBookPanel` and
-          `AnnouncementsPanel` were each a `Card variant="flat"` with their own
-          eyebrow heading, and `RecordShelf` carried its own `<h2>` and section
-          wrapper. Inside the frame that would be a card in a card and a
-          heading under a heading, so the frame's panel supplies both and the
-          components supply only their content. */}
+          EVERY ROW HAS ONE SHAPE. Announcements left the frame because they
+          were its only conditional panel; the record book is gated as a whole
+          rather than spanned around. Nothing in here changes width on data. */}
       <Dashboard
         eyebrow="The league record"
         meta={`${memberCount} member${memberCount === 1 ? "" : "s"} · ${seasonCount} season${seasonCount === 1 ? "" : "s"}`}
@@ -207,11 +217,11 @@ export default async function LeaguePage({
       >
         <DashboardGrid>
           {/* THE COMMAND BAND — the league's twin of Season Home's. Same
-              placement, same full width, same hidden heading, so the two pages
-              open the same way. It is conditional because a member with no
-              completed season has no career position to state, and inventing a
-              rank for them would be the same lie the season page refuses to
-              tell before anything has scored. */}
+              placement, same full width, same hidden heading, same tracks, so
+              the two pages open the same way. It is conditional because a
+              member with no completed season has no career position to state,
+              and inventing a rank for them would be the same lie the season
+              page refuses to tell before anything has scored. */}
           {home.story.position && (
             <DashboardPanel
               id="your-career"
@@ -226,19 +236,11 @@ export default async function LeaguePage({
             </DashboardPanel>
           )}
 
-          <DashboardPanel
-            id="record-shelf"
-            title="The record book"
-            aside={
-              <TextLink href={`/leagues/${leagueId}/records`} size="micro">
-                Every record and every career
-              </TextLink>
-            }
-            span="md:col-span-6 xl:col-span-12"
-          >
-            <RecordShelf records={home.records} leagueId={leagueId} />
-          </DashboardPanel>
-
+          {/* THE PEOPLE. Seven columns of ranked roster beside five of the
+              seasons they played — two fixed-height lists, so the row holds
+              still whatever the league's size. The archive is three short
+              columns; at twelve wide it was a name at one edge and a date at
+              the other with 700px of nothing between. */}
           <DashboardPanel
             id="members"
             title="Members"
@@ -249,49 +251,10 @@ export default async function LeaguePage({
           </DashboardPanel>
 
           <DashboardPanel
-            id="league-averages"
-            title="The going rate"
-            span="md:col-span-6 xl:col-span-5"
-          >
-            <RecordBookPanel aggregates={home.aggregates} leagueId={leagueId} />
-          </DashboardPanel>
-
-          {/* GATED HERE, BECAUSE THE PANEL SUPPLIES THE HEADING NOW.
-              `AnnouncementsPanel` returns null for an empty league, and its own
-              comment says why: "an empty Announcements heading is a promise the
-              league has not made". Wrapping it in a `DashboardPanel` moved the
-              heading outside the component, so the null no longer suppressed
-              it — a league with nothing to say got a titled, empty panel. The
-              condition has to live where the heading does. */}
-          {home.announcements.length > 0 && (
-            <DashboardPanel
-              id="announcements"
-              title="Announcements"
-              span="md:col-span-6 xl:col-span-5"
-            >
-              <AnnouncementsPanel
-                announcements={home.announcements}
-                leagueId={leagueId}
-              />
-            </DashboardPanel>
-          )}
-
-          {/* THE ARCHIVE TAKES THE WHOLE ROW WHEN THERE IS NOTHING TO PUT
-              BESIDE IT. Announcements is the one panel on this page that can
-              be absent — a league that has never posted has none — and a
-              seven-column table with an empty five beside it is a hole the
-              reader reads as a missing panel. This is the only conditional
-              span on either dashboard, and it exists because this is the only
-              conditional PANEL. */}
-          <DashboardPanel
             id="past-seasons"
             title="Past seasons"
             aside="Completed and archived"
-            span={
-              home.announcements.length > 0
-                ? "md:col-span-6 xl:col-span-7"
-                : "md:col-span-6 xl:col-span-12"
-            }
+            span="md:col-span-6 xl:col-span-5"
           >
             <SeasonsTable
               seasons={home.seasons}
@@ -299,6 +262,28 @@ export default async function LeaguePage({
             />
           </DashboardPanel>
 
+          {/* THE RECORD. Gated on a marquee record existing, because the
+              shelf returns null without one and a titled panel over nothing
+              is the defect the announcements panel already taught this page.
+              The averages ride inside it as a strip. */}
+          {home.records.some((r) => r.marquee) && (
+            <DashboardPanel
+              id="record-shelf"
+              title="The record book"
+              aside={
+                <TextLink href={`/leagues/${leagueId}/records`} size="micro">
+                  Every record and every career
+                </TextLink>
+              }
+              span="md:col-span-6 xl:col-span-12"
+            >
+              <RecordShelf
+                records={home.records}
+                aggregates={home.aggregates}
+                leagueId={leagueId}
+              />
+            </DashboardPanel>
+          )}
         </DashboardGrid>
       </Dashboard>
     </main>

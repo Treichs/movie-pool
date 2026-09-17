@@ -1,5 +1,6 @@
 import { ArrowDownRightIcon, ArrowUpRightIcon } from "lucide-react";
 
+import { REGISTER } from "@/components/dashboard";
 import { Figure } from "@/components/figure";
 import { ordinal } from "@/lib/format";
 import type { MyPosition } from "@/lib/season-story";
@@ -84,24 +85,6 @@ import { cn } from "@/lib/utils";
  * coincide the money version wins: it carries the gap AND what closing it is
  * worth.
  */
-/**
- * The shared tracks. Two columns on a phone, four from `lg`.
- *
- * The phone pair is UNEQUAL, and both numbers came off the rendered page rather
- * than out of the air. Measured at 390px against a ten-player league, the
- * widest thing the first column ever holds is "6th of 10" at 135px and the
- * widest the second ever holds is "Down 1 place" at 160px. Two equal halves of
- * 327px give each 144, which breaks both.
- *
- * 8.75rem is the first column's 135 with a little room; what is left is 155,
- * which takes the movement inline in the ordinary case and lets it drop its
- * unit word to a second line in the worst one — the graceful break
- * `PlacesMoved` is built for. It was 8rem until the ten-player fixture, where
- * a two-digit player count pushed "of 10" onto its own line under "6th".
- */
-export const REGISTER =
-  "grid grid-cols-[8.75rem_minmax(0,1fr)] items-end gap-x-8 gap-y-5 sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-4";
-
 export function SeasonHero({
   position,
   bankrollLeft,
